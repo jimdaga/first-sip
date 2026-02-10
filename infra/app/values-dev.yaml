@@ -1,0 +1,7 @@
+fullnameOverride: first-sip-dev
+
+image:
+  pullPolicy: Always
+
+ingress:
+  enabled: false

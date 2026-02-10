@@ -1,0 +1,6 @@
+apiVersion: v2
+name: first-sip
+description: A Helm chart for the first-sip Go service
+type: application
+version: 0.0.0
+appVersion: "0.0.0"

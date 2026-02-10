@@ -1,0 +1,7 @@
+fullnameOverride: first-sip-prd
+
+image:
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
