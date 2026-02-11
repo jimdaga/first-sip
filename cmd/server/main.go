@@ -4,12 +4,20 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/jimdaga/first-sip/internal/auth"
 	"github.com/jimdaga/first-sip/internal/config"
+	"github.com/jimdaga/first-sip/internal/templates"
 )
+
+// render is a helper function to render Templ components in Gin handlers
+func render(c *gin.Context, component templ.Component) {
+	c.Header("Content-Type", "text/html")
+	component.Render(c.Request.Context(), c.Writer)
+}
 
 func main() {
 	// Load configuration
@@ -39,9 +47,25 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	// Root route - redirect based on auth status
+	r.GET("/", func(c *gin.Context) {
+		session := sessions.Default(c)
+		if session.Get("user_id") != nil {
+			c.Redirect(http.StatusFound, "/dashboard")
+		} else {
+			c.Redirect(http.StatusFound, "/login")
+		}
+	})
+
 	// Public routes (no authentication required)
 	r.GET("/login", func(c *gin.Context) {
-		c.String(200, "Login page (coming in Plan 02)")
+		errorMsg := ""
+		if c.Query("error") == "auth_failed" {
+			errorMsg = "Authentication failed. Please try again."
+		} else if c.Query("error") == "session_failed" {
+			errorMsg = "Session error. Please try again."
+		}
+		render(c, templates.LoginPage(errorMsg))
 	})
 	r.GET("/auth/google", auth.HandleLogin)
 	r.GET("/auth/google/callback", auth.HandleCallback)
@@ -50,11 +74,21 @@ func main() {
 	protected := r.Group("/")
 	protected.Use(auth.RequireAuth())
 	{
-		protected.GET("/", func(c *gin.Context) {
-			c.Redirect(http.StatusFound, "/dashboard")
-		})
 		protected.GET("/dashboard", func(c *gin.Context) {
-			c.String(200, "Dashboard (coming in Plan 02)")
+			// Extract user info from context (set by RequireAuth middleware)
+			name, _ := c.Get("user_name")
+			email, _ := c.Get("user_email")
+
+			nameStr := ""
+			emailStr := ""
+			if name != nil {
+				nameStr = name.(string)
+			}
+			if email != nil {
+				emailStr = email.(string)
+			}
+
+			render(c, templates.DashboardPage(nameStr, emailStr))
 		})
 		protected.GET("/logout", auth.HandleLogout)
 	}
