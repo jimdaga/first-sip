@@ -11,6 +11,8 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleCallbackURL  string
 	SessionSecret      string
+	DatabaseURL        string
+	EncryptionKey      string
 	Env                string
 	Port               string
 }
@@ -22,6 +24,8 @@ func Load() *Config {
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleCallbackURL:  os.Getenv("GOOGLE_CALLBACK_URL"),
 		SessionSecret:      os.Getenv("SESSION_SECRET"),
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		EncryptionKey:      os.Getenv("ENCRYPTION_KEY"),
 		Env:                getEnvWithDefault("ENV", "development"),
 		Port:               getEnvWithDefault("PORT", "8080"),
 	}
@@ -30,6 +34,22 @@ func Load() *Config {
 	if cfg.SessionSecret == "" {
 		cfg.SessionSecret = "dev-secret-change-in-production-use-openssl-rand-hex-32"
 		log.Println("WARNING: Using default SESSION_SECRET. Generate a secure secret with: openssl rand -hex 32")
+	}
+
+	// Check for required database configuration
+	if cfg.DatabaseURL == "" {
+		if cfg.Env == "production" {
+			log.Fatal("DATABASE_URL is required in production")
+		}
+		log.Println("WARNING: DATABASE_URL not set. Database features will be unavailable.")
+	}
+
+	// Check for required encryption configuration
+	if cfg.EncryptionKey == "" {
+		if cfg.Env == "production" {
+			log.Fatal("ENCRYPTION_KEY is required in production")
+		}
+		log.Println("WARNING: ENCRYPTION_KEY not set. Token encryption will be unavailable.")
 	}
 
 	return cfg
