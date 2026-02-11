@@ -39,8 +39,25 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// TODO: Auth routes will be registered here in Task 2
-	// TODO: Protected routes will be registered here in Task 2
+	// Public routes (no authentication required)
+	r.GET("/login", func(c *gin.Context) {
+		c.String(200, "Login page (coming in Plan 02)")
+	})
+	r.GET("/auth/google", auth.HandleLogin)
+	r.GET("/auth/google/callback", auth.HandleCallback)
+
+	// Protected routes (require authentication)
+	protected := r.Group("/")
+	protected.Use(auth.RequireAuth())
+	{
+		protected.GET("/", func(c *gin.Context) {
+			c.Redirect(http.StatusFound, "/dashboard")
+		})
+		protected.GET("/dashboard", func(c *gin.Context) {
+			c.String(200, "Dashboard (coming in Plan 02)")
+		})
+		protected.GET("/logout", auth.HandleLogout)
+	}
 
 	log.Printf("Starting server on :%s (env: %s)", cfg.Port, cfg.Env)
 	if err := r.Run(":" + cfg.Port); err != nil {
