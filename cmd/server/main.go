@@ -4,15 +4,46 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jimdaga/first-sip/internal/health"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/jimdaga/first-sip/internal/auth"
+	"github.com/jimdaga/first-sip/internal/config"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", health.Handler)
+	// Load configuration
+	cfg := config.Load()
 
-	log.Println("starting server on :8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	// Create Gin router
+	r := gin.Default()
+
+	// Set up cookie-based session store
+	store := cookie.NewStore([]byte(cfg.SessionSecret))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30, // 30 days
+		HttpOnly: true,
+		Secure:   cfg.Env == "production",
+		SameSite: http.SameSiteLaxMode, // Lax allows OAuth redirects, Strict would block them
+	})
+
+	// Register session middleware BEFORE routes
+	r.Use(sessions.Sessions("first_sip_session", store))
+
+	// Initialize Goth OAuth providers (after session middleware)
+	auth.InitProviders(cfg)
+
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	// TODO: Auth routes will be registered here in Task 2
+	// TODO: Protected routes will be registered here in Task 2
+
+	log.Printf("Starting server on :%s (env: %s)", cfg.Port, cfg.Env)
+	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
 }
