@@ -12,7 +12,7 @@ This roadmap transforms the minimal Go service into a production-ready daily bri
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Authentication** - Google OAuth login with session persistence
+- [x] **Phase 1: Authentication** - Google OAuth login with session persistence
 - [ ] **Phase 2: Database & Models** - Postgres setup with GORM migrations
 - [ ] **Phase 3: Background Job Infrastructure** - Asynq worker with Redis queue
 - [ ] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
@@ -34,8 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Auth backend: Gin router, Goth OAuth, session middleware, auth handlers
-- [ ] 01-02-PLAN.md — Auth frontend: Templ templates, route wiring, end-to-end verification
+- [x] 01-01-PLAN.md — Auth backend: Gin router, Goth OAuth, session middleware, auth handlers
+- [x] 01-02-PLAN.md — Auth frontend: Templ templates, route wiring, end-to-end verification
 
 ### Phase 2: Database & Models
 **Goal**: Application has persistent storage for users and briefings
@@ -133,7 +133,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Authentication | 0/2 | Planned | - |
+| 1. Authentication | 2/2 | ✓ Complete | 2026-02-10 |
 | 2. Database & Models | 0/? | Not started | - |
 | 3. Background Job Infrastructure | 0/? | Not started | - |
 | 4. Briefing Generation (Mock) | 0/? | Not started | - |
@@ -143,4 +143,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-11*
