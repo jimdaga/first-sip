@@ -79,27 +79,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| BGEN-01 | — | Pending |
-| BGEN-02 | — | Pending |
-| BGEN-03 | — | Pending |
-| BGEN-04 | — | Pending |
-| BDISP-01 | — | Pending |
-| BDISP-02 | — | Pending |
-| BDISP-03 | — | Pending |
-| BDISP-04 | — | Pending |
-| INFR-01 | — | Pending |
-| INFR-02 | — | Pending |
-| INFR-03 | — | Pending |
-| INFR-04 | — | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| BGEN-01 | Phase 4 | Pending |
+| BGEN-02 | Phase 4 | Pending |
+| BGEN-03 | Phase 4 | Pending |
+| BGEN-04 | Phase 6 | Pending |
+| BDISP-01 | Phase 5 | Pending |
+| BDISP-02 | Phase 5 | Pending |
+| BDISP-03 | Phase 5 | Pending |
+| BDISP-04 | Phase 7 | Pending |
+| INFR-01 | Phase 3 | Pending |
+| INFR-02 | Phase 2 | Pending |
+| INFR-03 | Phase 4 | Pending |
+| INFR-04 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-10*
-*Last updated: 2026-02-10 after initial definition*
+*Last updated: 2026-02-10 after roadmap creation*
