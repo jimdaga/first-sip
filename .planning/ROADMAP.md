@@ -45,11 +45,12 @@ Plans:
   1. User records persist in Postgres with encrypted OAuth tokens
   2. Briefing records can be created, read, and updated via GORM
   3. Database migrations run automatically on application start
-  4. Local development works with SQLite, production uses Postgres
-**Plans**: TBD
+  4. Local development uses Postgres via Docker Compose (Postgres everywhere per user decision)
+**Plans**: 2 plans
 
 Plans:
-- TBD (created during /gsd:plan-phase 2)
+- [ ] 02-01-PLAN.md — Database infrastructure: Docker Compose, GORM connection, SQL migrations, AES-256-GCM encryption
+- [ ] 02-02-PLAN.md — GORM models with encryption hooks, seed data, application wiring
 
 ### Phase 3: Background Job Infrastructure
 **Goal**: Application can process long-running tasks asynchronously
@@ -134,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Authentication | 2/2 | ✓ Complete | 2026-02-10 |
-| 2. Database & Models | 0/? | Not started | - |
+| 2. Database & Models | 0/2 | Planned | - |
 | 3. Background Job Infrastructure | 0/? | Not started | - |
 | 4. Briefing Generation (Mock) | 0/? | Not started | - |
 | 5. Briefing Display | 0/? | Not started | - |
