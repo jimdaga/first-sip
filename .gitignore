@@ -25,6 +25,7 @@ vendor/
 # Environment
 .env
 *.env.local
+local.env
 
 # OS
 .DS_Store
