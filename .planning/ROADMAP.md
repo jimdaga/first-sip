@@ -31,10 +31,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User session persists across browser refresh and restarts
   3. User can click "Logout" from dashboard and be returned to login page
   4. Protected routes redirect unauthenticated users to login
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- TBD (created during /gsd:plan-phase 1)
+- [ ] 01-01-PLAN.md — Auth backend: Gin router, Goth OAuth, session middleware, auth handlers
+- [ ] 01-02-PLAN.md — Auth frontend: Templ templates, route wiring, end-to-end verification
 
 ### Phase 2: Database & Models
 **Goal**: Application has persistent storage for users and briefings
@@ -132,7 +133,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Authentication | 0/? | Not started | - |
+| 1. Authentication | 0/2 | Planned | - |
 | 2. Database & Models | 0/? | Not started | - |
 | 3. Background Job Infrastructure | 0/? | Not started | - |
 | 4. Briefing Generation (Mock) | 0/? | Not started | - |
