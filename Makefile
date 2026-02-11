@@ -1,7 +1,13 @@
-.PHONY: build test lint run docker-build clean
+.PHONY: build test lint run docker-build clean templ-generate dev
 
-build:
+templ-generate:
+	$(HOME)/go/bin/templ generate
+
+build: templ-generate
 	go build -ldflags="-s -w" -o server ./cmd/server
+
+dev: templ-generate
+	go run cmd/server/main.go
 
 test:
 	go test -v -race -coverprofile=coverage.out ./...
