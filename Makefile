@@ -1,4 +1,4 @@
-.PHONY: build test lint run docker-build clean templ-generate dev
+.PHONY: build test lint run docker-build clean templ-generate dev db-up db-down db-reset
 
 templ-generate:
 	$(HOME)/go/bin/templ generate
@@ -7,6 +7,8 @@ build: templ-generate
 	go build -ldflags="-s -w" -o server ./cmd/server
 
 dev: templ-generate
+	@echo "Ensure Postgres is running: make db-up"
+	@echo "Then source environment: source env.local"
 	go run cmd/server/main.go
 
 test:
@@ -20,6 +22,15 @@ run:
 
 docker-build:
 	docker build -t jimdaga/first-sip:local .
+
+db-up:
+	docker compose up -d
+
+db-down:
+	docker compose down
+
+db-reset:
+	docker compose down -v && docker compose up -d
 
 clean:
 	rm -f server coverage.out

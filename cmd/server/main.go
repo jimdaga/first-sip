@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jimdaga/first-sip/internal/auth"
 	"github.com/jimdaga/first-sip/internal/config"
+	"github.com/jimdaga/first-sip/internal/database"
+	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/templates"
 )
 
@@ -22,6 +24,34 @@ func render(c *gin.Context, component templ.Component) {
 func main() {
 	// Load configuration
 	cfg := config.Load()
+
+	// Initialize encryption (must be before any model operations)
+	if cfg.EncryptionKey != "" {
+		if err := models.InitEncryption(cfg.EncryptionKey); err != nil {
+			log.Fatalf("Failed to initialize encryption: %v", err)
+		}
+	}
+
+	// Initialize database connection
+	if cfg.DatabaseURL != "" {
+		db, err := database.Init(cfg.DatabaseURL)
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v", err)
+		}
+		defer database.Close(db)
+
+		// Run migrations
+		if err := database.RunMigrations(db); err != nil {
+			log.Fatalf("Failed to run migrations: %v", err)
+		}
+
+		// Seed development data
+		if cfg.Env != "production" {
+			if err := database.SeedDevData(db); err != nil {
+				log.Printf("Warning: seed data failed: %v", err)
+			}
+		}
+	}
 
 	// Create Gin router
 	r := gin.Default()
