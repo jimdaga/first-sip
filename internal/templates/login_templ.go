@@ -41,7 +41,7 @@ func LoginPage(errorMsg string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"hero min-h-screen bg-base-200\"><div class=\"hero-content text-center\"><div class=\"max-w-md\"><h1 class=\"text-5xl font-bold\">First Sip</h1><p class=\"py-6\">Your daily briefing, personalized.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"hero min-h-screen bg-base-200\"><div class=\"hero-content text-center\"><div class=\"max-w-md\"><img src=\"/static/img/logo.png\" alt=\"First Sip\" class=\"w-48 mx-auto mb-4\"><p class=\"py-6\">Your daily briefing, personalized.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
