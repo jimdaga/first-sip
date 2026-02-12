@@ -35,6 +35,7 @@ services:
 
   asynqmon:
     image: hibiken/asynqmon:latest
+    platform: linux/amd64
     container_name: first-sip-asynqmon
     ports:
       - "8081:8080"
