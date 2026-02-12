@@ -13,7 +13,7 @@ This roadmap transforms the minimal Go service into a production-ready daily bri
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Authentication** - Google OAuth login with session persistence
-- [ ] **Phase 2: Database & Models** - Postgres setup with GORM migrations
+- [x] **Phase 2: Database & Models** - Postgres setup with GORM migrations
 - [ ] **Phase 3: Background Job Infrastructure** - Asynq worker with Redis queue
 - [ ] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
 - [ ] **Phase 5: Briefing Display** - Dashboard UI with section layout
@@ -49,8 +49,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Database infrastructure: Docker Compose, GORM connection, SQL migrations, AES-256-GCM encryption
-- [ ] 02-02-PLAN.md — GORM models with encryption hooks, seed data, application wiring
+- [x] 02-01-PLAN.md — Database infrastructure: Docker Compose, GORM connection, SQL migrations, AES-256-GCM encryption
+- [x] 02-02-PLAN.md — GORM models with encryption hooks, seed data, application wiring
 
 ### Phase 3: Background Job Infrastructure
 **Goal**: Application can process long-running tasks asynchronously
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Authentication | 2/2 | ✓ Complete | 2026-02-10 |
-| 2. Database & Models | 0/2 | Planned | - |
+| 2. Database & Models | 2/2 | ✓ Complete | 2026-02-11 |
 | 3. Background Job Infrastructure | 0/? | Not started | - |
 | 4. Briefing Generation (Mock) | 0/? | Not started | - |
 | 5. Briefing Display | 0/? | Not started | - |
@@ -144,4 +144,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-11*
+*Last updated: 2026-02-12*
