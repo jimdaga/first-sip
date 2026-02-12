@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** Phase 3 - Background Job Infrastructure
+**Current focus:** Phase 4 - Briefing Generation (Mock)
 
 ## Current Position
 
-Phase: 3 of 7 (Background Job Infrastructure)
-Plan: 2 of 2 in current phase
-Status: Complete — Verified
-Last activity: 2026-02-12 — Phase 3 verified (10/10 must-haves passed)
+Phase: 4 of 7 (Briefing Generation - Mock)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-12 — Completed 04-01-PLAN.md (webhook client foundation)
 
-Progress: [██████████] 100% (Phase 3)
+Progress: [█████████░] 50% (Phase 4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 13.7 min
-- Total execution time: 1.4 hours
+- Total plans completed: 7
+- Average duration: 12.1 min
+- Total execution time: 1.5 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [██████████] 100% (Phase 3)
 | 01 | 2 | 21 min | 10.5 min |
 | 02 | 2 | 51 min | 25.5 min |
 | 03 | 2 | 13 min | 6.5 min |
+| 04 | 1 | 1 min | 1.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [02-01 (12 min), 02-02 (39 min), 03-01 (1 min), 03-02 (12 min)]
-- Trend: Phase 3 (infrastructure) completed efficiently with quick setup and worker implementation
+- Last 5 plans: [02-02 (39 min), 03-01 (1 min), 03-02 (12 min), 04-01 (1 min)]
+- Trend: Fast execution for foundation layers (webhook client, types, config)
 
 *Updated after each plan completion*
 
@@ -64,6 +65,10 @@ Recent decisions affecting current work:
 - [Phase 03-background-job-infrastructure]: Task timeout 5 minutes for briefing generation — Matches Claude API processing expectations
 - [Phase 03-background-job-infrastructure]: Embedded worker in development mode — Single process eliminates need for separate terminal/tmux session
 - [Phase 03-background-job-infrastructure]: Standalone worker via --worker flag — Enables production deployment with separate worker processes
+- [Phase 04-briefing-generation-mock]: Use custom http.Client with 30s timeout (not http.DefaultClient) — Prevents infinite hangs per research recommendation
+- [Phase 04-briefing-generation-mock]: Default N8N_STUB_MODE to true — Safe development default, no n8n infrastructure required
+- [Phase 04-briefing-generation-mock]: Add 2s delay in stub mode — Makes polling UI visible during demos
+- [Phase 04-briefing-generation-mock]: Keep datatypes.JSON for Content field — Simpler than typed wrapper, sufficient for Phase 4 scope
 
 ### Pending Todos
 
@@ -79,11 +84,11 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-12 (phase execution + verification)
-Stopped at: Phase 3 complete and verified
-Resume with: /gsd:plan-phase 4 to begin Phase 4 (Briefing Generation - Mock)
+Last session: 2026-02-12 (plan execution)
+Stopped at: Completed 04-01-PLAN.md (webhook client foundation)
+Resume with: /gsd:execute-phase 4 --plan 02 to continue Phase 4
 
-**Note:** Background job infrastructure complete. Worker package with mode-switching binary, embedded development worker, task enqueue helpers, and placeholder task handler ready. Phase 4 will add POST /briefings endpoint and implement real task processing logic.
+**Note:** Webhook client foundation complete. Created internal/webhook package with BriefingContent types (News/Weather/Work), Client with stub mode and n8n authentication. Added GeneratedAt to Briefing model and n8n config fields. Plan 02 will implement POST /briefings endpoint, worker task handler, and UI integration.
 
 ---
 *Created: 2026-02-10*
