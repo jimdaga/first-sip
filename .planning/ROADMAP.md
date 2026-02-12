@@ -62,10 +62,11 @@ Plans:
   3. Failed tasks retry automatically with exponential backoff
   4. Tasks that exceed retry limit move to dead letter queue
   5. Worker can be monitored via Asynqmon UI (optional)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- TBD (created during /gsd:plan-phase 3)
+- [ ] 03-01-PLAN.md — Redis + Asynqmon Docker Compose, Asynq dependency, config extension (RedisURL, logging)
+- [ ] 03-02-PLAN.md — Worker package (server, client, tasks, logging), mode-switching binary, end-to-end verification
 
 ### Phase 4: Briefing Generation (Mock)
 **Goal**: Users can trigger briefing generation and see results
@@ -136,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Authentication | 2/2 | ✓ Complete | 2026-02-10 |
 | 2. Database & Models | 2/2 | ✓ Complete | 2026-02-11 |
-| 3. Background Job Infrastructure | 0/? | Not started | - |
+| 3. Background Job Infrastructure | 0/2 | In Progress | - |
 | 4. Briefing Generation (Mock) | 0/? | Not started | - |
 | 5. Briefing Display | 0/? | Not started | - |
 | 6. Scheduled Generation | 0/? | Not started | - |
