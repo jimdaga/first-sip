@@ -3,12 +3,16 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
 	"github.com/jimdaga/first-sip/internal/config"
+	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/webhook"
+	"gorm.io/gorm"
 )
 
 // asynqLoggerAdapter wraps slog.Logger to implement asynq.Logger interface
@@ -39,7 +43,7 @@ func (a *asynqLoggerAdapter) Fatal(args ...interface{}) {
 }
 
 // Run starts the Asynq worker server and blocks until shutdown.
-func Run(cfg *config.Config) error {
+func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
 	// Parse Redis connection options
 	redisOpt, err := asynq.ParseRedisURI(cfg.RedisURL)
 	if err != nil {
@@ -64,7 +68,7 @@ func Run(cfg *config.Config) error {
 	mux := asynq.NewServeMux()
 
 	// Register task handlers
-	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger))
+	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger, db, webhookClient))
 
 	logger.Info("Worker starting", "concurrency", 5, "redis", cfg.RedisURL)
 
@@ -72,25 +76,83 @@ func Run(cfg *config.Config) error {
 	return srv.Run(mux)
 }
 
-// handleGenerateBriefing is a placeholder handler for the briefing:generate task.
-// Phase 4 will implement the actual briefing generation logic.
-func handleGenerateBriefing(logger *slog.Logger) func(context.Context, *asynq.Task) error {
+// handleGenerateBriefing processes briefing generation tasks by calling the webhook
+// client and updating the database with the generated content.
+func handleGenerateBriefing(logger *slog.Logger, db *gorm.DB, webhookClient *webhook.Client) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, task *asynq.Task) error {
 		// Unmarshal the payload
 		var payload struct {
 			BriefingID uint `json:"briefing_id"`
 		}
 		if err := json.Unmarshal(task.Payload(), &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload: %w", err)
+			// Invalid payload - don't retry
+			return fmt.Errorf("invalid payload: %w", asynq.SkipRetry)
+		}
+
+		// Fetch briefing from database
+		var briefing models.Briefing
+		if err := db.WithContext(ctx).First(&briefing, payload.BriefingID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Record not found - don't retry
+				logger.Error("Briefing not found", "briefing_id", payload.BriefingID)
+				return fmt.Errorf("briefing not found: %w", asynq.SkipRetry)
+			}
+			// Database error - retryable
+			return fmt.Errorf("failed to fetch briefing: %w", err)
 		}
 
 		logger.Info(
-			"Processing briefing:generate task (placeholder handler)",
+			"Processing briefing:generate task",
 			"briefing_id", payload.BriefingID,
-			"task_type", task.Type(),
+			"user_id", briefing.UserID,
 		)
 
-		// Placeholder - Phase 4 will implement actual briefing generation
+		// Update status to processing
+		db.Model(&briefing).Update("status", models.BriefingStatusProcessing)
+
+		// Call webhook client to generate briefing content
+		content, err := webhookClient.GenerateBriefing(ctx, briefing.UserID)
+		if err != nil {
+			// Update briefing to failed status
+			db.Model(&briefing).Updates(map[string]interface{}{
+				"status":        models.BriefingStatusFailed,
+				"error_message": err.Error(),
+			})
+			logger.Error(
+				"Webhook generation failed",
+				"briefing_id", payload.BriefingID,
+				"error", err.Error(),
+			)
+			return fmt.Errorf("webhook generation failed: %w", err)
+		}
+
+		// Marshal content to JSON
+		jsonBytes, err := json.Marshal(content)
+		if err != nil {
+			// Failed to marshal - update briefing and don't retry
+			db.Model(&briefing).Updates(map[string]interface{}{
+				"status":        models.BriefingStatusFailed,
+				"error_message": "Failed to marshal content",
+			})
+			return fmt.Errorf("failed to marshal content: %w", asynq.SkipRetry)
+		}
+
+		// Update briefing with completed status and content
+		now := time.Now()
+		if err := db.Model(&briefing).Updates(map[string]interface{}{
+			"status":        models.BriefingStatusCompleted,
+			"content":       jsonBytes,
+			"generated_at":  now,
+			"error_message": "",
+		}).Error; err != nil {
+			return fmt.Errorf("failed to update briefing: %w", err)
+		}
+
+		logger.Info(
+			"Briefing generation completed",
+			"briefing_id", payload.BriefingID,
+		)
+
 		return nil
 	}
 }

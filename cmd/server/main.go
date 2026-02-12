@@ -10,11 +10,14 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/jimdaga/first-sip/internal/auth"
+	"github.com/jimdaga/first-sip/internal/briefings"
 	"github.com/jimdaga/first-sip/internal/config"
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/templates"
+	"github.com/jimdaga/first-sip/internal/webhook"
 	"github.com/jimdaga/first-sip/internal/worker"
+	"gorm.io/gorm"
 )
 
 // render is a helper function to render Templ components in Gin handlers
@@ -38,6 +41,9 @@ func main() {
 		}
 	}
 
+	// Create webhook client
+	webhookClient := webhook.NewClient(cfg.N8NWebhookURL, cfg.N8NWebhookSecret, cfg.N8NStubMode)
+
 	// Initialize Asynq client (runs in BOTH modes so server can enqueue tasks)
 	if cfg.RedisURL != "" {
 		if err := worker.InitClient(cfg.RedisURL); err != nil {
@@ -47,8 +53,10 @@ func main() {
 	}
 
 	// Initialize database connection
+	var db *gorm.DB
 	if cfg.DatabaseURL != "" {
-		db, err := database.Init(cfg.DatabaseURL)
+		var err error
+		db, err = database.Init(cfg.DatabaseURL)
 		if err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
@@ -70,7 +78,7 @@ func main() {
 	// Mode branching: run as worker or web server
 	if *workerMode {
 		log.Println("Starting in WORKER mode")
-		if err := worker.Run(cfg); err != nil {
+		if err := worker.Run(cfg, db, webhookClient); err != nil {
 			log.Fatalf("Worker failed: %v", err)
 		}
 		return
@@ -80,7 +88,7 @@ func main() {
 	if cfg.Env == "development" && cfg.RedisURL != "" {
 		log.Println("Starting embedded worker for development")
 		go func() {
-			if err := worker.Run(cfg); err != nil {
+			if err := worker.Run(cfg, db, webhookClient); err != nil {
 				log.Printf("Embedded worker error: %v", err)
 			}
 		}()
@@ -151,9 +159,26 @@ func main() {
 				emailStr = email.(string)
 			}
 
-			render(c, templates.DashboardPage(nameStr, emailStr))
+			// Query latest briefing for the user
+			var latestBriefing models.Briefing
+			var latestBriefingPtr *models.Briefing
+			if db != nil && emailStr != "" {
+				var user models.User
+				if err := db.Where("email = ?", emailStr).First(&user).Error; err == nil {
+					result := db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&latestBriefing)
+					if result.Error == nil {
+						latestBriefingPtr = &latestBriefing
+					}
+				}
+			}
+
+			render(c, templates.DashboardPage(nameStr, emailStr, latestBriefingPtr))
 		})
 		protected.GET("/logout", auth.HandleLogout)
+
+		// Briefing API routes
+		protected.POST("/api/briefings", briefings.CreateBriefingHandler(db))
+		protected.GET("/api/briefings/:id/status", briefings.GetBriefingStatusHandler(db))
 	}
 
 	log.Printf("Starting server on :%s (env: %s)", cfg.Port, cfg.Env)

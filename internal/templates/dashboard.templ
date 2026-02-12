@@ -1,6 +1,11 @@
 package templates
 
-templ DashboardPage(name string, email string) {
+import (
+	"github.com/jimdaga/first-sip/internal/briefings"
+	"github.com/jimdaga/first-sip/internal/models"
+)
+
+templ DashboardPage(name string, email string, latestBriefing *models.Briefing) {
 	@Layout("Dashboard - First Sip") {
 		<div class="navbar bg-base-100">
 			<div class="flex-1">
@@ -13,12 +18,23 @@ templ DashboardPage(name string, email string) {
 		</div>
 		<div class="container mx-auto p-8">
 			<h2 class="text-3xl font-bold mb-6">Welcome, { name }</h2>
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h3 class="card-title">Your daily briefing will appear here.</h3>
-					<p class="text-sm text-gray-500">Briefing generation coming in Phase 4</p>
-				</div>
+			<div class="mb-4">
+				<button
+					class="btn btn-primary"
+					hx-post="/api/briefings"
+					hx-target="#briefing-area"
+					hx-swap="outerHTML"
+				>
+					Generate Daily Summary
+				</button>
 			</div>
+			if latestBriefing != nil {
+				@briefings.BriefingCard(*latestBriefing)
+			} else {
+				<div id="briefing-area" class="text-gray-500">
+					No briefings yet. Click Generate to create your first one.
+				</div>
+			}
 		</div>
 	}
 }
