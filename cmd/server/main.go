@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
 
 	"github.com/a-h/templ"
 	"github.com/gin-contrib/sessions"
@@ -84,14 +87,15 @@ func main() {
 		return
 	}
 
-	// Start embedded worker in development mode
+	// Start embedded worker in development mode (non-blocking)
+	var stopWorker func()
 	if cfg.Env == "development" && cfg.RedisURL != "" {
 		log.Println("Starting embedded worker for development")
-		go func() {
-			if err := worker.Run(cfg, db, webhookClient); err != nil {
-				log.Printf("Embedded worker error: %v", err)
-			}
-		}()
+		var err error
+		stopWorker, err = worker.Start(cfg, db, webhookClient)
+		if err != nil {
+			log.Fatalf("Failed to start embedded worker: %v", err)
+		}
 	}
 
 	// Create Gin router
@@ -112,6 +116,9 @@ func main() {
 
 	// Initialize Goth OAuth providers (after session middleware)
 	auth.InitProviders(cfg)
+
+	// Serve static files
+	r.Static("/static", "./static")
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
@@ -139,7 +146,7 @@ func main() {
 		render(c, templates.LoginPage(errorMsg))
 	})
 	r.GET("/auth/google", auth.HandleLogin)
-	r.GET("/auth/google/callback", auth.HandleCallback)
+	r.GET("/auth/google/callback", auth.HandleCallback(db))
 
 	// Protected routes (require authentication)
 	protected := r.Group("/")
@@ -181,8 +188,37 @@ func main() {
 		protected.GET("/api/briefings/:id/status", briefings.GetBriefingStatusHandler(db))
 	}
 
-	log.Printf("Starting server on :%s (env: %s)", cfg.Port, cfg.Env)
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatal(err)
+	// Create HTTP server for graceful shutdown
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
 	}
+
+	// Listen for interrupt signals
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	// Start HTTP server in background
+	go func() {
+		log.Printf("Starting server on :%s (env: %s)", cfg.Port, cfg.Env)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// Block until signal
+	<-ctx.Done()
+	log.Println("Shutting down...")
+
+	// Shut down HTTP server
+	if err := srv.Shutdown(context.Background()); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+	}
+
+	// Shut down embedded worker
+	if stopWorker != nil {
+		stopWorker()
+	}
+
+	log.Println("Server stopped")
 }

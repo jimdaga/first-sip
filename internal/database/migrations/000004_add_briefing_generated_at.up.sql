@@ -1,0 +1,1 @@
+ALTER TABLE briefings ADD COLUMN generated_at TIMESTAMPTZ;

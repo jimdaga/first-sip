@@ -42,18 +42,38 @@ func (a *asynqLoggerAdapter) Fatal(args ...interface{}) {
 	panic(fmt.Sprint(args...))
 }
 
-// Run starts the Asynq worker server and blocks until shutdown.
+// Run starts the Asynq worker server and blocks until shutdown signal.
+// Use this for standalone worker mode.
 func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
-	// Parse Redis connection options
+	srv, mux, err := newServer(cfg, db, webhookClient)
+	if err != nil {
+		return err
+	}
+	// Run blocks and handles its own signal interception
+	return srv.Run(mux)
+}
+
+// Start starts the Asynq worker in non-blocking mode and returns a stop function.
+// Use this for embedded mode so the caller can coordinate shutdown.
+func Start(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (stop func(), err error) {
+	srv, mux, err := newServer(cfg, db, webhookClient)
+	if err != nil {
+		return nil, err
+	}
+	if err := srv.Start(mux); err != nil {
+		return nil, fmt.Errorf("failed to start worker: %w", err)
+	}
+	return func() { srv.Shutdown() }, nil
+}
+
+func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (*asynq.Server, *asynq.ServeMux, error) {
 	redisOpt, err := asynq.ParseRedisURI(cfg.RedisURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse Redis URL: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse Redis URL: %w", err)
 	}
 
-	// Create structured logger
 	logger := NewLogger(cfg.LogLevel, cfg.LogFormat)
 
-	// Create Asynq server with configuration
 	srv := asynq.NewServer(
 		redisOpt,
 		asynq.Config{
@@ -64,16 +84,11 @@ func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
 		},
 	)
 
-	// Create task multiplexer
 	mux := asynq.NewServeMux()
-
-	// Register task handlers
 	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger, db, webhookClient))
 
 	logger.Info("Worker starting", "concurrency", 5, "redis", cfg.RedisURL)
-
-	// Run the server (blocks until shutdown signal)
-	return srv.Run(mux)
+	return srv, mux, nil
 }
 
 // handleGenerateBriefing processes briefing generation tasks by calling the webhook
