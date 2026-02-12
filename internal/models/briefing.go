@@ -23,5 +23,6 @@ type Briefing struct {
 	Content      datatypes.JSON `gorm:"type:jsonb"`
 	Status       string         `gorm:"not null;default:'pending';index"`
 	ErrorMessage string         `gorm:"column:error_message;type:text"`
+	GeneratedAt  *time.Time
 	ReadAt       *time.Time
 }

@@ -14,6 +14,9 @@ type Config struct {
 	DatabaseURL        string
 	EncryptionKey      string
 	RedisURL           string
+	N8NWebhookURL      string
+	N8NWebhookSecret   string
+	N8NStubMode        bool
 	LogLevel           string
 	LogFormat          string
 	Env                string
@@ -30,6 +33,9 @@ func Load() *Config {
 		DatabaseURL:        os.Getenv("DATABASE_URL"),
 		EncryptionKey:      os.Getenv("ENCRYPTION_KEY"),
 		RedisURL:           os.Getenv("REDIS_URL"),
+		N8NWebhookURL:      os.Getenv("N8N_WEBHOOK_URL"),
+		N8NWebhookSecret:   os.Getenv("N8N_WEBHOOK_SECRET"),
+		N8NStubMode:        parseStubMode(getEnvWithDefault("N8N_STUB_MODE", "true")),
 		LogLevel:           getEnvWithDefault("LOG_LEVEL", "debug"),
 		LogFormat:          getEnvWithDefault("LOG_FORMAT", "text"),
 		Env:                getEnvWithDefault("ENV", "development"),
@@ -79,4 +85,8 @@ func getEnvWithDefault(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func parseStubMode(value string) bool {
+	return value == "true" || value == "1"
 }
