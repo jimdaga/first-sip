@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/templates"
+	"github.com/jimdaga/first-sip/internal/worker"
 )
 
 // render is a helper function to render Templ components in Gin handlers
@@ -22,6 +24,10 @@ func render(c *gin.Context, component templ.Component) {
 }
 
 func main() {
+	// Parse command-line flags
+	workerMode := flag.Bool("worker", false, "Run in worker mode")
+	flag.Parse()
+
 	// Load configuration
 	cfg := config.Load()
 
@@ -30,6 +36,14 @@ func main() {
 		if err := models.InitEncryption(cfg.EncryptionKey); err != nil {
 			log.Fatalf("Failed to initialize encryption: %v", err)
 		}
+	}
+
+	// Initialize Asynq client (runs in BOTH modes so server can enqueue tasks)
+	if cfg.RedisURL != "" {
+		if err := worker.InitClient(cfg.RedisURL); err != nil {
+			log.Fatalf("Failed to initialize Asynq client: %v", err)
+		}
+		defer worker.CloseClient()
 	}
 
 	// Initialize database connection
@@ -51,6 +65,25 @@ func main() {
 				log.Printf("Warning: seed data failed: %v", err)
 			}
 		}
+	}
+
+	// Mode branching: run as worker or web server
+	if *workerMode {
+		log.Println("Starting in WORKER mode")
+		if err := worker.Run(cfg); err != nil {
+			log.Fatalf("Worker failed: %v", err)
+		}
+		return
+	}
+
+	// Start embedded worker in development mode
+	if cfg.Env == "development" && cfg.RedisURL != "" {
+		log.Println("Starting embedded worker for development")
+		go func() {
+			if err := worker.Run(cfg); err != nil {
+				log.Printf("Embedded worker error: %v", err)
+			}
+		}()
 	}
 
 	// Create Gin router

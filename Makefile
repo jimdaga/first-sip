@@ -1,4 +1,4 @@
-.PHONY: build test lint run docker-build clean templ-generate dev db-up db-down db-reset
+.PHONY: build test lint run docker-build clean templ-generate dev db-up db-down db-reset worker
 
 templ-generate:
 	$(HOME)/go/bin/templ generate
@@ -7,9 +7,12 @@ build: templ-generate
 	go build -ldflags="-s -w" -o server ./cmd/server
 
 dev: templ-generate
-	@echo "Ensure Postgres is running: make db-up"
+	@echo "Ensure Postgres and Redis are running: make db-up"
 	@echo "Then source environment: source env.local"
 	go run cmd/server/main.go
+
+worker: templ-generate
+	go run cmd/server/main.go --worker
 
 test:
 	go test -v -race -coverprofile=coverage.out ./...
