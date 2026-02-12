@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Authentication** - Google OAuth login with session persistence
 - [x] **Phase 2: Database & Models** - Postgres setup with GORM migrations
 - [x] **Phase 3: Background Job Infrastructure** - Asynq worker with Redis queue
-- [ ] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
+- [x] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
 - [ ] **Phase 5: Briefing Display** - Dashboard UI with section layout
 - [ ] **Phase 6: Scheduled Generation** - Daily auto-generation via cron
 - [ ] **Phase 7: Briefing History** - Browse past briefings with read tracking
@@ -82,8 +82,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Webhook client package, briefing content types, config extension for n8n
-- [ ] 04-02-PLAN.md — HTTP handlers, Templ components, worker implementation, dashboard UI, end-to-end verification
+- [x] 04-01-PLAN.md — Webhook client package, briefing content types, config extension for n8n
+- [x] 04-02-PLAN.md — HTTP handlers, Templ components, worker implementation, dashboard UI, end-to-end verification
 
 ### Phase 5: Briefing Display
 **Goal**: Dashboard presents briefings in mobile-friendly, organized layout
@@ -139,7 +139,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Authentication | 2/2 | ✓ Complete | 2026-02-10 |
 | 2. Database & Models | 2/2 | ✓ Complete | 2026-02-11 |
 | 3. Background Job Infrastructure | 2/2 | ✓ Complete | 2026-02-12 |
-| 4. Briefing Generation (Mock) | 0/2 | In Progress | - |
+| 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
 | 5. Briefing Display | 0/? | Not started | - |
 | 6. Scheduled Generation | 0/? | Not started | - |
 | 7. Briefing History | 0/? | Not started | - |
