@@ -90,10 +90,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BDISP-02 | Phase 5 | Pending |
 | BDISP-03 | Phase 5 | Pending |
 | BDISP-04 | Phase 7 | Pending |
-| INFR-01 | Phase 3 | Pending |
-| INFR-02 | Phase 2 | Pending |
+| INFR-01 | Phase 3 | ✓ Complete |
+| INFR-02 | Phase 2 | ✓ Complete |
 | INFR-03 | Phase 4 | Pending |
-| INFR-04 | Phase 3 | Pending |
+| INFR-04 | Phase 3 | ✓ Complete |
 
 **Coverage:**
 - v1 requirements: 15 total
