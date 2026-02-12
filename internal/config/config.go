@@ -13,6 +13,9 @@ type Config struct {
 	SessionSecret      string
 	DatabaseURL        string
 	EncryptionKey      string
+	RedisURL           string
+	LogLevel           string
+	LogFormat          string
 	Env                string
 	Port               string
 }
@@ -26,6 +29,9 @@ func Load() *Config {
 		SessionSecret:      os.Getenv("SESSION_SECRET"),
 		DatabaseURL:        os.Getenv("DATABASE_URL"),
 		EncryptionKey:      os.Getenv("ENCRYPTION_KEY"),
+		RedisURL:           os.Getenv("REDIS_URL"),
+		LogLevel:           getEnvWithDefault("LOG_LEVEL", "debug"),
+		LogFormat:          getEnvWithDefault("LOG_FORMAT", "text"),
 		Env:                getEnvWithDefault("ENV", "development"),
 		Port:               getEnvWithDefault("PORT", "8080"),
 	}
@@ -50,6 +56,19 @@ func Load() *Config {
 			log.Fatal("ENCRYPTION_KEY is required in production")
 		}
 		log.Println("WARNING: ENCRYPTION_KEY not set. Token encryption will be unavailable.")
+	}
+
+	// Check for required Redis configuration
+	if cfg.RedisURL == "" {
+		if cfg.Env == "production" {
+			log.Fatal("REDIS_URL is required in production")
+		}
+		log.Println("WARNING: REDIS_URL not set. Background job features will be unavailable.")
+	}
+
+	// Force JSON logging in production
+	if cfg.Env == "production" && cfg.LogFormat == "text" {
+		cfg.LogFormat = "json"
 	}
 
 	return cfg
