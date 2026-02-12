@@ -1,0 +1,142 @@
+package briefings
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/webhook"
+)
+
+templ BriefingCard(briefing models.Briefing) {
+	<div id="briefing-area">
+		if briefing.Status == models.BriefingStatusPending || briefing.Status == models.BriefingStatusProcessing {
+			<!-- Polling state with HTMX trigger -->
+			<div
+				class="card bg-base-100 shadow-xl"
+				hx-get={ fmt.Sprintf("/api/briefings/%d/status", briefing.ID) }
+				hx-trigger="every 2s"
+				hx-swap="outerHTML"
+			>
+				<div class="card-body">
+					<div class="flex items-center gap-4">
+						<span class="loading loading-spinner loading-md"></span>
+						<span>Generating your briefing...</span>
+					</div>
+				</div>
+			</div>
+		} else if briefing.Status == models.BriefingStatusCompleted {
+			<!-- Completed state (no HTMX polling) -->
+			<div class="card bg-base-100 shadow-xl">
+				<div class="card-body">
+					<div class="flex items-center justify-between">
+						<h2 class="card-title">Daily Briefing</h2>
+						<div class="badge badge-success">Completed</div>
+					</div>
+					@BriefingContentView(briefing)
+				</div>
+			</div>
+		} else if briefing.Status == models.BriefingStatusFailed {
+			<!-- Failed state with retry button (no HTMX polling) -->
+			<div class="alert alert-error">
+				<div class="flex-1">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-6 h-6 mx-2 stroke-current">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+					</svg>
+					<label>Generation failed. Please try again.</label>
+				</div>
+				<div class="flex-none">
+					<button
+						class="btn btn-sm"
+						hx-post="/api/briefings"
+						hx-target="#briefing-area"
+						hx-swap="outerHTML"
+					>
+						Retry
+					</button>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+templ BriefingContentView(briefing models.Briefing) {
+	if len(briefing.Content) > 0 {
+		<!--
+			Unmarshal JSON content into BriefingContent struct.
+			Note: This is done in the templ context, so error handling is limited.
+			In production, consider unmarshaling in the handler.
+		-->
+		@renderContent(briefing.Content)
+	} else {
+		<div class="text-gray-500 mt-4">No content available</div>
+	}
+}
+
+templ renderContent(contentJSON []byte) {
+	{{
+		var content webhook.BriefingContent
+		err := json.Unmarshal(contentJSON, &content)
+		if err != nil {
+			// If unmarshal fails, show error message
+			contentValid := false
+			_ = contentValid
+		} else {
+			contentValid := true
+			_ = contentValid
+		}
+	}}
+	if err != nil {
+		<div class="text-error mt-4">Unable to display briefing content</div>
+	} else {
+		<div class="space-y-4 mt-4">
+			<!-- News Section -->
+			if len(content.News) > 0 {
+				<div>
+					<h4 class="text-lg font-semibold mb-2">News</h4>
+					<div class="space-y-2">
+						for _, item := range content.News {
+							<div class="border-l-4 border-primary pl-4">
+								<a href={ templ.URL(item.URL) } target="_blank" class="font-medium text-primary hover:underline">
+									{ item.Title }
+								</a>
+								<p class="text-sm text-gray-600 mt-1">{ item.Summary }</p>
+							</div>
+						}
+					</div>
+				</div>
+			}
+			<!-- Weather Section -->
+			<div>
+				<h4 class="text-lg font-semibold mb-2">Weather</h4>
+				<div class="flex items-center gap-2">
+					<span class="font-medium">{ content.Weather.Location }</span>
+					<span>•</span>
+					<span>{ fmt.Sprintf("%d°", content.Weather.Temperature) }</span>
+					<span>•</span>
+					<span>{ content.Weather.Condition }</span>
+				</div>
+			</div>
+			<!-- Work Section -->
+			<div>
+				<h4 class="text-lg font-semibold mb-2">Today's Schedule</h4>
+				if len(content.Work.TodayEvents) > 0 {
+					<ul class="list-disc list-inside space-y-1">
+						for _, event := range content.Work.TodayEvents {
+							<li>{ event }</li>
+						}
+					</ul>
+				} else {
+					<p class="text-gray-500">No events scheduled</p>
+				}
+				if len(content.Work.TomorrowTasks) > 0 {
+					<h5 class="text-md font-semibold mt-3 mb-1">Tomorrow</h5>
+					<ul class="list-disc list-inside space-y-1">
+						for _, task := range content.Work.TomorrowTasks {
+							<li>{ task }</li>
+						}
+					</ul>
+				}
+			</div>
+		</div>
+	}
+}
