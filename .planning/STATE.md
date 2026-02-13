@@ -2,23 +2,22 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-10)
+See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** Phase 7 complete — all milestone phases delivered
+**Current focus:** v1.0 MVP shipped — planning next milestone
 
 ## Current Position
 
-Phase: 7 of 7 (Briefing History)
-Plan: 1 of 1 in current phase
-Status: Complete — Verified
-Last activity: 2026-02-13 — Phase 7 Plan 1 complete (briefing history verified)
+Milestone: v1.0 MVP — SHIPPED 2026-02-13
+Status: Complete — Archived
+Last activity: 2026-02-13 — v1.0 milestone completion
 
-Progress: [██████████] 100% (All 7 phases complete)
+Progress: [██████████] 100% (v1.0: 7 phases, 11 plans)
 
 ## Performance Metrics
 
-**Velocity:**
+**v1.0 Velocity:**
 - Total plans completed: 11
 - Average duration: 10.8 min
 - Total execution time: 2.0 hours
@@ -35,62 +34,11 @@ Progress: [██████████] 100% (All 7 phases complete)
 | 06 | 1 | 14 min | 14.0 min |
 | 07 | 1 | 9 min | 9.0 min |
 
-**Recent Trend:**
-- Last 5 plans: [04-02 (12 min), 05-01 (2 min), 06-01 (14 min), 07-01 (9 min)]
-- Trend: Consistent execution speed across all phases
-
-*Updated after each plan completion*
-
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- **Session cookie SameSite mode**: Use Lax (not Strict) to allow OAuth redirect flows from Google
-- **Session storage strategy**: Cookie-based store for Phase 1, defer Redis to Phase 3
-- **User persistence approach**: Store user info in session for Phase 1, defer database User model to Phase 2
-- [Phase 01-authentication]: Use Tailwind CSS + DaisyUI via CDN for Phase 1 simplicity instead of build pipeline — Simplifies development for personal tool; can add build pipeline later if optimization needed
-- [Phase 01-authentication]: Implement render helper function in main.go for Templ-Gin integration — Centralizes Content-Type setting and component.Render() logic to eliminate repetition
-- [Phase 01-authentication]: Root route intelligently redirects based on authentication status — Provides intuitive default behavior for / route
-- [Phase 02-database-models]: Place migrations under internal/database/migrations/ for natural go:embed usage — Simpler structure than root-level migrations, no symlinks or parameter passing needed
-- [Phase 02-database-models]: Use partial unique indexes (WHERE deleted_at IS NULL) for soft-delete support — Allows email and provider+user_id re-registration after soft delete
-- [Phase 02-database-models]: Go toolchain auto-upgraded to 1.24.0 for golang-migrate compatibility — Transparent upgrade, no breaking changes
-- [Phase 02-database-models]: Global TokenEncryptor singleton in models package via InitEncryption() — Required due to GORM hook signature limitations, initialized before database operations
-- [Phase 02-database-models]: BeforeSave/AfterFind hooks always encrypt/decrypt tokens — Safe with GCM due to random nonce, simpler than tracking encrypted state
-- [Phase 02-database-models]: Idempotent seed data uses check-then-create pattern — Application restarts safe, no duplicate data creation
-- [Phase 03-background-job-infrastructure]: Use Redis AOF persistence for durability — Fsync every second balances performance and data safety
-- [Phase 03-background-job-infrastructure]: Expose Asynqmon on localhost:8081 — Avoids port conflict with main app on 8080
-- [Phase 03-background-job-infrastructure]: Default debug logging in dev, force JSON in production — Human-readable dev logs, structured production logs
-- [Phase 03-background-job-infrastructure]: Fail fast on missing REDIS_URL in production — Ensures production deployments have required infrastructure configured
-- [Phase 03-background-job-infrastructure]: Worker concurrency set to 5 — Balances throughput with Claude API rate limits per research recommendation
-- [Phase 03-background-job-infrastructure]: Task timeout 5 minutes for briefing generation — Matches Claude API processing expectations
-- [Phase 03-background-job-infrastructure]: Embedded worker in development mode — Single process eliminates need for separate terminal/tmux session
-- [Phase 03-background-job-infrastructure]: Standalone worker via --worker flag — Enables production deployment with separate worker processes
-- [Phase 04-briefing-generation-mock]: Use custom http.Client with 30s timeout (not http.DefaultClient) — Prevents infinite hangs per research recommendation
-- [Phase 04-briefing-generation-mock]: Default N8N_STUB_MODE to true — Safe development default, no n8n infrastructure required
-- [Phase 04-briefing-generation-mock]: Add 2s delay in stub mode — Makes polling UI visible during demos
-- [Phase 04-briefing-generation-mock]: Keep datatypes.JSON for Content field — Simpler than typed wrapper, sufficient for Phase 4 scope
-- [Phase 04-briefing-generation-mock]: HTMX polling stops by omitting hx-trigger on terminal states — No explicit stop mechanism needed
-- [Phase 04-briefing-generation-mock]: Duplicate prevention checks for existing pending/processing briefing — Prevents user from creating multiple concurrent briefings
-- [Phase 04-briefing-generation-mock]: worker.Start() non-blocking for embedded mode — Coordinated shutdown with HTTP server via signal.NotifyContext
-- [Phase 04-briefing-generation-mock]: OAuth callback upserts User record in database — Ensures DB consistency for new users logging in via Google
-- [Phase 05-01]: Use bg-base-200 backgrounds for section cards instead of borders to create distinct visual separation
-- [Phase 05-01]: Apply mobile-first responsive design with md: breakpoint classes throughout
-- [Phase 05-01]: Implement click-to-mark-read on entire completed card (not just button) for better UX
-- [Phase 05-01]: Use emoji prefixes (📰 News, 🌤️ Weather, 💼 Work) to enhance section recognition
-- [Phase 06-01]: Default schedule 6 AM UTC (0 6 * * *) configurable via BRIEFING_SCHEDULE environment variable — Enables deployment-time configuration without code changes
-- [Phase 06-01]: Timezone support via BRIEFING_TIMEZONE (default UTC) — Proper time interpretation across deployments
-- [Phase 06-01]: Embedded scheduler in development mode — Runs alongside embedded worker in single process for simplified development workflow
-- [Phase 06-01]: Separate task type for scheduled generation (briefing:scheduled_generation) — Cleaner separation from manual generation tasks
-- [Phase 06-01]: Unique(1h) on EnqueueGenerateBriefing — Prevents duplicate briefings when manual and scheduled generation overlap
-- [Phase 06-01]: Scheduler shutdown before worker — Prevents new task enqueuing during worker shutdown
-- [Phase 07-01]: Move BriefingCard templates to templates package — Avoid circular dependency between briefings and templates packages
-- [Phase 07-01]: Separate HistoryBriefingCard from BriefingCard — History cards are compact, dashboard cards are detailed
-- [Phase 07-01]: HTMX Load More instead of traditional pagination — Infinite scroll UX without client-side JS complexity
-- [Phase 07-01]: Filter to completed and failed briefings only — Pending/processing are transient states shown on dashboard
-- [Phase 07-01]: 30-day retention window for history view — Older briefings retained in DB but hidden from UI
+All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
@@ -101,17 +49,13 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-[Issues that affect future work]
-
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (phase 7 plan 1 execution + verification)
-Stopped at: All 7 phases complete — milestone ready for completion
-Resume with: /gsd:complete-milestone to archive v1.0 milestone
-
-**Note:** All 7 phases complete. Phase 7 added browsable briefing history with date-grouped list, HTMX pagination, read tracking, and navbar integration. 8/8 must-haves verified. Templates refactored to resolve circular dependency (BriefingCard moved to templates package).
+Last session: 2026-02-13 (v1.0 milestone completion)
+Stopped at: v1.0 archived, ready for next milestone
+Resume with: /gsd:new-milestone to start v1.1 planning
 
 ---
 *Created: 2026-02-10*

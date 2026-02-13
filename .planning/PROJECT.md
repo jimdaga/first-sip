@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A web application that generates personalized daily briefings by pulling from multiple sources (news, work context, custom data) through n8n workflows. Users log in with Google, trigger a briefing, and see an AI-assembled summary. Built with Go, Templ, and HTMX for a server-rendered experience with dynamic UI updates. Designed for personal use first, with multi-user growth in mind.
+A web application that generates personalized daily briefings by pulling from multiple sources through n8n workflows. Users log in with Google OAuth, trigger or receive auto-generated briefings, and browse their history — all through a liquid glass UI built with Go, Templ, and HTMX. v1.0 ships with mock data sources; real n8n integration is next.
 
 ## Core Value
 
@@ -12,66 +12,80 @@ A user can click "Generate" and receive a multi-source daily briefing without le
 
 ### Validated
 
-- ✓ Go 1.23 project structure with `cmd/` and `internal/` layout — existing
-- ✓ Multi-stage Docker build (golang:1.23-alpine builder, alpine:3.19 runtime) — existing
+- ✓ Go project structure with `cmd/` and `internal/` layout — existing
+- ✓ Multi-stage Docker build — existing
 - ✓ Kubernetes deployment via Helm charts and ArgoCD — existing
 - ✓ Health check endpoint at `GET /health` — existing
 - ✓ CI pipeline with golangci-lint — existing
 - ✓ Makefile-based build automation — existing
 - ✓ Dev/prod environment separation via Helm values — existing
+- ✓ Gin router with Templ templates replacing net/http — v1.0
+- ✓ HTMX-driven dashboard with liquid glass design system — v1.0
+- ✓ Google OAuth login via Goth with session persistence — v1.0
+- ✓ User model with AES-256-GCM encrypted OAuth tokens (GORM) — v1.0
+- ✓ Briefing model with status tracking (Pending/Completed/Failed) — v1.0
+- ✓ Postgres database with GORM auto-migrations — v1.0
+- ✓ Redis + Asynq background job infrastructure with retry policy — v1.0
+- ✓ `briefing:generate` Asynq task with n8n webhook stub (mock data) — v1.0
+- ✓ HTMX polling for real-time briefing status updates — v1.0
+- ✓ End-to-end flow: login → generate → see briefing — v1.0
+- ✓ Automated daily briefing via Asynq cron scheduler — v1.0
+- ✓ Briefing history with date grouping and HTMX pagination — v1.0
+- ✓ Read/unread tracking with click-to-mark-read — v1.0
 
 ### Active
 
-- [ ] Replace net/http with Gin router and Templ templates
-- [ ] HTMX-driven dashboard with DaisyUI styling
-- [ ] Google OAuth login via Goth
-- [ ] User model with encrypted OAuth token fields (GORM)
-- [ ] Briefing model with status tracking (Pending/Completed/Failed)
-- [ ] Postgres database with GORM migrations
-- [ ] Redis + Asynq background job infrastructure
-- [ ] `briefing:generate` Asynq task with n8n webhook stub (mock data)
-- [ ] HTMX polling for briefing status updates
-- [ ] End-to-end clickable demo: login → generate → see briefing
+(Fresh for next milestone — define with `/gsd:new-milestone`)
 
 ### Out of Scope
 
-- Real n8n workflow implementation — Go app comes first, n8n built separately later
-- iOS mobile app — long-term goal, not this milestone
-- Multi-tenancy / team features — design for it, don't build it yet
-- Real-time SSE/WebSocket updates — HTMX polling sufficient for v1
+- Real-time SSE/WebSocket updates — HTMX polling works well for briefing status
+- iOS mobile app — long-term goal, web-first approach
+- Multi-tenancy / team features — designed for it, defer building
 - Email notifications — not needed for personal use phase
 - Admin panel — single-user context doesn't require it
+- Cross-source synthesis ("3 sources mention X") — validate basic summaries first
+- Interactive chat/follow-up on briefing items — major scope expansion
+- Voice/TTS briefing — different UX paradigm
+- Push notifications — defeats batching purpose
 
 ## Context
 
-**Existing codebase:** Minimal Go service with health endpoint, CI/CD pipeline (GitHub Actions), Helm chart, and ArgoCD deployment. No external dependencies — uses only Go standard library. The internals will be replaced with the new stack while preserving CI/CD and deployment infrastructure.
+**Shipped v1.0** with ~4,000 LOC across Go (2,749), Templ (357), and CSS (912).
 
-**Architecture direction:** Structured Go layout — `/cmd` (entry points), `/internal/handlers` (HTTP/Gin), `/internal/models` (GORM structs), `/internal/services` (business logic/n8n calls), `/internal/templates` (Templ files), `/internal/worker` (Asynq background processing).
+**Tech stack:** Go 1.24, Gin, Templ, HTMX 2.0, GORM (PostgreSQL), Asynq (Redis), Goth (Google OAuth), custom liquid glass CSS design system.
 
-**n8n integration pattern:** Go app enqueues Asynq tasks → worker calls n8n webhook with `X-N8N-SECRET` header → n8n processes and returns briefing content. For bootstrap, worker returns mock data to prove the full flow.
+**Architecture:** `/cmd/server/main.go` (entry point with embedded worker), `/internal/auth` (OAuth), `/internal/config`, `/internal/database` (GORM + migrations), `/internal/models` (User, AuthIdentity, Briefing), `/internal/briefings` (handlers), `/internal/templates` (Templ layouts + components), `/internal/webhook` (n8n client), `/internal/worker` (Asynq server + tasks).
 
-**Frontend approach:** Server-rendered Templ components + HTMX for dynamic behavior. Templ gives type-safe, component-style HTML (like React but Go). HTMX handles triggering generation (`hx-post`), polling for status (`hx-get` with `hx-trigger="every 5s"`), and swapping content. DaisyUI provides component styling on top of Tailwind.
+**Current state:** Fully functional with mock data. n8n webhook client exists with stub mode — replacing with real n8n workflows is the primary next step. Scheduled generation runs via Asynq cron. UI uses custom liquid glass design system (evolved from initial DaisyUI approach).
 
-**Security considerations:** OAuth tokens encrypted via GORM hooks (`BeforeSave`). n8n webhook calls include `X-N8N-SECRET` header. Design with multi-user in mind even for v1.
+**Known issues / tech debt:**
+- n8n integration is mock/stub only — real workflows needed
+- No per-user schedule configuration (global cron only)
+- Session store is cookie-based (Redis-backed sessions deferred)
+- No error recovery UI for failed briefings (just shows "Failed" badge)
 
 ## Constraints
 
-- **Tech stack**: Go 1.23+ / Gin / Templ / HTMX / GORM / Asynq / Goth / Tailwind+DaisyUI — all specified, no substitutions
+- **Tech stack**: Go 1.24 / Gin / Templ / HTMX / GORM / Asynq / Goth / Tailwind+custom CSS
 - **Infrastructure**: Must work with existing Kubernetes + Helm + ArgoCD deployment pipeline
-- **Database**: Postgres (production), SQLite acceptable for local dev
-- **Bootstrap scope**: Clickable demo — login, generate, see mock briefing. Not production-ready.
-- **Existing code**: Keep CI/CD and Helm charts, replace Go internals with new architecture
+- **Database**: Postgres everywhere (production and local dev via Docker Compose)
+- **Existing code**: CI/CD and Helm charts preserved, Go internals fully replaced
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Templ over html/template | Type-safe, component-style HTML; better DX for complex UIs | — Pending |
-| HTMX polling over SSE | Simpler implementation; SSE can be added later if needed | — Pending |
-| Asynq over goroutines | Persistent job queue with Redis; survives restarts; ready for scale | — Pending |
-| GORM hooks for encryption | Transparent encryption at model layer; tokens never stored in plaintext | — Pending |
-| Replace internals, keep infra | Existing CI/CD and Helm are working; only Go code needs restructuring | — Pending |
-| Design for multi-user | OAuth and user model from day one; avoid painful refactor later | — Pending |
+| Templ over html/template | Type-safe, component-style HTML; better DX for complex UIs | ✓ Good — clean component composition, compile-time safety |
+| HTMX polling over SSE | Simpler implementation; SSE can be added later if needed | ✓ Good — polling works well for briefing status, simple to implement |
+| Asynq over goroutines | Persistent job queue with Redis; survives restarts; ready for scale | ✓ Good — embedded mode great for dev, standalone for production |
+| GORM hooks for encryption | Transparent encryption at model layer; tokens never stored in plaintext | ✓ Good — AES-256-GCM with random nonce, idempotent encrypt/decrypt |
+| Replace internals, keep infra | Existing CI/CD and Helm are working; only Go code needs restructuring | ✓ Good — preserved deployment pipeline, clean rebuild of application |
+| Design for multi-user | OAuth and user model from day one; avoid painful refactor later | ✓ Good — user model + auth identity supports multiple providers |
+| Liquid glass over DaisyUI | Custom design system with glass morphism aesthetic | ✓ Good — distinctive visual identity, warm coffee-inspired tones |
+| Embedded worker in dev mode | Single process for HTTP + worker + scheduler | ✓ Good — eliminates tmux/multiple terminal requirement |
+| Cookie sessions, defer Redis | Simplest session store for v1 personal use | ⚠️ Revisit — move to Redis sessions for multi-instance deployment |
+| Global cron schedule | Single schedule for all users via env var | ⚠️ Revisit — per-user schedules needed for multi-user |
 
 ---
-*Last updated: 2026-02-10 after initialization*
+*Last updated: 2026-02-13 after v1.0 milestone*
