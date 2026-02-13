@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A web application that generates personalized daily briefings by pulling from multiple sources through n8n workflows. Users log in with Google OAuth, trigger or receive auto-generated briefings, and browse their history — all through a liquid glass UI built with Go, Templ, and HTMX. v1.0 ships with mock data sources; real n8n integration is next.
+A web application that generates personalized daily briefings through a plugin-based architecture. Each briefing type is an independent plugin with its own n8n workflow, schedule, and configuration. Users log in with Google OAuth, configure which plugins they want, and see their latest briefings on a tile-based dashboard — all through a liquid glass UI built with Go, Templ, and HTMX.
 
 ## Core Value
 
-A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
+A user's configured briefing plugins run on schedule and their latest results appear automatically on a tile-based dashboard — no manual action needed to receive fresh, personalized briefings every day.
 
 ## Requirements
 
@@ -35,7 +35,14 @@ A user can click "Generate" and receive a multi-source daily briefing without le
 
 ### Active
 
-(Fresh for next milestone — define with `/gsd:new-milestone`)
+**Current Milestone: v1.1 Plugin Architecture**
+
+- Plugin framework with YAML metadata and settings schema
+- Centralized per-user, per-plugin scheduler replacing global cron
+- Tile-based homepage with plugin tiles showing latest briefing and status
+- Full settings page with plugin management, enable/disable, schedule config, manual trigger
+- Daily news digest plugin with real n8n workflow integration
+- Basic account tier scaffolding (tier field, limit checks, no enforcement yet)
 
 ### Out of Scope
 
@@ -48,6 +55,10 @@ A user can click "Generate" and receive a multi-source daily briefing without le
 - Interactive chat/follow-up on briefing items — major scope expansion
 - Voice/TTS briefing — different UX paradigm
 - Push notifications — defeats batching purpose
+- Multiple plugins beyond daily news digest — prove architecture first, add more plugins in v1.2+
+- Payment / tier enforcement — scaffolding only this milestone
+- Plugin marketplace / third-party plugins — internal plugins only
+- Plugin detail pages / drill-down views — tiles with summary only for now
 
 ## Context
 
@@ -57,13 +68,14 @@ A user can click "Generate" and receive a multi-source daily briefing without le
 
 **Architecture:** `/cmd/server/main.go` (entry point with embedded worker), `/internal/auth` (OAuth), `/internal/config`, `/internal/database` (GORM + migrations), `/internal/models` (User, AuthIdentity, Briefing), `/internal/briefings` (handlers), `/internal/templates` (Templ layouts + components), `/internal/webhook` (n8n client), `/internal/worker` (Asynq server + tasks).
 
-**Current state:** Fully functional with mock data. n8n webhook client exists with stub mode — replacing with real n8n workflows is the primary next step. Scheduled generation runs via Asynq cron. UI uses custom liquid glass design system (evolved from initial DaisyUI approach).
+**Current state:** v1.0 shipped with monolithic briefing generation (mock data, global cron). v1.1 redesigns around plugin-based architecture — each briefing type becomes an independent plugin with its own n8n workflow, schedule, and user configuration.
 
 **Known issues / tech debt:**
-- n8n integration is mock/stub only — real workflows needed
-- No per-user schedule configuration (global cron only)
+- n8n integration is mock/stub only — v1.1 adds real workflow for news digest
+- No per-user schedule configuration (global cron only) — v1.1 replaces with per-plugin scheduler
 - Session store is cookie-based (Redis-backed sessions deferred)
 - No error recovery UI for failed briefings (just shows "Failed" badge)
+- Monolithic briefing model needs refactoring to support plugin-sourced briefings
 
 ## Constraints
 
@@ -88,4 +100,4 @@ A user can click "Generate" and receive a multi-source daily briefing without le
 | Global cron schedule | Single schedule for all users via env var | ⚠️ Revisit — per-user schedules needed for multi-user |
 
 ---
-*Last updated: 2026-02-13 after v1.0 milestone*
+*Last updated: 2026-02-13 after v1.1 milestone start*

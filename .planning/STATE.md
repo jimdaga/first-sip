@@ -4,16 +4,15 @@
 
 See: .planning/PROJECT.md (updated 2026-02-13)
 
-**Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** v1.0 MVP shipped — planning next milestone
+**Core value:** A user's configured briefing plugins run on schedule and their latest results appear automatically on a tile-based dashboard — no manual action needed to receive fresh, personalized briefings every day.
+**Current focus:** v1.1 Plugin Architecture
 
 ## Current Position
 
-Milestone: v1.0 MVP — SHIPPED 2026-02-13
-Status: Complete — Archived
-Last activity: 2026-02-13 — v1.0 milestone completion
-
-Progress: [██████████] 100% (v1.0: 7 phases, 11 plans)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-13 — Milestone v1.1 started
 
 ## Performance Metrics
 
@@ -53,10 +52,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (v1.0 milestone completion)
-Stopped at: v1.0 archived, ready for next milestone
-Resume with: /gsd:new-milestone to start v1.1 planning
+Last session: 2026-02-13 (v1.1 milestone initialization)
+Stopped at: Defining requirements for v1.1 Plugin Architecture
+Resume with: /gsd:new-milestone (in progress)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-13*
+*Last updated: 2026-02-13 after v1.1 milestone start*
