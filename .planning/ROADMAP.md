@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Database & Models** - Postgres setup with GORM migrations
 - [x] **Phase 3: Background Job Infrastructure** - Asynq worker with Redis queue
 - [x] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
-- [ ] **Phase 5: Briefing Display** - Dashboard UI with section layout
+- [x] **Phase 5: Briefing Display** - Dashboard UI with section layout
 - [ ] **Phase 6: Scheduled Generation** - Daily auto-generation via cron
 - [ ] **Phase 7: Briefing History** - Browse past briefings with read tracking
 
@@ -98,7 +98,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — Responsive layout, read/unread badges, click-to-mark-read handler and route
+- [x] 05-01-PLAN.md — Responsive layout, read/unread badges, click-to-mark-read handler and route
 
 ### Phase 6: Scheduled Generation
 **Goal**: Briefings generate automatically on daily schedule
@@ -140,7 +140,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Database & Models | 2/2 | ✓ Complete | 2026-02-11 |
 | 3. Background Job Infrastructure | 2/2 | ✓ Complete | 2026-02-12 |
 | 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
-| 5. Briefing Display | 0/1 | In Progress | - |
+| 5. Briefing Display | 1/1 | ✓ Complete | 2026-02-12 |
 | 6. Scheduled Generation | 0/? | Not started | - |
 | 7. Briefing History | 0/? | Not started | - |
 
