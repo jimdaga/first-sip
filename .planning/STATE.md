@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** Phase 5 complete — ready for Phase 6
+**Current focus:** Phase 6 Plan 1 complete — automatic scheduled briefing generation
 
 ## Current Position
 
-Phase: 5 of 7 (Briefing Display)
+Phase: 6 of 7 (Scheduled Generation)
 Plan: 1 of 1 in current phase
 Status: Complete — Verified
-Last activity: 2026-02-12 — Phase 5 verified (5/5 must-haves passed)
+Last activity: 2026-02-13 — Phase 6 Plan 1 complete (scheduler integration verified)
 
-Progress: [██████████] 100% (Phase 5)
+Progress: [██████████] 100% (Phase 6 Plan 1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 10.9 min
-- Total execution time: 1.6 hours
+- Total plans completed: 10
+- Average duration: 11.2 min
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [██████████] 100% (Phase 5)
 | 03 | 2 | 13 min | 6.5 min |
 | 04 | 2 | 13 min | 6.5 min |
 | 05 | 1 | 2 min | 2.4 min |
+| 06 | 1 | 14 min | 14.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [03-02 (12 min), 04-01 (1 min), 04-02 (12 min), 05-01 (2 min)]
+- Last 5 plans: [04-01 (1 min), 04-02 (12 min), 05-01 (2 min), 06-01 (14 min)]
 - Trend: Consistent execution speed for infrastructure and feature plans
 
 *Updated after each plan completion*
@@ -78,6 +79,12 @@ Recent decisions affecting current work:
 - [Phase 05-01]: Apply mobile-first responsive design with md: breakpoint classes throughout
 - [Phase 05-01]: Implement click-to-mark-read on entire completed card (not just button) for better UX
 - [Phase 05-01]: Use emoji prefixes (📰 News, 🌤️ Weather, 💼 Work) to enhance section recognition
+- [Phase 06-01]: Default schedule 6 AM UTC (0 6 * * *) configurable via BRIEFING_SCHEDULE environment variable — Enables deployment-time configuration without code changes
+- [Phase 06-01]: Timezone support via BRIEFING_TIMEZONE (default UTC) — Proper time interpretation across deployments
+- [Phase 06-01]: Embedded scheduler in development mode — Runs alongside embedded worker in single process for simplified development workflow
+- [Phase 06-01]: Separate task type for scheduled generation (briefing:scheduled_generation) — Cleaner separation from manual generation tasks
+- [Phase 06-01]: Unique(1h) on EnqueueGenerateBriefing — Prevents duplicate briefings when manual and scheduled generation overlap
+- [Phase 06-01]: Scheduler shutdown before worker — Prevents new task enqueuing during worker shutdown
 
 ### Pending Todos
 
@@ -93,12 +100,12 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-12 (phase execution + verification)
-Stopped at: Phase 5 complete and verified
-Resume with: /gsd:plan-phase 6 to begin Phase 6 (Scheduled Generation)
+Last session: 2026-02-13 (phase 6 plan 1 execution + verification)
+Stopped at: Completed 06-01-PLAN.md
+Resume with: /gsd:plan-phase 7 to begin Phase 7 (Production Deployment) or /gsd:verify-work 6 to verify Phase 6
 
-**Note:** Phase 5 complete. Mobile-responsive briefing display with distinct visual sections (bg-base-200 cards for News/Weather/Work), read/unread badge tracking (badge-error/badge-success), and click-to-mark-read HTMX interaction. All BDISP requirements satisfied. 5/5 must-haves verified.
+**Note:** Phase 6 Plan 1 complete. Asynq Scheduler integrated with automatic daily briefing generation at configurable time (default 6 AM UTC). Scheduler runs in both development (embedded) and worker (standalone) modes with coordinated lifecycle management. All 6 verification steps passed.
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-13*
