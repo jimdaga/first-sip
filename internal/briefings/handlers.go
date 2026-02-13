@@ -2,6 +2,7 @@ package briefings
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jimdaga/first-sip/internal/models"
@@ -81,6 +82,38 @@ func GetBriefingStatusHandler(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// Return full briefing card (allows content to appear when completed)
+		c.Header("Content-Type", "text/html")
+		BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
+	}
+}
+
+// MarkBriefingReadHandler marks a briefing as read and returns updated card HTML
+func MarkBriefingReadHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Parse briefing ID from URL parameter
+		briefingID := c.Param("id")
+
+		// Query briefing
+		var briefing models.Briefing
+		if err := db.First(&briefing, briefingID).Error; err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusNotFound, `<div class="alert alert-error">Briefing not found</div>`)
+			return
+		}
+
+		// Only update if not already read (idempotent)
+		if briefing.ReadAt == nil {
+			now := time.Now()
+			if err := db.Model(&briefing).Update("read_at", now).Error; err != nil {
+				c.Header("Content-Type", "text/html")
+				c.String(http.StatusInternalServerError, `<div class="alert alert-error">Failed to mark as read</div>`)
+				return
+			}
+			// Update in-memory model for rendering
+			briefing.ReadAt = &now
+		}
+
+		// Return updated briefing card HTML
 		c.Header("Content-Type", "text/html")
 		BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
 	}

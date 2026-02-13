@@ -186,6 +186,7 @@ func main() {
 		// Briefing API routes
 		protected.POST("/api/briefings", briefings.CreateBriefingHandler(db))
 		protected.GET("/api/briefings/:id/status", briefings.GetBriefingStatusHandler(db))
+		protected.POST("/api/briefings/:id/read", briefings.MarkBriefingReadHandler(db))
 	}
 
 	// Create HTTP server for graceful shutdown
