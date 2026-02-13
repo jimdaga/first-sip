@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
 - [x] **Phase 5: Briefing Display** - Dashboard UI with section layout
 - [x] **Phase 6: Scheduled Generation** - Daily auto-generation via cron
-- [ ] **Phase 7: Briefing History** - Browse past briefings with read tracking
+- [x] **Phase 7: Briefing History** - Browse past briefings with read tracking
 
 ## Phase Details
 
@@ -127,7 +127,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — History page with date-grouped briefing list, HTMX pagination, navbar link, read tracking
+- [x] 07-01-PLAN.md — History page with date-grouped briefing list, HTMX pagination, navbar link, read tracking
 
 ## Progress
 
@@ -142,7 +142,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
 | 5. Briefing Display | 1/1 | ✓ Complete | 2026-02-12 |
 | 6. Scheduled Generation | 1/1 | ✓ Complete | 2026-02-13 |
-| 7. Briefing History | 0/1 | In Progress | - |
+| 7. Briefing History | 1/1 | ✓ Complete | 2026-02-13 |
 
 ---
 *Created: 2026-02-10*

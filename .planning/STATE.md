@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** Phase 6 Plan 1 complete — automatic scheduled briefing generation
+**Current focus:** Phase 7 complete — all milestone phases delivered
 
 ## Current Position
 
-Phase: 6 of 7 (Scheduled Generation)
+Phase: 7 of 7 (Briefing History)
 Plan: 1 of 1 in current phase
 Status: Complete — Verified
-Last activity: 2026-02-13 — Phase 6 Plan 1 complete (scheduler integration verified)
+Last activity: 2026-02-13 — Phase 7 Plan 1 complete (briefing history verified)
 
-Progress: [██████████] 100% (Phase 6 Plan 1)
+Progress: [██████████] 100% (All 7 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 11.2 min
-- Total execution time: 1.9 hours
+- Total plans completed: 11
+- Average duration: 10.8 min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [██████████] 100% (Phase 6 Plan 1)
 | 04 | 2 | 13 min | 6.5 min |
 | 05 | 1 | 2 min | 2.4 min |
 | 06 | 1 | 14 min | 14.0 min |
+| 07 | 1 | 9 min | 9.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [04-01 (1 min), 04-02 (12 min), 05-01 (2 min), 06-01 (14 min)]
-- Trend: Consistent execution speed for infrastructure and feature plans
+- Last 5 plans: [04-02 (12 min), 05-01 (2 min), 06-01 (14 min), 07-01 (9 min)]
+- Trend: Consistent execution speed across all phases
 
 *Updated after each plan completion*
 
@@ -85,6 +86,11 @@ Recent decisions affecting current work:
 - [Phase 06-01]: Separate task type for scheduled generation (briefing:scheduled_generation) — Cleaner separation from manual generation tasks
 - [Phase 06-01]: Unique(1h) on EnqueueGenerateBriefing — Prevents duplicate briefings when manual and scheduled generation overlap
 - [Phase 06-01]: Scheduler shutdown before worker — Prevents new task enqueuing during worker shutdown
+- [Phase 07-01]: Move BriefingCard templates to templates package — Avoid circular dependency between briefings and templates packages
+- [Phase 07-01]: Separate HistoryBriefingCard from BriefingCard — History cards are compact, dashboard cards are detailed
+- [Phase 07-01]: HTMX Load More instead of traditional pagination — Infinite scroll UX without client-side JS complexity
+- [Phase 07-01]: Filter to completed and failed briefings only — Pending/processing are transient states shown on dashboard
+- [Phase 07-01]: 30-day retention window for history view — Older briefings retained in DB but hidden from UI
 
 ### Pending Todos
 
@@ -101,11 +107,11 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13 (phase 6 plan 1 execution + verification)
-Stopped at: Completed 06-01-PLAN.md
-Resume with: /gsd:plan-phase 7 to begin Phase 7 (Production Deployment) or /gsd:verify-work 6 to verify Phase 6
+Last session: 2026-02-13 (phase 7 plan 1 execution + verification)
+Stopped at: All 7 phases complete — milestone ready for completion
+Resume with: /gsd:complete-milestone to archive v1.0 milestone
 
-**Note:** Phase 6 Plan 1 complete. Asynq Scheduler integrated with automatic daily briefing generation at configurable time (default 6 AM UTC). Scheduler runs in both development (embedded) and worker (standalone) modes with coordinated lifecycle management. All 6 verification steps passed.
+**Note:** All 7 phases complete. Phase 7 added browsable briefing history with date-grouped list, HTMX pagination, read tracking, and navbar integration. 8/8 must-haves verified. Templates refactored to resolve circular dependency (BriefingCard moved to templates package).
 
 ---
 *Created: 2026-02-10*
