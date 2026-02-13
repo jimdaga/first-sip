@@ -1,7 +1,6 @@
 package templates
 
 import (
-	"github.com/jimdaga/first-sip/internal/briefings"
 	"github.com/jimdaga/first-sip/internal/models"
 )
 
@@ -10,10 +9,13 @@ templ DashboardPage(name string, email string, latestBriefing *models.Briefing) 
 		<nav class="glass-navbar">
 			<div class="navbar-inner">
 				<div class="navbar-brand">
-					<img src="/static/img/logo.png" alt="" class="navbar-logo"/>
-					<span class="navbar-title">First Sip</span>
+					<a href="/dashboard" class="navbar-brand-link">
+						<img src="/static/img/logo.png" alt="" class="navbar-logo"/>
+						<span class="navbar-title">First Sip</span>
+					</a>
 				</div>
 				<div class="navbar-actions">
+					<a href="/history" class="navbar-link">History</a>
 					<span class="navbar-user">{ name }</span>
 					<a href="/logout" class="glass-btn glass-btn-ghost glass-btn-sm">Logout</a>
 				</div>
@@ -34,7 +36,7 @@ templ DashboardPage(name string, email string, latestBriefing *models.Briefing) 
 				</button>
 			</div>
 			if latestBriefing != nil {
-				@briefings.BriefingCard(*latestBriefing)
+				@BriefingCard(*latestBriefing)
 			} else {
 				<div id="briefing-area" class="empty-state">
 					<p>No briefings yet. Click Generate to create your first one.</p>

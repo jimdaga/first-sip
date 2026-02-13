@@ -9,7 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/jimdaga/first-sip/internal/briefings"
 	"github.com/jimdaga/first-sip/internal/models"
 )
 
@@ -46,14 +45,14 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"glass-navbar\"><div class=\"navbar-inner\"><div class=\"navbar-brand\"><img src=\"/static/img/logo.png\" alt=\"\" class=\"navbar-logo\"> <span class=\"navbar-title\">First Sip</span></div><div class=\"navbar-actions\"><span class=\"navbar-user\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"glass-navbar\"><div class=\"navbar-inner\"><div class=\"navbar-brand\"><a href=\"/dashboard\" class=\"navbar-brand-link\"><img src=\"/static/img/logo.png\" alt=\"\" class=\"navbar-logo\"> <span class=\"navbar-title\">First Sip</span></a></div><div class=\"navbar-actions\"><a href=\"/history\" class=\"navbar-link\">History</a> <span class=\"navbar-user\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 17, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 19, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -66,7 +65,7 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 24, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 26, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -77,7 +76,7 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 				return templ_7745c5c3_Err
 			}
 			if latestBriefing != nil {
-				templ_7745c5c3_Err = briefings.BriefingCard(*latestBriefing).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = BriefingCard(*latestBriefing).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/worker"
 	"gorm.io/gorm"
 )
@@ -35,7 +36,7 @@ func CreateBriefingHandler(db *gorm.DB) gin.HandlerFunc {
 		if result.Error == nil {
 			// Found existing pending/processing briefing - return it instead of creating duplicate
 			c.Header("Content-Type", "text/html")
-			BriefingCard(existing).Render(c.Request.Context(), c.Writer)
+			templates.BriefingCard(existing).Render(c.Request.Context(), c.Writer)
 			return
 		}
 
@@ -65,7 +66,7 @@ func CreateBriefingHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Return HTML fragment with briefing card
 		c.Header("Content-Type", "text/html")
-		BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
+		templates.BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
 	}
 }
 
@@ -84,7 +85,7 @@ func GetBriefingStatusHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Return full briefing card (allows content to appear when completed)
 		c.Header("Content-Type", "text/html")
-		BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
+		templates.BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
 	}
 }
 
@@ -116,7 +117,7 @@ func MarkBriefingReadHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Return updated briefing card HTML
 		c.Header("Content-Type", "text/html")
-		BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
+		templates.BriefingCard(briefing).Render(c.Request.Context(), c.Writer)
 	}
 }
 
@@ -166,7 +167,7 @@ func GetHistoryHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Render full history page
 		c.Header("Content-Type", "text/html")
-		HistoryPage(nameStr, briefings, 0, hasMore).Render(c.Request.Context(), c.Writer)
+		templates.HistoryPage(nameStr, briefings, 0, hasMore).Render(c.Request.Context(), c.Writer)
 	}
 }
 
@@ -216,7 +217,7 @@ func GetHistoryPageHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Render history list fragment
 		c.Header("Content-Type", "text/html")
-		HistoryList(briefings, page, hasMore).Render(c.Request.Context(), c.Writer)
+		templates.HistoryList(briefings, page, hasMore).Render(c.Request.Context(), c.Writer)
 	}
 }
 
@@ -248,6 +249,6 @@ func MarkHistoryBriefingReadHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Return updated history briefing card HTML
 		c.Header("Content-Type", "text/html")
-		HistoryBriefingCard(briefing).Render(c.Request.Context(), c.Writer)
+		templates.HistoryBriefingCard(briefing).Render(c.Request.Context(), c.Writer)
 	}
 }
