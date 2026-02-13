@@ -124,10 +124,10 @@ Plans:
   3. User can click date to view past briefing
   4. Read/unread state persists in history view
   5. Briefings older than 30 days are archived (not deleted)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- TBD (created during /gsd:plan-phase 7)
+- [ ] 07-01-PLAN.md — History page with date-grouped briefing list, HTMX pagination, navbar link, read tracking
 
 ## Progress
 
@@ -142,7 +142,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
 | 5. Briefing Display | 1/1 | ✓ Complete | 2026-02-12 |
 | 6. Scheduled Generation | 1/1 | ✓ Complete | 2026-02-13 |
-| 7. Briefing History | 0/? | Not started | - |
+| 7. Briefing History | 0/1 | In Progress | - |
 
 ---
 *Created: 2026-02-10*
