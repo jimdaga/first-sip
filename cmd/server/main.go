@@ -202,6 +202,11 @@ func main() {
 		protected.POST("/api/briefings", briefings.CreateBriefingHandler(db))
 		protected.GET("/api/briefings/:id/status", briefings.GetBriefingStatusHandler(db))
 		protected.POST("/api/briefings/:id/read", briefings.MarkBriefingReadHandler(db))
+
+		// History routes
+		protected.GET("/history", briefings.GetHistoryHandler(db))
+		protected.GET("/api/history", briefings.GetHistoryPageHandler(db))
+		protected.POST("/api/history/briefings/:id/read", briefings.MarkHistoryBriefingReadHandler(db))
 	}
 
 	// Create HTTP server for graceful shutdown
