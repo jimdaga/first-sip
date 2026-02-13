@@ -83,7 +83,7 @@ Recent decisions affecting current work:
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-None yet.
+1. **Per-user briefing schedule configuration** (worker) — Add per-user BriefingSchedule/BriefingTimezone fields to User model so users can configure their own daily briefing time from profile settings
 
 ### Blockers/Concerns
 
