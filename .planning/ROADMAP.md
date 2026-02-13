@@ -109,10 +109,10 @@ Plans:
   2. User wakes up to new briefing without manual generation
   3. Schedule is configurable via environment variable
   4. Scheduled generation follows same flow as manual generation
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- TBD (created during /gsd:plan-phase 6)
+- [ ] 06-01-PLAN.md — Asynq Scheduler with StartScheduler function, config fields for schedule/timezone, scheduled briefing handler, lifecycle management in both modes
 
 ### Phase 7: Briefing History
 **Goal**: Users can browse and review past briefings
@@ -141,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Background Job Infrastructure | 2/2 | ✓ Complete | 2026-02-12 |
 | 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
 | 5. Briefing Display | 1/1 | ✓ Complete | 2026-02-12 |
-| 6. Scheduled Generation | 0/? | Not started | - |
+| 6. Scheduled Generation | 0/1 | Not started | - |
 | 7. Briefing History | 0/? | Not started | - |
 
 ---
