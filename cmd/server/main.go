@@ -81,6 +81,13 @@ func main() {
 	// Mode branching: run as worker or web server
 	if *workerMode {
 		log.Println("Starting in WORKER mode")
+		// Start scheduler in worker mode
+		stopScheduler, err := worker.StartScheduler(cfg)
+		if err != nil {
+			log.Fatalf("Failed to start scheduler: %v", err)
+		}
+		defer stopScheduler()
+
 		if err := worker.Run(cfg, db, webhookClient); err != nil {
 			log.Fatalf("Worker failed: %v", err)
 		}
@@ -89,12 +96,20 @@ func main() {
 
 	// Start embedded worker in development mode (non-blocking)
 	var stopWorker func()
+	var stopScheduler func()
 	if cfg.Env == "development" && cfg.RedisURL != "" {
 		log.Println("Starting embedded worker for development")
 		var err error
 		stopWorker, err = worker.Start(cfg, db, webhookClient)
 		if err != nil {
 			log.Fatalf("Failed to start embedded worker: %v", err)
+		}
+
+		// Start embedded scheduler
+		log.Println("Starting embedded scheduler for development")
+		stopScheduler, err = worker.StartScheduler(cfg)
+		if err != nil {
+			log.Fatalf("Failed to start embedded scheduler: %v", err)
 		}
 	}
 
@@ -214,6 +229,11 @@ func main() {
 	// Shut down HTTP server
 	if err := srv.Shutdown(context.Background()); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)
+	}
+
+	// Shut down embedded scheduler
+	if stopScheduler != nil {
+		stopScheduler()
 	}
 
 	// Shut down embedded worker

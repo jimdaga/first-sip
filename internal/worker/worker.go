@@ -49,6 +49,9 @@ func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
 	if err != nil {
 		return err
 	}
+
+	// Note: Scheduler is started separately in main.go worker mode
+	// and deferred there for shutdown coordination.
 	// Run blocks and handles its own signal interception
 	return srv.Run(mux)
 }
