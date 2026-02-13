@@ -10,52 +10,48 @@ import (
 templ BriefingCard(briefing models.Briefing) {
 	<div id="briefing-area">
 		if briefing.Status == models.BriefingStatusPending || briefing.Status == models.BriefingStatusProcessing {
-			<!-- Polling state with HTMX trigger -->
 			<div
-				class="card bg-base-100 shadow-xl"
+				class="glass-card"
 				hx-get={ fmt.Sprintf("/api/briefings/%d/status", briefing.ID) }
 				hx-trigger="every 2s"
 				hx-swap="outerHTML"
 			>
-				<div class="card-body">
-					<div class="flex items-center gap-4">
-						<span class="loading loading-spinner loading-md"></span>
-						<span>Generating your briefing...</span>
-					</div>
+				<div class="briefing-loading">
+					<div class="glass-spinner"></div>
+					<span class="briefing-loading-text">Generating your briefing...</span>
 				</div>
 			</div>
 		} else if briefing.Status == models.BriefingStatusCompleted {
-			<!-- Completed state with click-to-mark-read -->
 			<div
-				class="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+				class="glass-card"
+				style="cursor: pointer"
 				hx-post={ fmt.Sprintf("/api/briefings/%d/read", briefing.ID) }
 				hx-target="#briefing-area"
 				hx-swap="outerHTML"
 			>
-				<div class="card-body p-4 md:p-6">
-					<div class="flex items-center justify-between">
-						<h2 class="card-title">Daily Briefing</h2>
+				<div class="glass-card-body">
+					<div class="briefing-card-header">
+						<h2 class="briefing-card-title">Daily Briefing</h2>
 						if briefing.ReadAt == nil {
-							<span class="badge badge-error">Unread</span>
+							<span class="glass-badge glass-badge-unread">Unread</span>
 						} else {
-							<span class="badge badge-success">Read</span>
+							<span class="glass-badge glass-badge-read">Read</span>
 						}
 					</div>
 					@BriefingContentView(briefing)
 				</div>
 			</div>
 		} else if briefing.Status == models.BriefingStatusFailed {
-			<!-- Failed state with retry button (no HTMX polling) -->
-			<div class="alert alert-error">
-				<div class="flex-1">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-6 h-6 mx-2 stroke-current">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-					</svg>
-					<label>Generation failed. Please try again.</label>
-				</div>
-				<div class="flex-none">
+			<div class="glass-card">
+				<div class="briefing-error">
+					<div class="briefing-error-msg">
+						<svg class="briefing-error-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+						</svg>
+						<span>Generation failed. Please try again.</span>
+					</div>
 					<button
-						class="btn btn-sm"
+						class="glass-btn glass-btn-ghost glass-btn-sm"
 						hx-post="/api/briefings"
 						hx-target="#briefing-area"
 						hx-swap="outerHTML"
@@ -70,14 +66,9 @@ templ BriefingCard(briefing models.Briefing) {
 
 templ BriefingContentView(briefing models.Briefing) {
 	if len(briefing.Content) > 0 {
-		<!--
-			Unmarshal JSON content into BriefingContent struct.
-			Note: This is done in the templ context, so error handling is limited.
-			In production, consider unmarshaling in the handler.
-		-->
 		@renderContent(briefing.Content)
 	} else {
-		<div class="text-gray-500 mt-4">No content available</div>
+		<div class="content-empty">No content available</div>
 	}
 }
 
@@ -86,7 +77,6 @@ templ renderContent(contentJSON []byte) {
 		var content webhook.BriefingContent
 		err := json.Unmarshal(contentJSON, &content)
 		if err != nil {
-			// If unmarshal fails, show error message
 			contentValid := false
 			_ = contentValid
 		} else {
@@ -95,53 +85,50 @@ templ renderContent(contentJSON []byte) {
 		}
 	}}
 	if err != nil {
-		<div class="text-error mt-4">Unable to display briefing content</div>
+		<div class="content-error">Unable to display briefing content</div>
 	} else {
-		<div class="space-y-4 md:space-y-6 mt-4">
-			<!-- News Section -->
+		<div class="briefing-sections">
 			if len(content.News) > 0 {
-				<div class="bg-base-200 p-3 md:p-4 rounded-lg">
-					<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">📰 News</h4>
-					<div class="space-y-2">
+				<div class="glass-inner">
+					<h4 class="briefing-section-title">📰 News</h4>
+					<div>
 						for _, item := range content.News {
-							<div class="border-l-4 border-primary pl-3 md:pl-4">
-								<a href={ templ.URL(item.URL) } target="_blank" class="font-medium text-primary hover:underline text-sm md:text-base">
+							<div class="news-item">
+								<a href={ templ.URL(item.URL) } target="_blank" rel="noopener">
 									{ item.Title }
 								</a>
-								<p class="text-sm md:text-base text-gray-600 mt-1 line-clamp-2 md:line-clamp-3">{ item.Summary }</p>
+								<p>{ item.Summary }</p>
 							</div>
 						}
 					</div>
 				</div>
 			}
-			<!-- Weather Section -->
-			<div class="bg-base-200 p-3 md:p-4 rounded-lg">
-				<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">🌤️ Weather</h4>
-				<div class="flex items-center gap-2 text-sm md:text-base">
-					<span class="font-medium">{ content.Weather.Location }</span>
-					<span>•</span>
-					<span>{ fmt.Sprintf("%d°", content.Weather.Temperature) }</span>
-					<span>•</span>
-					<span>{ content.Weather.Condition }</span>
+			<div class="glass-inner">
+				<h4 class="briefing-section-title">🌤️ Weather</h4>
+				<div class="weather-row">
+					<span class="weather-location">{ content.Weather.Location }</span>
+					<span class="weather-divider">&bull;</span>
+					<span class="weather-detail">{ fmt.Sprintf("%d°", content.Weather.Temperature) }</span>
+					<span class="weather-divider">&bull;</span>
+					<span class="weather-detail">{ content.Weather.Condition }</span>
 				</div>
 			</div>
-			<!-- Work Section -->
-			<div class="bg-base-200 p-3 md:p-4 rounded-lg">
-				<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">💼 Work</h4>
+			<div class="glass-inner">
+				<h4 class="briefing-section-title">💼 Work</h4>
 				if len(content.Work.TodayEvents) > 0 {
-					<ul class="list-disc list-inside space-y-1">
+					<ul class="work-list">
 						for _, event := range content.Work.TodayEvents {
-							<li class="text-xs md:text-sm truncate md:whitespace-normal">{ event }</li>
+							<li>{ event }</li>
 						}
 					</ul>
 				} else {
-					<p class="text-gray-500 text-sm md:text-base">No events scheduled</p>
+					<p class="content-empty">No events scheduled</p>
 				}
 				if len(content.Work.TomorrowTasks) > 0 {
-					<h5 class="text-md font-semibold mt-3 mb-1">Tomorrow</h5>
-					<ul class="list-disc list-inside space-y-1">
+					<h5 class="briefing-section-subtitle">Tomorrow</h5>
+					<ul class="work-list">
 						for _, task := range content.Work.TomorrowTasks {
-							<li class="text-xs md:text-sm truncate md:whitespace-normal">{ task }</li>
+							<li>{ task }</li>
 						}
 					</ul>
 				}

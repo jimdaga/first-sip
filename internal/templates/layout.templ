@@ -2,16 +2,25 @@ package templates
 
 templ Layout(title string) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="light">
+	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title }</title>
-			<link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" type="text/css"/>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+			<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+			<link href="/static/css/liquid-glass.css" rel="stylesheet"/>
 			<script src="https://cdn.tailwindcss.com"></script>
 			<script src="https://unpkg.com/htmx.org@2.0.0"></script>
 		</head>
 		<body>
+			<div class="mesh-bg" aria-hidden="true">
+				<div class="orb orb-1"></div>
+				<div class="orb orb-2"></div>
+				<div class="orb orb-3"></div>
+				<div class="orb orb-4"></div>
+			</div>
 			{ children... }
 		</body>
 	</html>

@@ -1,0 +1,812 @@
+/* ==========================================
+   LIQUID GLASS DESIGN SYSTEM
+   First Sip — Daily AI Briefing
+   ========================================== */
+
+/* ── Custom Properties ───────────────────── */
+:root {
+  /* Glass Materials */
+  --glass-bg: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --glass-bg-heavy: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-border-subtle: rgba(255, 255, 255, 0.18);
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+
+  /* Palette */
+  --bg-base: #FEF5ED;
+  --accent: #D4915E;
+  --accent-hover: #C07A48;
+  --accent-glow: rgba(212, 145, 94, 0.3);
+  --text-primary: #1C1C2E;
+  --text-secondary: rgba(28, 28, 46, 0.55);
+  --text-tertiary: rgba(28, 28, 46, 0.35);
+
+  /* Status */
+  --status-unread-bg: rgba(235, 87, 87, 0.1);
+  --status-unread-text: #C94040;
+  --status-unread-border: rgba(235, 87, 87, 0.2);
+  --status-read-bg: rgba(39, 174, 96, 0.1);
+  --status-read-text: #1E8C52;
+  --status-read-border: rgba(39, 174, 96, 0.2);
+
+  /* Radius */
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  /* Shadows */
+  --shadow-glass:
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-glass-hover:
+    0 16px 48px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-glass-elevated:
+    0 24px 64px rgba(0, 0, 0, 0.10),
+    0 8px 20px rgba(0, 0, 0, 0.06);
+
+  /* Typography */
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+
+/* ── Base ────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
+
+
+/* ── Animated Mesh Background ────────────── */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 60vw;
+  height: 60vw;
+  max-width: 700px;
+  max-height: 700px;
+  background: rgba(235, 195, 155, 0.35);
+  top: -15%;
+  left: -10%;
+  animation: float1 25s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 50vw;
+  height: 50vw;
+  max-width: 600px;
+  max-height: 600px;
+  background: rgba(220, 190, 160, 0.25);
+  top: 20%;
+  right: -15%;
+  animation: float2 30s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+.orb-3 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: rgba(210, 185, 165, 0.3);
+  bottom: -10%;
+  left: 25%;
+  animation: float3 22s ease-in-out infinite;
+  animation-delay: -14s;
+}
+
+.orb-4 {
+  width: 30vw;
+  height: 30vw;
+  max-width: 350px;
+  max-height: 350px;
+  background: rgba(225, 200, 175, 0.2);
+  top: 50%;
+  left: 10%;
+  animation: float1 28s ease-in-out infinite reverse;
+  animation-delay: -5s;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.05); }
+  66% { transform: translate(-30px, 30px) scale(0.97); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 40px) scale(1.03); }
+  66% { transform: translate(30px, -40px) scale(0.98); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, 50px) scale(1.04); }
+  66% { transform: translate(-40px, -30px) scale(0.96); }
+}
+
+
+/* ── Glass Card ──────────────────────────── */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-glass),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition:
+    transform 0.5s var(--ease-spring),
+    box-shadow 0.5s var(--ease-spring),
+    border-color 0.5s ease;
+  overflow: hidden;
+}
+
+/* Warm edge glow */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius-lg) + 1px);
+  background: linear-gradient(
+    135deg,
+    rgba(212, 145, 94, 0.15),
+    rgba(255, 220, 190, 0.1),
+    rgba(212, 145, 94, 0.12)
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: -1;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    var(--shadow-glass-hover),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.glass-card-body {
+  padding: 1.25rem;
+}
+
+/* Inner glass panel (sections within cards) */
+.glass-inner {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  transition: background 0.3s ease;
+}
+
+.glass-inner:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+
+/* ── Glass Navbar ────────────────────────── */
+.glass-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+}
+
+.navbar-inner {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.navbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.navbar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-user {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+
+/* ── Glass Buttons ───────────────────────── */
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  line-height: 1;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.4s var(--ease-spring);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.glass-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow:
+    0 4px 16px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 28px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.glass-btn-primary:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-btn-ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.glass-btn-sm {
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+}
+
+.glass-btn-google {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-btn-google:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glass-hover);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.glass-btn-google:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-glass);
+}
+
+
+/* ── Glass Badges ────────────────────────── */
+.glass-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  border: 1px solid;
+}
+
+.glass-badge-unread {
+  background: var(--status-unread-bg);
+  color: var(--status-unread-text);
+  border-color: var(--status-unread-border);
+}
+
+.glass-badge-read {
+  background: var(--status-read-bg);
+  color: var(--status-read-text);
+  border-color: var(--status-read-border);
+}
+
+
+/* ── Glass Alerts ────────────────────────── */
+.glass-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  border: 1px solid;
+}
+
+.glass-alert-error {
+  background: rgba(235, 87, 87, 0.08);
+  border-color: rgba(235, 87, 87, 0.18);
+  color: var(--status-unread-text);
+}
+
+
+/* ── Glass Spinner ───────────────────────── */
+.glass-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(212, 145, 94, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ── Login Page ──────────────────────────── */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: var(--glass-bg-heavy);
+  box-shadow: var(--shadow-glass-elevated);
+  animation: fadeInUp 0.8s var(--ease-spring) both;
+}
+
+/* Always show subtle prismatic edge on login card */
+.login-card::before {
+  opacity: 0.5;
+}
+.login-card:hover::before {
+  opacity: 0.8;
+}
+.login-card:hover {
+  transform: translateY(-3px);
+}
+
+.login-logo {
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.8s var(--ease-spring) 0.1s both;
+}
+
+.login-logo img {
+  width: 120px;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.08));
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+  animation: fadeInUp 0.8s var(--ease-spring) 0.2s both;
+}
+
+.login-tagline {
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.8s var(--ease-spring) 0.3s both;
+}
+
+.login-error {
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.5s var(--ease-spring) both;
+}
+
+.login-btn {
+  width: 100%;
+  animation: fadeInUp 0.8s var(--ease-spring) 0.4s both;
+}
+
+.login-btn svg {
+  flex-shrink: 0;
+}
+
+
+/* ── Dashboard ───────────────────────────── */
+.dashboard-content {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.dashboard-header {
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.7s var(--ease-spring) 0.1s both;
+}
+
+.greeting {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.dashboard-actions {
+  margin-bottom: 1.75rem;
+  animation: fadeInUp 0.7s var(--ease-spring) 0.2s both;
+}
+
+
+/* ── Briefing Card ───────────────────────── */
+.briefing-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.briefing-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.briefing-loading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.briefing-loading-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.briefing-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.briefing-section-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+
+.briefing-section-subtitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+
+/* ── News Items ──────────────────────────── */
+.news-item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.news-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.news-item a {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.news-item a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.news-item p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
+
+/* ── Weather ─────────────────────────────── */
+.weather-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.weather-location {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.weather-detail {
+  color: var(--text-secondary);
+}
+
+.weather-divider {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+
+/* ── Work Items ──────────────────────────── */
+.work-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.work-list li {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding-left: 1rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.work-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+
+/* ── Empty State ─────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+}
+
+
+/* ── Briefing Error ──────────────────────── */
+.briefing-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(235, 87, 87, 0.06);
+  border: 1px solid rgba(235, 87, 87, 0.15);
+  border-radius: var(--radius-md);
+}
+
+.briefing-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--status-unread-text);
+}
+
+.briefing-error-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.8;
+}
+
+
+/* ── Content States ──────────────────────── */
+.content-error {
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: var(--status-unread-text);
+}
+
+.content-empty {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+
+
+/* ── Animations ──────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ── Responsive ──────────────────────────── */
+@media (min-width: 768px) {
+  .glass-card-body {
+    padding: 1.75rem;
+  }
+
+  .login-card {
+    padding: 3rem 2.5rem;
+  }
+
+  .login-logo img {
+    width: 140px;
+  }
+
+  .login-title {
+    font-size: 2.25rem;
+  }
+
+  .dashboard-content {
+    padding: 2.5rem 2rem 5rem;
+  }
+
+  .greeting {
+    font-size: 2rem;
+  }
+
+  .briefing-section-title {
+    font-size: 1rem;
+  }
+
+  .news-item a {
+    font-size: 0.9rem;
+  }
+
+  .news-item p {
+    font-size: 0.85rem;
+  }
+
+  .work-list li {
+    font-size: 0.85rem;
+  }
+
+  .glass-inner {
+    padding: 1.15rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .login-title {
+    font-size: 1.75rem;
+  }
+
+  .navbar-inner {
+    padding: 0.65rem 1rem;
+  }
+}

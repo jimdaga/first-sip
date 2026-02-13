@@ -108,11 +108,38 @@ func handleScheduledBriefingGeneration(logger *slog.Logger, db *gorm.DB) func(co
 		}
 
 		successCount := 0
+		skippedCount := 0
 		errorCount := 0
 
-		// Enqueue briefing generation for each user
 		for _, user := range users {
-			// Create briefing record first
+			// Skip users who already have a pending or processing briefing.
+			// This prevents orphaned records when tasks don't get processed
+			// (e.g., during app restarts or Asynq task recovery).
+			var existing models.Briefing
+			err := db.WithContext(ctx).
+				Where("user_id = ? AND status IN ?", user.ID, []string{
+					models.BriefingStatusPending,
+					models.BriefingStatusProcessing,
+				}).
+				First(&existing).Error
+			if err == nil {
+				// Mark stale pending briefings as failed (older than 10 minutes)
+				if existing.CreatedAt.Before(time.Now().Add(-10 * time.Minute)) {
+					db.Model(&existing).Updates(map[string]interface{}{
+						"status":        models.BriefingStatusFailed,
+						"error_message": "Stale: task was not processed within 10 minutes",
+					})
+					logger.Warn("Marked stale briefing as failed",
+						"briefing_id", existing.ID, "user_id", user.ID)
+				} else {
+					logger.Info("Skipping user with existing pending briefing",
+						"user_id", user.ID, "briefing_id", existing.ID)
+					skippedCount++
+					continue
+				}
+			}
+
+			// Create briefing record
 			briefing := models.Briefing{
 				UserID: user.ID,
 				Status: models.BriefingStatusPending,
@@ -137,10 +164,10 @@ func handleScheduledBriefingGeneration(logger *slog.Logger, db *gorm.DB) func(co
 			"Scheduled briefing generation completed",
 			"total_users", len(users),
 			"enqueued", successCount,
+			"skipped", skippedCount,
 			"errors", errorCount,
 		)
 
-		// Don't fail if some briefings failed to enqueue (partial success is OK)
 		return nil
 	}
 }
