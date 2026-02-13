@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./static/img/logo.png" alt="Logo" width="200">
+  <img src="./static/img/coffeeicon.png" alt="Logo" width="200">
 </p>
 
 # First Sip
