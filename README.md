@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./static/img/logo.png" alt="Logo" width="200">
+</p>
+
 # First Sip
 
 A daily briefing app that aggregates news, weather, and work updates into a single morning summary. Built with Go, HTMX, and background job processing.
