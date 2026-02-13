@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Background Job Infrastructure** - Asynq worker with Redis queue
 - [x] **Phase 4: Briefing Generation (Mock)** - Core generation flow with stub data
 - [x] **Phase 5: Briefing Display** - Dashboard UI with section layout
-- [ ] **Phase 6: Scheduled Generation** - Daily auto-generation via cron
+- [x] **Phase 6: Scheduled Generation** - Daily auto-generation via cron
 - [ ] **Phase 7: Briefing History** - Browse past briefings with read tracking
 
 ## Phase Details
@@ -112,7 +112,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Asynq Scheduler with StartScheduler function, config fields for schedule/timezone, scheduled briefing handler, lifecycle management in both modes
+- [x] 06-01-PLAN.md — Asynq Scheduler with StartScheduler function, config fields for schedule/timezone, scheduled briefing handler, lifecycle management in both modes
 
 ### Phase 7: Briefing History
 **Goal**: Users can browse and review past briefings
@@ -141,9 +141,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Background Job Infrastructure | 2/2 | ✓ Complete | 2026-02-12 |
 | 4. Briefing Generation (Mock) | 2/2 | ✓ Complete | 2026-02-12 |
 | 5. Briefing Display | 1/1 | ✓ Complete | 2026-02-12 |
-| 6. Scheduled Generation | 0/1 | Not started | - |
+| 6. Scheduled Generation | 1/1 | ✓ Complete | 2026-02-13 |
 | 7. Briefing History | 0/? | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-13*
