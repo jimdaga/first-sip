@@ -2,6 +2,8 @@ package worker
 
 import (
 	"encoding/json"
+	"errors"
+	"log"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -9,7 +11,8 @@ import (
 
 // Task type constants
 const (
-	TaskGenerateBriefing = "briefing:generate"
+	TaskGenerateBriefing           = "briefing:generate"
+	TaskScheduledBriefingGeneration = "briefing:scheduled_generation"
 )
 
 // Package-level Asynq client (singleton)
@@ -37,7 +40,7 @@ func CloseClient() error {
 
 // EnqueueGenerateBriefing enqueues a briefing generation task for the given briefing ID.
 // The task will be processed by the worker with a 5-minute timeout, retry up to 3 times,
-// and retain for 24 hours after completion.
+// and retain for 24 hours after completion. Duplicate tasks within 1 hour are prevented.
 func EnqueueGenerateBriefing(briefingID uint) error {
 	// Create task payload
 	payload, err := json.Marshal(map[string]uint{
@@ -47,16 +50,25 @@ func EnqueueGenerateBriefing(briefingID uint) error {
 		return err
 	}
 
-	// Create task with options
+	// Create task with options including Unique to prevent duplicates
 	task := asynq.NewTask(
 		TaskGenerateBriefing,
 		payload,
 		asynq.MaxRetry(3),
 		asynq.Timeout(5*time.Minute),
 		asynq.Retention(24*time.Hour),
+		asynq.Unique(1*time.Hour), // Prevent duplicate generation within 1 hour
 	)
 
 	// Enqueue the task
 	_, err = client.Enqueue(task)
-	return err
+	if err != nil {
+		// Check if duplicate task error (not a failure condition)
+		if errors.Is(err, asynq.ErrDuplicateTask) {
+			log.Printf("Briefing %d already queued (duplicate), skipping", briefingID)
+			return nil // Not an error - task already enqueued
+		}
+		return err
+	}
+	return nil
 }

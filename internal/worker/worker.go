@@ -86,9 +86,60 @@ func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (
 
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger, db, webhookClient))
+	mux.HandleFunc(TaskScheduledBriefingGeneration, handleScheduledBriefingGeneration(logger, db))
 
 	logger.Info("Worker starting", "concurrency", 5, "redis", cfg.RedisURL)
 	return srv, mux, nil
+}
+
+// handleScheduledBriefingGeneration processes the daily scheduled briefing generation
+// by creating briefing records for all users and enqueueing individual generation tasks.
+func handleScheduledBriefingGeneration(logger *slog.Logger, db *gorm.DB) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, task *asynq.Task) error {
+		logger.Info("Starting scheduled briefing generation for all users")
+
+		// Query all active users
+		var users []models.User
+		if err := db.WithContext(ctx).Find(&users).Error; err != nil {
+			return fmt.Errorf("failed to query users: %w", err)
+		}
+
+		successCount := 0
+		errorCount := 0
+
+		// Enqueue briefing generation for each user
+		for _, user := range users {
+			// Create briefing record first
+			briefing := models.Briefing{
+				UserID: user.ID,
+				Status: models.BriefingStatusPending,
+			}
+			if err := db.WithContext(ctx).Create(&briefing).Error; err != nil {
+				logger.Error("Failed to create briefing", "user_id", user.ID, "error", err)
+				errorCount++
+				continue
+			}
+
+			// Enqueue task (Unique option prevents duplicates)
+			if err := EnqueueGenerateBriefing(briefing.ID); err != nil {
+				logger.Error("Failed to enqueue briefing", "briefing_id", briefing.ID, "error", err)
+				errorCount++
+				continue
+			}
+
+			successCount++
+		}
+
+		logger.Info(
+			"Scheduled briefing generation completed",
+			"total_users", len(users),
+			"enqueued", successCount,
+			"errors", errorCount,
+		)
+
+		// Don't fail if some briefings failed to enqueue (partial success is OK)
+		return nil
+	}
 }
 
 // handleGenerateBriefing processes briefing generation tasks by calling the webhook
