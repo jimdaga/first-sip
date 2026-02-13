@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** A user can click "Generate" and receive a multi-source daily briefing without leaving the app — the background processing, source aggregation, and status tracking all happen seamlessly.
-**Current focus:** Phase 4 complete — ready for Phase 5
+**Current focus:** Phase 5 in progress — Briefing Display
 
 ## Current Position
 
-Phase: 4 of 7 (Briefing Generation - Mock)
-Plan: 2 of 2 in current phase
-Status: Complete — Verified
-Last activity: 2026-02-12 — Phase 4 verified (10/10 must-haves passed)
+Phase: 5 of 7 (Briefing Display)
+Plan: 1 of 1 in current phase
+Status: Complete
+Last activity: 2026-02-12 — Phase 5 Plan 1 complete (mobile-responsive UI with read/unread tracking)
 
-Progress: [██████████] 100% (Phase 4)
+Progress: [██████████] 100% (Phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 11.6 min
+- Total plans completed: 9
+- Average duration: 10.9 min
 - Total execution time: 1.6 hours
 
 **By Phase:**
@@ -31,9 +31,10 @@ Progress: [██████████] 100% (Phase 4)
 | 02 | 2 | 51 min | 25.5 min |
 | 03 | 2 | 13 min | 6.5 min |
 | 04 | 2 | 13 min | 6.5 min |
+| 05 | 1 | 2 min | 2.4 min |
 
 **Recent Trend:**
-- Last 5 plans: [03-01 (1 min), 03-02 (12 min), 04-01 (1 min), 04-02 (12 min)]
+- Last 5 plans: [03-02 (12 min), 04-01 (1 min), 04-02 (12 min), 05-01 (2 min)]
 - Trend: Consistent execution speed for infrastructure and feature plans
 
 *Updated after each plan completion*
@@ -73,6 +74,10 @@ Recent decisions affecting current work:
 - [Phase 04-briefing-generation-mock]: Duplicate prevention checks for existing pending/processing briefing — Prevents user from creating multiple concurrent briefings
 - [Phase 04-briefing-generation-mock]: worker.Start() non-blocking for embedded mode — Coordinated shutdown with HTTP server via signal.NotifyContext
 - [Phase 04-briefing-generation-mock]: OAuth callback upserts User record in database — Ensures DB consistency for new users logging in via Google
+- [Phase 05-01]: Use bg-base-200 backgrounds for section cards instead of borders to create distinct visual separation
+- [Phase 05-01]: Apply mobile-first responsive design with md: breakpoint classes throughout
+- [Phase 05-01]: Implement click-to-mark-read on entire completed card (not just button) for better UX
+- [Phase 05-01]: Use emoji prefixes (📰 News, 🌤️ Weather, 💼 Work) to enhance section recognition
 
 ### Pending Todos
 
@@ -88,11 +93,11 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-12 (phase execution + verification)
-Stopped at: Phase 4 complete and verified
-Resume with: /gsd:plan-phase 5 to begin Phase 5 (Briefing Display)
+Last session: 2026-02-12 (phase execution)
+Stopped at: Completed 05-01-PLAN.md
+Resume with: /gsd:plan-phase 6 to begin Phase 6 or continue with Phase 7
 
-**Note:** Full briefing generation flow working end-to-end. User can click Generate, see loading spinner with HTMX polling, watch transition to Completed, and view mock News/Weather/Work content. Also added: logo on login page, README with OAuth setup docs, graceful shutdown, user upsert on OAuth callback.
+**Note:** Phase 5 complete. Mobile-responsive briefing display with distinct visual sections (bg-base-200 cards for News/Weather/Work), read/unread badge tracking (badge-error/badge-success), and click-to-mark-read HTMX interaction. All BDISP requirements satisfied.
 
 ---
 *Created: 2026-02-10*
