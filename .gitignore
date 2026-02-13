@@ -25,6 +25,7 @@ vendor/
 # Environment
 .env
 *.env.local
+env.local
 local.env
 
 # OS
