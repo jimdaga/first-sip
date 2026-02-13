@@ -1,0 +1,117 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jimdaga/first-sip/internal/models"
+)
+
+// HistoryPage renders the full history page
+templ HistoryPage(name string, briefings []models.Briefing, page int, hasMore bool) {
+	@Layout("History - First Sip") {
+		<nav class="glass-navbar">
+			<div class="navbar-inner">
+				<div class="navbar-brand">
+					<a href="/dashboard" class="navbar-brand-link">
+						<img src="/static/img/logo.png" alt="" class="navbar-logo"/>
+						<span class="navbar-title">First Sip</span>
+					</a>
+				</div>
+				<div class="navbar-actions">
+					<a href="/history" class="navbar-link navbar-link-active">History</a>
+					<span class="navbar-user">{ name }</span>
+					<a href="/logout" class="glass-btn glass-btn-ghost glass-btn-sm">Logout</a>
+				</div>
+			</div>
+		</nav>
+		<main class="dashboard-content">
+			<div class="history-header">
+				<h1 class="greeting">Briefing History</h1>
+				<p class="history-subtitle">Last 30 days</p>
+			</div>
+			@HistoryList(briefings, page, hasMore)
+		</main>
+	}
+}
+
+// HistoryList renders the briefing list with date grouping and pagination
+templ HistoryList(briefings []models.Briefing, page int, hasMore bool) {
+	if len(briefings) == 0 && page == 0 {
+		<div class="empty-state">
+			<p>No briefings in the last 30 days.</p>
+			<p style="margin-top: 0.5rem;"><a href="/dashboard" class="navbar-link">Return to Dashboard</a></p>
+		</div>
+	} else {
+		{{
+			var lastDate string
+		}}
+		for _, briefing := range briefings {
+			{{
+				currentDate := briefing.CreatedAt.Format("January 2, 2006")
+			}}
+			if currentDate != lastDate {
+				<div class="history-date-group">
+					<span class="history-date-label">{ currentDate }</span>
+				</div>
+				{{
+					lastDate = currentDate
+				}}
+			}
+			@HistoryBriefingCard(briefing)
+		}
+		if hasMore {
+			<div id="load-more-row">
+				<button
+					class="glass-btn glass-btn-ghost history-load-more"
+					hx-get={ fmt.Sprintf("/api/history?page=%d", page+1) }
+					hx-target="#load-more-row"
+					hx-swap="outerHTML"
+				>
+					Load More
+				</button>
+			</div>
+		}
+	}
+}
+
+// HistoryBriefingCard renders a compact briefing card for history view
+templ HistoryBriefingCard(briefing models.Briefing) {
+	if briefing.Status == models.BriefingStatusCompleted {
+		<div
+			class="glass-card history-card"
+			style="cursor: pointer"
+			hx-post={ fmt.Sprintf("/api/history/briefings/%d/read", briefing.ID) }
+			hx-target="closest .history-card"
+			hx-swap="outerHTML"
+		>
+			<div class="glass-card-body">
+				<div class="history-card-row">
+					<h3 class="briefing-card-title">Daily Briefing</h3>
+					if briefing.ReadAt == nil {
+						<span class="glass-badge glass-badge-unread">Unread</span>
+					} else {
+						<span class="glass-badge glass-badge-read">Read</span>
+					}
+				</div>
+				<div class="history-card-meta">
+					<span class="history-card-time">{ briefing.CreatedAt.Format("3:04 PM") }</span>
+					if len(briefing.Content) > 0 {
+						<span class="history-card-preview">View briefing</span>
+					}
+				</div>
+			</div>
+		</div>
+	} else if briefing.Status == models.BriefingStatusFailed {
+		<div class="glass-card history-card">
+			<div class="glass-card-body">
+				<div class="history-card-row">
+					<h3 class="briefing-card-title">Daily Briefing</h3>
+					<span class="glass-badge glass-badge-unread">Failed</span>
+				</div>
+				<div class="history-card-meta">
+					<span class="history-card-time">{ briefing.CreatedAt.Format("3:04 PM") }</span>
+					<span class="history-card-failed">Generation failed</span>
+				</div>
+			</div>
+		</div>
+	}
+}
