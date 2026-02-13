@@ -59,20 +59,20 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <a href=\"/logout\" class=\"btn btn-ghost btn-sm\">Logout</a></div></div><div class=\"container mx-auto p-8\"><h2 class=\"text-3xl font-bold mb-6\">Welcome, ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <a href=\"/logout\" class=\"btn btn-ghost btn-sm\">Logout</a></div></div><div class=\"container mx-auto p-4 md:p-8 max-w-4xl\"><h2 class=\"text-2xl md:text-3xl font-bold mb-4 md:mb-6\">Welcome, ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 20, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/dashboard.templ`, Line: 20, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h2><div class=\"mb-4\"><button class=\"btn btn-primary\" hx-post=\"/api/briefings\" hx-target=\"#briefing-area\" hx-swap=\"outerHTML\">Generate Daily Summary</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h2><div class=\"mb-4\"><button class=\"btn btn-primary w-full md:w-auto\" hx-post=\"/api/briefings\" hx-target=\"#briefing-area\" hx-swap=\"outerHTML\">Generate Daily Summary</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -82,7 +82,7 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"briefing-area\" class=\"text-gray-500\">No briefings yet. Click Generate to create your first one.</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"briefing-area\" class=\"text-gray-500 text-center md:text-left\">No briefings yet. Click Generate to create your first one.</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

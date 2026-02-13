@@ -25,12 +25,21 @@ templ BriefingCard(briefing models.Briefing) {
 				</div>
 			</div>
 		} else if briefing.Status == models.BriefingStatusCompleted {
-			<!-- Completed state (no HTMX polling) -->
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
+			<!-- Completed state with click-to-mark-read -->
+			<div
+				class="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+				hx-post={ fmt.Sprintf("/api/briefings/%d/read", briefing.ID) }
+				hx-target="#briefing-area"
+				hx-swap="outerHTML"
+			>
+				<div class="card-body p-4 md:p-6">
 					<div class="flex items-center justify-between">
 						<h2 class="card-title">Daily Briefing</h2>
-						<div class="badge badge-success">Completed</div>
+						if briefing.ReadAt == nil {
+							<span class="badge badge-error">Unread</span>
+						} else {
+							<span class="badge badge-success">Read</span>
+						}
 					</div>
 					@BriefingContentView(briefing)
 				</div>
@@ -88,27 +97,27 @@ templ renderContent(contentJSON []byte) {
 	if err != nil {
 		<div class="text-error mt-4">Unable to display briefing content</div>
 	} else {
-		<div class="space-y-4 mt-4">
+		<div class="space-y-4 md:space-y-6 mt-4">
 			<!-- News Section -->
 			if len(content.News) > 0 {
-				<div>
-					<h4 class="text-lg font-semibold mb-2">News</h4>
+				<div class="bg-base-200 p-3 md:p-4 rounded-lg">
+					<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">📰 News</h4>
 					<div class="space-y-2">
 						for _, item := range content.News {
-							<div class="border-l-4 border-primary pl-4">
-								<a href={ templ.URL(item.URL) } target="_blank" class="font-medium text-primary hover:underline">
+							<div class="border-l-4 border-primary pl-3 md:pl-4">
+								<a href={ templ.URL(item.URL) } target="_blank" class="font-medium text-primary hover:underline text-sm md:text-base">
 									{ item.Title }
 								</a>
-								<p class="text-sm text-gray-600 mt-1">{ item.Summary }</p>
+								<p class="text-sm md:text-base text-gray-600 mt-1 line-clamp-2 md:line-clamp-3">{ item.Summary }</p>
 							</div>
 						}
 					</div>
 				</div>
 			}
 			<!-- Weather Section -->
-			<div>
-				<h4 class="text-lg font-semibold mb-2">Weather</h4>
-				<div class="flex items-center gap-2">
+			<div class="bg-base-200 p-3 md:p-4 rounded-lg">
+				<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">🌤️ Weather</h4>
+				<div class="flex items-center gap-2 text-sm md:text-base">
 					<span class="font-medium">{ content.Weather.Location }</span>
 					<span>•</span>
 					<span>{ fmt.Sprintf("%d°", content.Weather.Temperature) }</span>
@@ -117,22 +126,22 @@ templ renderContent(contentJSON []byte) {
 				</div>
 			</div>
 			<!-- Work Section -->
-			<div>
-				<h4 class="text-lg font-semibold mb-2">Today's Schedule</h4>
+			<div class="bg-base-200 p-3 md:p-4 rounded-lg">
+				<h4 class="text-base md:text-lg font-semibold mb-2 md:mb-3">💼 Work</h4>
 				if len(content.Work.TodayEvents) > 0 {
 					<ul class="list-disc list-inside space-y-1">
 						for _, event := range content.Work.TodayEvents {
-							<li>{ event }</li>
+							<li class="text-xs md:text-sm truncate md:whitespace-normal">{ event }</li>
 						}
 					</ul>
 				} else {
-					<p class="text-gray-500">No events scheduled</p>
+					<p class="text-gray-500 text-sm md:text-base">No events scheduled</p>
 				}
 				if len(content.Work.TomorrowTasks) > 0 {
 					<h5 class="text-md font-semibold mt-3 mb-1">Tomorrow</h5>
 					<ul class="list-disc list-inside space-y-1">
 						for _, task := range content.Work.TomorrowTasks {
-							<li>{ task }</li>
+							<li class="text-xs md:text-sm truncate md:whitespace-normal">{ task }</li>
 						}
 					</ul>
 				}
