@@ -1,482 +1,601 @@
-# Pitfalls Research
+# Pitfalls Research: v1.1 Plugin Architecture
 
-**Domain:** Go web application with Templ + HTMX + GORM + Asynq + OAuth
-**Researched:** 2026-02-10
-**Overall Confidence:** MEDIUM (based on training data without current web verification)
+**Domain:** Adding plugin framework + CrewAI sidecar + per-user scheduling to Go web app
+**Researched:** 2026-02-13
+**Confidence:** MEDIUM (based on training data + architectural patterns, no current web verification)
 
 ## Critical Pitfalls
 
-### Pitfall 1: GORM Hooks Causing N+1 Queries
+### Pitfall 1: Plugin Metadata YAML vs Runtime State Mismatch
 
 **What goes wrong:**
-Encryption/decryption hooks (AfterFind, BeforeCreate) trigger for every row in a query result. With `db.Find(&tokens)` returning 100 records, each row's AfterFind hook fires individually. If hooks do ANY database queries, you get exponential query explosion.
+Plugin YAML defines 3 settings fields. User saves config to database. Developer updates YAML to add a 4th field. Settings page loads, iterates YAML schema, tries to render value for new field that doesn't exist in user's saved JSON. Template crashes with nil pointer. User sees blank settings page.
 
 **Why it happens:**
-GORM hooks run in-process per-record. Developers add "just one query" to a hook without realizing it multiplies by result set size. Encryption seems like a model concern, so hooks feel natural.
+Schema evolution is natural during development. YAML is treated as "truth" but database holds stale user data. No schema version tracking. No migration path for settings changes. Template assumes all YAML fields have database values.
 
 **How to avoid:**
-- Never query the database inside GORM hooks
-- Keep hooks to pure computation only (encrypt/decrypt bytes)
-- Use `db.Session(&gorm.Session{SkipHooks: true})` for bulk operations
-- Monitor query count in development (add middleware that panics if >5 queries per request)
-- Consider explicit service-layer encryption instead of hooks for complex cases
+- Add `schema_version` field to plugin YAML metadata
+- Store schema version with user settings in database: `{version: 1, values: {...}}`
+- Write schema migration functions per plugin for version upgrades
+- Template code MUST handle missing fields gracefully (default values)
+- Add validation: check schema version on settings save, reject mismatches
+- Never remove fields from schema (only deprecate), breaking change requires new plugin version
+
+**Example defensive pattern:**
+```go
+// In settings rendering
+func GetSettingValue(userSettings map[string]interface{}, field SchemaField) interface{} {
+    if val, ok := userSettings[field.Name]; ok {
+        return val
+    }
+    return field.Default // YAML schema must define defaults
+}
+
+// Schema version check
+if userSettings.SchemaVersion != plugin.Metadata.SchemaVersion {
+    // Run migration or reject with "Please reconfigure plugin"
+}
+```
 
 **Warning signs:**
-- Slow queries that don't show in database logs (computation time)
-- Query count scales with result set size
-- Performance degrades non-linearly with data growth
-- Database connection pool exhaustion under moderate load
+- Blank settings pages after YAML updates
+- Nil pointer errors in Templ rendering
+- User complaints about "settings reset themselves"
+- Inconsistent settings validation errors
 
 **Phase to address:**
-Bootstrap phase - Set up query monitoring middleware immediately. Document hook limitations in architecture decisions.
+Phase 1 (Plugin Framework) — Design schema versioning before first plugin ships. Add migration infrastructure.
 
-**Confidence:** HIGH (well-documented GORM behavior)
+**Confidence:** HIGH (common configuration management issue)
 
 ---
 
-### Pitfall 2: HTMX Polling Without Backoff Creates Thundering Herd
+### Pitfall 2: CrewAI Python Process Orphaned on Go Service Restart
 
 **What goes wrong:**
-`hx-trigger="every 2s"` on job status endpoints means every user polls every 2 seconds. 100 concurrent users = 50 requests/second doing database queries. No built-in backoff when jobs complete. Polls continue even after success.
+Go service crashes or restarts (deploy, OOM kill, manual restart). CrewAI Python sidecar continues running. New Go instance starts, spawns NEW CrewAI process. Now 2+ Python processes run concurrently, both polling Redis for tasks. Race conditions. Duplicate task processing. Memory leak as processes accumulate.
 
 **Why it happens:**
-HTMX makes polling trivial (`every Ns`), but doesn't handle completion/backoff. Developers forget to stop polling after terminal states. Each poll hits your app, database, and potentially external services.
+Python subprocess spawned with `exec.Command()` doesn't die when parent Go process exits unexpectedly. No PID tracking. No health check. Docker/K8s doesn't know about the subprocess. Each restart orphans another process.
 
 **How to avoid:**
-- Return `HX-Trigger: {"stopPolling": true}` header when job completes
-- Use exponential backoff: start at 1s, increase to 2s, 5s, 10s
-- Implement client-side using `hx-trigger="load delay:1s"` pattern with server-controlled delay
-- Add cache layer (Redis) for job status - most polls should hit cache
-- Consider WebSockets/SSE for real-time updates instead of polling
+- Use shared process namespace in Docker Compose / K8s: `shareProcessNamespace: true`
+- Go process MUST register signal handlers (SIGTERM, SIGINT) that kill Python subprocess
+- Track CrewAI PID, write to file or Redis, check on startup and kill stale PIDs
+- Python process should heartbeat to Redis, Go should monitor heartbeat and restart if dead
+- Use process supervisor (systemd, supervisord, or Kubernetes sidecar pattern properly)
+- Health check endpoint should verify Python process is alive
+- Set subprocess PID group to ensure child processes die with parent: `cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}`
 
 **Example pattern:**
 ```go
-// Return dynamic delay header
-if job.Status == "pending" && job.Attempts < 3 {
-    w.Header().Set("HX-Trigger-After-Settle", `{"poll": {"delay": "1000"}}`)
-} else if job.Status == "pending" {
-    w.Header().Set("HX-Trigger-After-Settle", `{"poll": {"delay": "5000"}}`)
-} else {
-    // Terminal state - stop polling
-    w.Header().Set("HX-Trigger", "stopPolling")
+func StartCrewAI(ctx context.Context) (*exec.Cmd, error) {
+    // Check for stale PID
+    if pid := readPIDFile(); pid != 0 {
+        syscall.Kill(pid, syscall.SIGTERM) // Kill stale process
+    }
+
+    cmd := exec.CommandContext(ctx, "python", "crewai_worker.py")
+    cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+    if err := cmd.Start(); err != nil {
+        return nil, err
+    }
+
+    writePIDFile(cmd.Process.Pid)
+
+    // Cleanup goroutine
+    go func() {
+        <-ctx.Done()
+        syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) // Kill process group
+        removePIDFile()
+    }()
+
+    return cmd, nil
 }
 ```
 
 **Warning signs:**
-- Database CPU spikes with many concurrent users
-- Polls continue after job completion
-- Linear scaling breaks at low user counts (<100)
-- Redis/cache hit rate is low for status endpoints
+- Multiple CrewAI processes in `ps aux | grep crewai`
+- Memory usage grows after each deploy
+- Duplicate briefing generation
+- Redis connection count increases over time
+- "Address already in use" errors if CrewAI binds port
 
 **Phase to address:**
-Bootstrap phase - Implement polling backoff in initial HTMX integration. Add Redis caching before performance testing.
+Phase 3 (CrewAI Integration) — MUST implement before first production deploy. Add integration test that kills Go process and verifies Python cleanup.
 
-**Confidence:** HIGH (common HTMX pattern, documented extensively)
+**Confidence:** HIGH (common subprocess management issue)
 
 ---
 
-### Pitfall 3: Asynq Task Serialization Breaks with Sensitive Data
+### Pitfall 3: Per-User Asynq Scheduler Creates O(users × plugins) Redis Entries
 
 **What goes wrong:**
-Asynq serializes task payloads to JSON and stores in Redis. Passing OAuth tokens, encryption keys, or PII directly in task payloads exposes sensitive data in Redis. Redis persistence means data lives beyond job execution.
+100 users, each with 5 plugins = 500 scheduled tasks in Redis. Asynq scheduler stores each as individual sorted set entry. Redis memory grows linearly with users. Scheduler scans all entries every tick. CPU spikes. At 10k users with 10 plugins = 100k scheduler entries. Redis OOM.
 
 **Why it happens:**
-Convenience - easiest to pass `Task{UserID: 1, Token: "secret"}` directly. Developers treat task queues like function calls. Not obvious that payloads are persisted.
+Naïve approach: create Asynq periodic task per user-plugin pair. Asynq scheduler isn't designed for massive per-user schedules. It's meant for application-level cron (5-50 tasks, not thousands).
 
 **How to avoid:**
-- Only pass identifiers in task payloads (user ID, job ID)
-- Fetch sensitive data from database inside task handler
-- Enable Redis encryption at rest
-- Set task retention policies (`asynq.Retention(24*time.Hour)`)
-- Use Redis ACLs to limit queue access
-- Never log full task payloads
+- DO NOT use Asynq scheduler per user-plugin
+- INSTEAD: Single cron task that queries database for "due now" user-plugin schedules
+- Store schedule config in Postgres: `user_plugin_schedules` table with `schedule_cron`, `next_run_at`, `enabled`
+- Single scheduler task runs every 5 minutes, queries `WHERE next_run_at <= NOW() AND enabled = true`
+- Enqueue individual generation tasks for matched user-plugins
+- Update `next_run_at` after enqueuing (calculate next from cron expression)
 
-**Example:**
+**Example architecture:**
 ```go
-// BAD
-type EmailTask struct {
-    Email string
-    OAuthToken string // Exposed in Redis
+// WRONG APPROACH (O(users))
+for _, user := range users {
+    for _, plugin := range user.EnabledPlugins {
+        scheduler.Register(plugin.Schedule, CreateTask(user.ID, plugin.ID))
+    }
 }
 
-// GOOD
-type EmailTask struct {
-    UserID int // Fetch token in handler
-}
+// CORRECT APPROACH (O(1) scheduler entries)
+scheduler.Register("*/5 * * * *", DispatchScheduledBriefings)
 
-func HandleEmail(ctx context.Context, t *asynq.Task) error {
-    var p EmailTask
-    json.Unmarshal(t.Payload(), &p)
+func DispatchScheduledBriefings(ctx context.Context, t *asynq.Task) error {
+    // Query database
+    var due []UserPluginSchedule
+    db.Where("next_run_at <= ? AND enabled = true", time.Now()).Find(&due)
 
-    // Fetch token securely
-    token, err := db.GetEncryptedToken(p.UserID)
-    // ...
-}
-```
+    // Enqueue tasks
+    for _, schedule := range due {
+        EnqueuePluginExecution(schedule.UserID, schedule.PluginID)
 
-**Warning signs:**
-- Task payloads contain tokens, keys, or PII
-- Redis memory grows unbounded
-- Compliance audit flags Redis data
-- Failed task logs expose sensitive data
-
-**Phase to address:**
-Bootstrap phase - Establish task payload patterns before first worker. Add pre-commit hook to grep for common sensitive field names in task structs.
-
-**Confidence:** HIGH (standard queue security practice)
-
----
-
-### Pitfall 4: Templ Component Boundaries Cause Template Duplication
-
-**What goes wrong:**
-HTMX swaps fragments, but Templ components need full HTML context. Developers duplicate layout code in each endpoint's template to avoid "partial layout" bugs. Over time, header/nav/footer logic diverges across handlers.
-
-**Why it happens:**
-Initial approach: each HTMX endpoint returns full page fragment with layout. Refactoring to extract layout feels risky mid-development. No clear "partial vs full" template pattern.
-
-**How to avoid:**
-- Establish layout pattern early: `layout(header, content, footer)`
-- Use `HX-Request` header to detect HTMX requests
-- Return fragments for HTMX, full pages for direct access
-- Create Templ helper: `RenderWithLayout(c, content, isHXRequest)`
-
-**Example:**
-```go
-func HandleDashboard(c *gin.Context) {
-    content := components.Dashboard(data)
-
-    if c.GetHeader("HX-Request") == "true" {
-        // HTMX swap - just content
-        content.Render(c.Request.Context(), c.Writer)
-    } else {
-        // Full page load - with layout
-        layout.Base(content).Render(c.Request.Context(), c.Writer)
+        // Calculate next run
+        nextRun := cronexpr.MustParse(schedule.Cron).Next(time.Now())
+        db.Model(&schedule).Update("next_run_at", nextRun)
     }
 }
 ```
 
 **Warning signs:**
-- Same nav/header code in 5+ template files
-- Layout changes require multi-file edits
-- Inconsistent styling between pages
-- HTMX swaps break layout (missing CSS/JS)
+- Redis memory grows linearly with users
+- Scheduler lag increases over time
+- Redis SLOWLOG shows sorted set operations
+- "Too many keys" errors from Redis
 
 **Phase to address:**
-Bootstrap phase - Create layout abstraction before second page. Document pattern in ADR.
+Phase 2 (Per-User Scheduler) — Design with database-backed schedules from start. CRITICAL architecture decision.
 
-**Confidence:** MEDIUM (Templ-specific pattern, limited production data)
+**Confidence:** HIGH (scalability anti-pattern)
 
 ---
 
-### Pitfall 5: OAuth Token Refresh Race Conditions
+### Pitfall 4: Tile Dashboard N+1 Query for "Latest Briefing Per Plugin"
 
 **What goes wrong:**
-User opens 3 tabs. Each tab makes API call. All 3 detect expired token simultaneously. All 3 trigger refresh. OAuth provider sees 3 refresh requests, invalidates token after first, remaining 2 fail. User logged out.
+Dashboard loads. Queries plugins: `SELECT * FROM plugins`. For each plugin tile, queries: `SELECT * FROM briefings WHERE plugin_id = ? ORDER BY created_at DESC LIMIT 1`. User has 8 plugins = 9 queries. Works fine at low scale. With 50 users viewing dashboard = 450 queries/second. Database CPU spikes.
 
 **Why it happens:**
-No distributed lock on token refresh. Each request independently checks expiry and refreshes. Goth doesn't handle concurrency. Race window is small but hits production.
+Templ templates iterate plugins, each template queries for latest briefing. GORM makes this too easy. Developers don't notice until load testing. Classic N+1.
 
 **How to avoid:**
-- Use Redis lock with `SET NX EX` for token refresh
-- Check token freshness after acquiring lock (another process may have refreshed)
-- Use single-flight pattern (Go's `singleflight` package)
-- Add jitter to expiry checks (refresh at 80-95% of lifetime randomly)
-- Implement token refresh queue (only one worker can refresh)
+- Pre-fetch latest briefings in handler BEFORE rendering
+- Use single query with window function:
+  ```sql
+  SELECT DISTINCT ON (plugin_id) * FROM briefings
+  WHERE user_id = ?
+  ORDER BY plugin_id, created_at DESC
+  ```
+- Or use subquery with join:
+  ```sql
+  SELECT b.* FROM briefings b
+  INNER JOIN (
+    SELECT plugin_id, MAX(created_at) as latest
+    FROM briefings WHERE user_id = ? GROUP BY plugin_id
+  ) latest ON b.plugin_id = latest.plugin_id AND b.created_at = latest.latest
+  ```
+- Pass `map[PluginID]Briefing` to template, template lookups don't query
+- Add query count middleware in dev to panic on >5 queries per request
 
-**Example:**
+**Example handler pattern:**
 ```go
-import "golang.org/x/sync/singleflight"
+func DashboardHandler(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        userID := c.GetInt("user_id")
 
-var refreshGroup singleflight.Group
+        // Get plugins
+        var plugins []Plugin
+        db.Where("enabled = true").Find(&plugins)
 
-func RefreshToken(userID int) (*Token, error) {
-    key := fmt.Sprintf("refresh-%d", userID)
-
-    val, err, _ := refreshGroup.Do(key, func() (interface{}, error) {
-        // Check if still needed (another goroutine may have refreshed)
-        token := db.GetToken(userID)
-        if token.ExpiresAt.After(time.Now().Add(5*time.Minute)) {
-            return token, nil // Fresh enough
+        // Get latest briefing per plugin IN ONE QUERY
+        type LatestBriefing struct {
+            PluginID uint
+            Briefing models.Briefing
         }
 
-        // Actually refresh
-        return oauth.Refresh(token.RefreshToken)
-    })
+        var latestBriefings []models.Briefing
+        db.Raw(`
+            SELECT DISTINCT ON (plugin_id) * FROM briefings
+            WHERE user_id = ? AND plugin_id IN (?)
+            ORDER BY plugin_id, created_at DESC
+        `, userID, pluginIDs).Scan(&latestBriefings)
 
-    return val.(*Token), err
+        // Build map for template
+        briefingMap := make(map[uint]models.Briefing)
+        for _, b := range latestBriefings {
+            briefingMap[b.PluginID] = b
+        }
+
+        // Render with map (no queries in template)
+        templates.TileDashboard(plugins, briefingMap).Render(...)
+    }
 }
 ```
 
 **Warning signs:**
-- Random "token invalid" errors under load
-- Logs show multiple refresh attempts for same user
-- OAuth provider rate limits refresh endpoint
-- Users report being logged out intermittently
+- Database query count scales with plugin count
+- Slow dashboard load with many plugins
+- Database CPU high during peak traffic
+- GORM logs show repeated similar queries
 
 **Phase to address:**
-Authentication phase - Implement before enabling concurrent users. Critical for production readiness.
+Phase 4 (Tile Dashboard) — Implement before load testing. Add to review checklist.
 
-**Confidence:** HIGH (common OAuth pattern)
+**Confidence:** HIGH (classic N+1 pattern)
 
 ---
 
-### Pitfall 6: Missing Database Transaction Rollback on HTMX Errors
+### Pitfall 5: HTMX Dynamic Settings Form Loses Client State on Validation Error
 
 **What goes wrong:**
-Handler starts transaction, renders HTMX response, hits template error. Response sends 200 OK with partial HTML, transaction commits. User sees error UI but data is saved. Retry attempts fail with duplicate key errors.
+User fills 8-field settings form. Submits. Server validates, finds error in field 3. Returns error HTML fragment with `hx-swap="outerHTML"`. HTMX replaces entire form. User's input for fields 4-8 vanished. User rage quits.
 
 **Why it happens:**
-Templ `Render()` can error after HTTP headers sent. Developers check `err` but can't change status code. Transaction already committed in defer/middleware.
+Server-side validation re-renders entire form from scratch. HTMX swaps out DOM with user's unsubmitted input. Standard form flow but terrible UX for multi-field forms.
 
 **How to avoid:**
-- Render to buffer first, THEN write to response
-- Commit transactions only after successful render
-- Use middleware pattern: `tx.Rollback()` in defer unless explicitly committed
-- Add integration tests that force template errors
+- Bind ALL form fields on server, including invalid ones
+- Re-render form with user's input preserved (pre-fill fields)
+- Use `hx-swap="outerHTML"` but include all form values in re-rendered HTML
+- Alternative: client-side validation first (JavaScript), server-side as backup
+- Alternative: per-field validation with `hx-target` per input (preserve other fields)
+- Store partial form state in session/Redis for multi-step flows
 
-**Example:**
+**Example pattern:**
 ```go
-func HandleCreate(c *gin.Context) {
-    tx := db.Begin()
-    defer func() {
-        if r := recover(); r != nil {
-            tx.Rollback()
-        }
-    }()
-
-    // Do database work
-    item := CreateItem(tx, data)
-
-    // Render to buffer
-    var buf bytes.Buffer
-    if err := components.Success(item).Render(c.Request.Context(), &buf); err != nil {
-        tx.Rollback()
-        c.String(500, "Render error")
+func SavePluginSettings(c *gin.Context) {
+    var input PluginSettingsInput
+    if err := c.ShouldBind(&input); err != nil {
+        // Validation failed - re-render form WITH user input
+        templates.SettingsForm(plugin, input, err).Render(...)
         return
     }
 
-    // Commit only after successful render
-    tx.Commit()
-    c.Data(200, "text/html", buf.Bytes())
+    // Save and show success
 }
-```
 
-**Warning signs:**
-- Duplicate key errors on retry
-- Partial data in database
-- Error UI but database shows "success"
-- Transaction logs don't match error logs
-
-**Phase to address:**
-Bootstrap phase - Establish transaction pattern before first write operation.
-
-**Confidence:** MEDIUM (Templ-specific, general transaction pattern is HIGH)
-
----
-
-### Pitfall 7: Asynq Worker Panics Lose Tasks Without Retry
-
-**What goes wrong:**
-Worker panics (nil pointer, type assertion). Asynq catches panic, marks task as failed. Default retry config may exhaust quickly (3 retries). Task lost. No alert. Silent failure.
-
-**Why it happens:**
-Go panics aren't exceptions. Asynq recovers but doesn't distinguish panic from error. Developers don't configure retry/dead queue monitoring. "It works in dev" (low volume, no edge cases).
-
-**How to avoid:**
-- Configure generous retry policy: `asynq.MaxRetry(10)` with exponential backoff
-- Monitor dead letter queue size (alert if >0)
-- Wrap handlers with panic recovery that logs stack traces
-- Send panics to error tracking (Sentry/Bugsnag)
-- Use `asynq.ErrorHandler` to distinguish panic from business error
-- Set up dead queue processor for manual intervention
-
-**Example:**
-```go
-srv := asynq.NewServer(
-    asynq.RedisClientOpt{Addr: redisAddr},
-    asynq.Config{
-        Concurrency: 10,
-        ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
-            // Log to error tracking
-            if isPanic(err) {
-                sentry.CaptureException(err)
-                // Alert on-call
+// In Templ template
+templ SettingsForm(plugin Plugin, input PluginSettingsInput, validationErr error) {
+    <form hx-post="/settings" hx-swap="outerHTML">
+        @for _, field := range plugin.Schema.Fields {
+            <input
+                name={field.Name}
+                value={input.Get(field.Name)} // Pre-fill with user input
+                class={validationErr.Has(field.Name) ? "error" : ""}
+            />
+            @if validationErr.Has(field.Name) {
+                <span class="error">{validationErr.Message(field.Name)}</span>
             }
-        }),
-        RetryDelayFunc: func(n int, err error, task *asynq.Task) time.Duration {
-            // Exponential backoff: 1m, 2m, 4m, 8m, ...
-            return time.Duration(1<<uint(n)) * time.Minute
-        },
-    },
-)
+        }
+    </form>
+}
 ```
 
 **Warning signs:**
-- Jobs mysteriously don't complete
-- No logs for some task executions
-- Dead queue grows
-- "It worked yesterday" without code changes
+- User complaints about "form keeps resetting"
+- High form abandonment rate
+- Support requests about "settings not saving"
+- Users re-typing same data multiple times
 
 **Phase to address:**
-Worker implementation phase - Configure before first production worker deployment.
+Phase 5 (Settings Page) — Design form flow before implementation. Test validation UX early.
 
-**Confidence:** HIGH (standard async job queue pattern)
+**Confidence:** MEDIUM-HIGH (HTMX-specific UX pattern)
 
 ---
 
-### Pitfall 8: HTMX Out-of-Band Swaps Accumulate Without Cleanup
+### Pitfall 6: Plugin YAML Loaded from Filesystem Doesn't Update Without Restart
 
 **What goes wrong:**
-Use `hx-swap-oob="true"` to update notifications/counters. Each response adds to DOM. After 50 status checks, 50 notification divs exist (all but one hidden). Memory leak. Browser slows. Inspector shows 1000s of duplicate IDs.
+Developer updates plugin YAML (adds new field, changes description). File saves. Settings page still shows old metadata. Restart app, now it shows new version. Users during deploy see inconsistent states. CI/CD deploys new pod, some requests hit old pod (old YAML), some hit new pod (new YAML).
 
 **Why it happens:**
-OOB swaps default to `innerHTML` which appends. Developers use OOB for "fire and forget" updates. Don't test long-running sessions.
+Plugin metadata loaded at startup into memory. File changes don't trigger reload. No hot reload mechanism. K8s rolling deploy means version skew during rollout window.
 
 **How to avoid:**
-- Always use `hx-swap-oob="outerHTML"` (replaces, not appends)
-- Use specific ID selectors: `id="notification-123"` not `id="notification"`
-- Add cleanup interval: `setInterval(() => cleanupOldNotifications(), 60000)`
-- Limit OOB updates per response (max 3)
-- Test with 100+ sequential updates
+- Accept that YAML updates require deploy (document this)
+- Load YAML fresh on each request in DEV mode only: `if cfg.Environment == "dev" { reloadYAML() }`
+- Add plugin metadata version to database, migrate on startup, reject stale versions
+- Use config hash in metadata table, detect changes on startup
+- For production: embrace immutability, YAML changes = new deploy
+- Kubernetes: use `maxSurge: 0, maxUnavailable: 1` for rolling updates to prevent version skew
+- Alternative: move plugin metadata to database, make it configurable via admin UI (future)
 
-**Example:**
+**Example startup pattern:**
+```go
+func LoadPlugins(db *gorm.DB, pluginDir string) error {
+    files, _ := os.ReadDir(pluginDir)
+
+    for _, file := range files {
+        metadata := parseYAML(file)
+
+        // Check if plugin exists in DB
+        var existing Plugin
+        result := db.Where("id = ?", metadata.ID).First(&existing)
+
+        if result.Error != nil {
+            // New plugin - insert
+            db.Create(&Plugin{Metadata: metadata})
+        } else if existing.MetadataHash != metadata.Hash() {
+            // Metadata changed - update
+            slog.Warn("Plugin metadata changed, updating", "plugin", metadata.ID)
+            db.Model(&existing).Update("metadata", metadata)
+        }
+    }
+}
+```
+
+**Warning signs:**
+- Settings page shows stale descriptions
+- Inconsistent behavior during deploys
+- "Restart fixes it" reports
+- Schema validation errors after YAML updates
+
+**Phase to address:**
+Phase 1 (Plugin Framework) — Document reload behavior. Add hash-based change detection.
+
+**Confidence:** MEDIUM (deployment/config management pattern)
+
+---
+
+### Pitfall 7: CrewAI Task Queue Separate from Asynq Creates Duplicate Queue Logic
+
+**What goes wrong:**
+Asynq handles Go task queue. CrewAI has its own task queue (Celery, or custom). Two queues. Two retry configs. Two monitoring dashboards. Two sets of dead letter queues. Task flow: Asynq task → HTTP call → CrewAI queue → Python task. Debugging which queue failed is nightmare. Monitoring shows incomplete picture.
+
+**Why it happens:**
+Each system brings its own queue. Python ecosystem defaults to Celery. Developers don't question it. "Two queues" seems normal until operations.
+
+**How to avoid:**
+- Use Asynq as SINGLE source of truth for all tasks
+- CrewAI tasks are enqueued by Asynq, not by separate Python queue
+- Pattern 1: Asynq calls Python HTTP endpoint synchronously (task blocks until Python completes)
+- Pattern 2: Asynq writes to Redis queue that Python polls (Redis list as simple queue)
+- Pattern 3: Python has no queue, runs as long-lived process that Go calls via HTTP/gRPC per task
+- Monitoring: Single dashboard (Asynqmon) shows all task states
+- Retry logic: Asynq retries, Python just returns success/failure
+
+**Recommended architecture:**
+```
+User request → Asynq enqueue → Asynq worker → HTTP POST to CrewAI service → CrewAI runs workflow → Return result → Asynq marks complete
+```
+
+NOT:
+```
+User request → Asynq → HTTP to Python → Python enqueues to Celery → Celery worker → ...
+```
+
+**Python service pattern (no queue):**
+```python
+# crewai_service.py - Flask/FastAPI endpoint
+@app.post("/workflow/news_digest")
+def run_news_digest(payload: NewsDigestInput):
+    crew = NewsDigestCrew(payload)
+    result = crew.kickoff()  # Runs synchronously
+    return {"status": "success", "content": result}
+```
+
+**Warning signs:**
+- Two different queue dashboards
+- Inconsistent retry behavior
+- "Task succeeded in one queue but failed in other"
+- Complex monitoring setup
+- Duplicate task tracking logic
+
+**Phase to address:**
+Phase 3 (CrewAI Integration) — Decide queue strategy before implementation. CRITICAL architecture decision.
+
+**Confidence:** HIGH (distributed systems anti-pattern)
+
+---
+
+### Pitfall 8: Account Tier Checks in Templates Create Logic Duplication
+
+**What goes wrong:**
+Free tier limited to 3 plugins. Logic added to settings page template: `@if user.Tier == "free" && enabledCount >= 3 { disable }`. Later added to API handler validation. Then added to cron scheduler. Three places. Developer updates limit to 5, changes template, forgets handler. Users exploit via API.
+
+**Why it happens:**
+Templates are "just display" but encode business logic. Easy to add `if` statements. No single source of truth. Copy-paste between template/handler/worker.
+
+**How to avoid:**
+- Business logic NEVER in templates
+- Create tier service: `tierService.CanEnablePlugin(user)` returns bool + reason
+- Call from handler, pass result to template: `templates.Settings(canEnable, reason)`
+- Template only shows/hides based on passed boolean, no logic
+- Tier limits in config or database, not hardcoded
+- Handler validation is authoritative, template is UX hint only
+- Always enforce server-side (API/handler), template just provides better UX
+
+**Example pattern:**
+```go
+// Service layer
+type TierService struct{}
+
+func (s *TierService) CanEnablePlugin(user User, currentCount int) (bool, string) {
+    limit := tierLimits[user.Tier].MaxPlugins
+    if currentCount >= limit {
+        return false, fmt.Sprintf("Free tier limited to %d plugins", limit)
+    }
+    return true, ""
+}
+
+// Handler
+func SettingsPage(c *gin.Context) {
+    user := getCurrentUser(c)
+    enabledCount := getEnabledPluginCount(user)
+
+    canEnable, reason := tierService.CanEnablePlugin(user, enabledCount)
+
+    templates.SettingsPage(user, canEnable, reason).Render(...)
+}
+
+// Template (no logic!)
+templ SettingsPage(user User, canEnable bool, reason string) {
+    @if !canEnable {
+        <div class="glass-alert glass-alert-error">{reason}</div>
+    }
+    <button disabled?={!canEnable}>Enable Plugin</button>
+}
+```
+
+**Warning signs:**
+- Same `if tier == ...` logic in 3+ files
+- Tier limit changes require multi-file edits
+- Security issues where template allows but API rejects (or vice versa)
+- Inconsistent error messages for same condition
+
+**Phase to address:**
+Phase 6 (Account Tiers) — Create tier service immediately. Enforce single source of truth.
+
+**Confidence:** HIGH (separation of concerns principle)
+
+---
+
+### Pitfall 9: Tile Dashboard Layout Breaks with Long Plugin Names or Missing Data
+
+**What goes wrong:**
+Plugin name "Daily International Technology & Business News Digest" wraps across 4 lines in tile. Tile height grows. Grid layout breaks. Or: plugin has no latest briefing. Template tries to render `briefing.Content`, nil pointer error. Entire dashboard blank.
+
+**Why it happens:**
+Fixed grid layout assumes uniform content. Real-world data has extreme variance. Templates don't handle nil gracefully. CSS doesn't constrain text overflow.
+
+**How to avoid:**
+- CSS: Limit plugin name to 2 lines with ellipsis: `line-clamp: 2; overflow: hidden; text-overflow: ellipsis`
+- Validate plugin names on save: max 50 characters
+- Tile grid: use `auto-fit` with `minmax()` for responsive flexibility
+- Template MUST handle missing briefing: `@if briefing != nil { } else { <EmptyState /> }`
+- Test with edge cases: no data, very long names, 1 plugin, 50 plugins
+- Set minimum tile height to prevent layout collapse
+
+**CSS pattern:**
+```css
+.plugin-tile-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 3em; /* 2 lines */
+}
+
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+```
+
+**Template pattern:**
 ```templ
-// BAD - accumulates
-<div id="notification" hx-swap-oob="true">New message</div>
-
-// GOOD - replaces
-<div id="notification" hx-swap-oob="outerHTML">New message</div>
-
-// BETTER - unique IDs
-<div id="notification-{timestamp}" hx-swap-oob="beforeend:#notification-container">
-    <span class="notification">New message</span>
-</div>
+templ PluginTile(plugin Plugin, briefing *Briefing) {
+    <div class="glass-card plugin-tile">
+        <h3 class="plugin-tile-title">{plugin.Name}</h3>
+        @if briefing != nil {
+            <p>{truncate(briefing.Content, 150)}</p>
+            <span class="badge">{briefing.Status}</span>
+        } else {
+            <div class="empty-state">No briefings yet</div>
+        }
+    </div>
+}
 ```
 
 **Warning signs:**
-- Browser DevTools shows duplicate IDs
-- Page gets slower after extended use
-- Memory usage grows linearly with requests
-- Multiple elements respond to same ID selector
+- Layout breaks on staging but not dev
+- Specific plugins cause page errors
+- Grid alignment issues
+- Users report "weird spacing"
+- Nil pointer panics in templates
 
 **Phase to address:**
-Bootstrap phase - Establish OOB pattern before notifications/polling.
+Phase 4 (Tile Dashboard) — Add constraints during implementation. Test with edge cases before merge.
 
-**Confidence:** MEDIUM (HTMX-specific behavior)
+**Confidence:** MEDIUM (frontend layout patterns)
 
 ---
 
-### Pitfall 9: GORM Preloading Doesn't Work with `Select()` on Joined Fields
+### Pitfall 10: Plugin Schema Type Coercion Fails on Form Submit
 
 **What goes wrong:**
-```go
-db.Preload("Tokens").Select("id, email").Find(&users)
-// Tokens is nil - Preload silently ignored
-```
-GORM can't preload associations when using `Select()` that excludes foreign keys. No error. No warning. Looks like data problem.
+Plugin schema defines `max_items: {type: "integer", default: 10}`. Settings form renders `<input type="number">`. User changes to "20", submits. Form data arrives as string `"20"`. JSON unmarshaling to schema struct fails (expects int). Validation error: "invalid type". User sees cryptic error.
 
 **Why it happens:**
-`Select()` limits SQL columns. Preload needs foreign keys. GORM doesn't validate compatibility. Common when optimizing queries.
+HTML forms send everything as strings. Schema defines types (int, bool, array). No automatic coercion. Developer forgets to convert before validation.
 
 **How to avoid:**
-- Always include foreign key columns in `Select()`: `Select("id, email, token_id")`
-- Use `Omit()` instead of `Select()` when excluding few fields
-- Test with empty database (preload failures often hidden by cached data)
-- Enable GORM logger in dev: `db.Debug()` to see actual queries
+- Parse form data with type coercion BEFORE schema validation
+- For each schema field, convert string to expected type:
+  - `integer` → `strconv.Atoi()`
+  - `boolean` → `value == "true" || value == "on"`
+  - `array` → split by delimiter or parse JSON
+- Use schema field type to drive conversion logic
+- Validation happens AFTER coercion
+- Return user-friendly errors: "Max items must be a number" not "type mismatch"
 
-**Example:**
+**Example coercion logic:**
 ```go
-// BAD - Tokens won't load
-db.Preload("Tokens").Select("id, email").Find(&users)
-
-// GOOD - Include foreign key
-db.Preload("Tokens").Select("id, email, token_id").Find(&users)
-
-// BETTER - Use Omit for large structs
-db.Preload("Tokens").Omit("large_binary_field").Find(&users)
-```
-
-**Warning signs:**
-- Associations unexpectedly nil
-- "Working" code breaks after "optimization"
-- Different results between `Find` and `First`
-- N+1 queries suddenly appear
-
-**Phase to address:**
-Database integration phase - Add linter rule, document in GORM patterns.
-
-**Confidence:** HIGH (documented GORM behavior)
-
----
-
-### Pitfall 10: Gin Context Not Propagated to Goroutines
-
-**What goes wrong:**
-```go
-func Handler(c *gin.Context) {
-    go func() {
-        c.JSON(200, data) // Panic or wrong response
-    }()
-}
-```
-Gin's context is request-scoped. Goroutine outlives request. Context methods panic. Common with background tasks triggered by requests.
-
-**Why it happens:**
-Go's goroutines are easy. Developers treat Gin context like Go's context. Asynq integration tempts inline task enqueuing.
-
-**How to avoid:**
-- Never use `*gin.Context` in goroutines
-- Extract data before goroutine: `userID := c.GetInt("user_id")`
-- Use `c.Request.Context()` for cancellation
-- Enqueue Asynq tasks, don't run inline
-- Add linter: `go vet` with custom check
-
-**Example:**
-```go
-// BAD
-func HandleWebhook(c *gin.Context) {
-    go processWebhook(c) // Context invalid
+func CoerceFormValue(value string, fieldType string) (interface{}, error) {
+    switch fieldType {
+    case "integer":
+        return strconv.Atoi(value)
+    case "number":
+        return strconv.ParseFloat(value, 64)
+    case "boolean":
+        return value == "true" || value == "on" || value == "1", nil
+    case "array":
+        if value == "" {
+            return []string{}, nil
+        }
+        return strings.Split(value, ","), nil
+    default:
+        return value, nil // string
+    }
 }
 
-// GOOD
-func HandleWebhook(c *gin.Context) {
-    var payload WebhookPayload
-    c.BindJSON(&payload)
+func ParseSettings(form url.Values, schema Schema) (map[string]interface{}, error) {
+    settings := make(map[string]interface{})
 
-    userID := c.GetInt("user_id")
-    ctx := c.Request.Context()
+    for _, field := range schema.Fields {
+        rawValue := form.Get(field.Name)
+        coerced, err := CoerceFormValue(rawValue, field.Type)
+        if err != nil {
+            return nil, fmt.Errorf("%s: %w", field.Label, err)
+        }
+        settings[field.Name] = coerced
+    }
 
-    go func(ctx context.Context, uid int, p WebhookPayload) {
-        // Use ctx for cancellation, uid for data
-        processWebhook(ctx, uid, p)
-    }(ctx, userID, payload)
-
-    c.JSON(202, gin.H{"status": "accepted"})
-}
-
-// BEST - Use Asynq
-func HandleWebhook(c *gin.Context) {
-    var payload WebhookPayload
-    c.BindJSON(&payload)
-
-    task, _ := tasks.NewWebhookTask(payload)
-    asynqClient.Enqueue(task)
-
-    c.JSON(202, gin.H{"status": "queued"})
+    return settings, nil
 }
 ```
 
 **Warning signs:**
-- Random panics under load
-- Context deadline exceeded errors
-- Multiple responses for single request
-- Race detector warnings
+- "Invalid type" errors on valid user input
+- Integer fields reject numbers
+- Boolean checkboxes don't work
+- Form values stored as strings in database
+- JavaScript required to make forms work
 
 **Phase to address:**
-Bootstrap phase - Enforce before first async operation.
+Phase 5 (Settings Page) — Implement coercion before first settings form. Add test cases for all schema types.
 
-**Confidence:** HIGH (documented Gin behavior)
+**Confidence:** MEDIUM-HIGH (form handling pattern)
 
 ---
 
@@ -484,13 +603,14 @@ Bootstrap phase - Enforce before first async operation.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Skip transaction boundaries | Faster development | Data inconsistency, hard to debug | Never - always use transactions for writes |
-| Direct SQL in handlers | Bypass GORM complexity | No type safety, SQL injection risk, hard to test | Complex queries GORM can't express - use sqlx |
-| Inline task processing (no Asynq) | Simpler code | Timeouts, no retry, blocks requests | Truly fast operations (<100ms) with no failure scenarios |
-| Store full OAuth token in cookie | Avoid database lookup | Security risk, size limits | Never - always use session ID |
-| HTMX without fallback URLs | Less code | Breaks without JS, bad SEO | Internal dashboards with JS guarantee |
-| Skip GORM migrations | Faster schema changes | No rollback, environment drift | Local dev only - never staging/prod |
-| Cache without TTL | Simpler logic | Stale data, memory leak | Immutable data (user IDs, config loaded once) |
+| No plugin schema versioning | Faster initial development | Can't evolve settings, breaking changes on updates | Never - add from start |
+| Hardcoded plugin list in Go | Simpler than YAML loading | Every new plugin requires code change + deploy | MVP only - 1-2 plugins |
+| CrewAI runs as subprocess not sidecar | Single container, simpler deploy | Process management issues, harder to scale | Local dev only, never production |
+| Settings validation only client-side | Better UX, less server load | Security risk, easily bypassed | Never - always validate server-side |
+| Tile dashboard uses client-side grid (Masonry.js) | Easier than CSS grid with dynamic content | Requires JavaScript, layout shift, not SSR-friendly | If CSS grid truly can't handle layout |
+| Store all plugin metadata in YAML | Easy to version in Git | Can't update without deploy | Good for v1.1 - move to DB in v1.2+ |
+| Per-user Asynq scheduler instances | Simple to implement | O(users) Redis memory, doesn't scale | Never - use database-backed scheduling |
+| Manual plugin registration (no auto-discovery) | Explicit, safer | Forgetting to register = invisible plugin | Small plugin count (<5), then add discovery |
 
 ---
 
@@ -498,14 +618,16 @@ Bootstrap phase - Enforce before first async operation.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| **GORM + HTMX** | Return JSON from endpoints | Use Templ templates, return HTML fragments |
-| **Asynq + OAuth** | Pass tokens in task payload | Pass user ID, fetch token in handler |
-| **Templ + Gin** | Call `c.JSON()` after `Render()` | Choose one response method - Templ OR JSON |
-| **HTMX + Gin middleware** | CORS blocks `HX-Request` header | Add `HX-*` headers to CORS allowed headers |
-| **GORM + Docker** | Use SQLite in dev, Postgres in prod | Match database engines (use Postgres in dev container) |
-| **Asynq + Docker Compose** | Share Redis for cache + queue | Separate Redis instances (different eviction policies) |
-| **Tailwind + Templ** | Classes don't apply | Run Tailwind build watching `.templ` files |
-| **DaisyUI + HTMX** | JS-based components break | Use CSS-only DaisyUI components or reinitialize after swap |
+| **Plugin YAML + GORM** | Load YAML every request | Load at startup, cache in memory, reload on deploy |
+| **CrewAI + Asynq** | Two separate task queues | Asynq enqueues, calls CrewAI HTTP endpoint synchronously |
+| **Templ + Dynamic Schema** | Loop in template with DB queries | Pre-fetch all data in handler, pass to template |
+| **HTMX + Form Validation** | Replace entire form on error | Re-render with user's input pre-filled |
+| **Tile Grid + Missing Data** | Assume all tiles have data | Handle nil briefings gracefully in template |
+| **Schema Types + HTML Forms** | Expect typed data from form | Coerce string form data to schema types |
+| **Per-User Schedule + Redis** | Create Asynq schedule per user | Database table + single cron that queries due schedules |
+| **Plugin Settings + User Model** | Store as TEXT in user table | Separate `user_plugin_settings` table with JSONB |
+| **Account Tier + Template Logic** | Check tier in template | Tier service in handler, pass boolean to template |
+| **Python Subprocess + K8s** | Spawn subprocess, hope it dies with parent | Use shared process namespace or proper sidecar pattern |
 
 ---
 
@@ -513,13 +635,13 @@ Bootstrap phase - Enforce before first async operation.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| GORM N+1 queries | Slow with more data | Use `Preload()`, monitor query count | >100 records |
-| HTMX polling storm | CPU spikes, connection pool exhaustion | Implement backoff, use cache | >50 concurrent users |
-| Asynq task backlog | Growing Redis memory, delayed jobs | Tune worker concurrency, add workers | >1000 jobs/hour |
-| Templ compilation on request | First request slow after deploy | Pre-compile templates at build | Every deploy |
-| OAuth token encryption overhead | Slow auth checks | Cache decrypted tokens in Redis (short TTL) | >100 requests/second |
-| Missing database indexes | All queries slow | Index foreign keys and WHERE clauses | >10K rows |
-| HTMX responses without streaming | Memory spikes on large pages | Use `Transfer-Encoding: chunked`, stream templates | Pages >100KB |
+| N+1 latest briefing queries | Dashboard slow with many plugins | Single query with window function or subquery | >5 plugins per user |
+| Plugin YAML loaded per request | Every request reads filesystem | Load at startup, cache in memory | Any production traffic |
+| CrewAI HTTP calls without timeout | Requests hang forever | Set timeout: `http.Client{Timeout: 60*time.Second}` | First external API slowdown |
+| All plugins run serially | Daily cron takes 5min × 8 plugins = 40min | Enqueue plugin tasks in parallel, workers process concurrently | >3 plugins per user |
+| Settings schema validation on every render | Template rendering slow | Validate on save only, render assumes valid | Complex schemas (>10 fields) |
+| Tile dashboard fetches all briefing content | Large page size, slow load | Fetch metadata only, lazy-load content on expand | >20 tiles |
+| Per-user scheduler with polling | CPU spikes every minute | Use database index on `next_run_at`, efficient query | >1000 users |
 
 ---
 
@@ -527,29 +649,58 @@ Bootstrap phase - Enforce before first async operation.
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| **OAuth state not validated** | CSRF on login flow | Always verify state parameter matches session |
-| **Encrypted tokens use weak cipher** | Token compromise | Use AES-256-GCM, rotate keys, use GORM hook carefully |
-| **HTMX endpoints skip CSRF** | CSRF attacks on mutations | Treat HTMX POST/DELETE like forms - require CSRF token |
-| **Asynq tasks logged with payloads** | Sensitive data in logs | Redact payloads in logs, only log task type + ID |
-| **Templ renders user input unescaped** | XSS attacks | Use Templ's built-in escaping, never `template.HTML()` user data |
-| **Database credentials in environment** | Exposed in process list, logs | Use secret management (Kubernetes secrets, Vault) |
-| **Redis has no password** | Unauthorized queue access | Enable Redis AUTH, use TLS |
-| **Session cookies without SameSite** | CSRF via cookie | Set `SameSite=Lax` minimum, `Secure=true` in production |
+| **Plugin YAML path traversal** | User provides `../../../../etc/passwd` as plugin ID | Validate plugin ID against allowed characters (alphanumeric + dash only) |
+| **Settings schema allows code execution** | Schema type "eval" or "function" enables RCE | Restrict schema types to primitives: string, integer, boolean, array |
+| **No tier enforcement server-side** | Free users bypass limits via API | Always enforce tier checks in handler, template is UX only |
+| **CrewAI API key in task payload** | API key logged in Asynq/Redis | Store API keys encrypted in database, fetch in task handler |
+| **Plugin-to-plugin data access** | One plugin reads another's settings | Scope settings queries by user ID + plugin ID |
+| **User can set other user's schedule** | Authorization bypass | Check `user_id` from session matches schedule's owner |
+| **Python code injection via settings** | User provides `"; os.system('rm -rf /')` in setting | Escape/validate all settings before passing to Python |
+| **Tile dashboard exposes all users' data** | Missing user filter on briefings query | ALWAYS filter by `user_id` from session |
+
+---
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| **No loading state on manual trigger** | User clicks "Generate Now", nothing happens for 30s | Show spinner + "Generating..." immediately, poll for status |
+| **Tile shows "No briefing" vs "Loading"** | User thinks plugin broken, actually generating | Distinguish states: loading (spinner), empty (no data), error (red badge) |
+| **Settings form loses data on error** | User re-fills 8 fields after typo | Re-render form with submitted values pre-filled |
+| **Plugin enable/disable requires page reload** | Clunky UX, feels broken | Use HTMX swap to update tile in-place |
+| **No feedback when schedule changes** | User unsure if save worked | Show success toast or update tile with "Next run: tomorrow 7am" |
+| **Account tier limit error after 5min of settings config** | User rage quits | Check tier BEFORE showing settings form, disable upgrade-required plugins |
+| **Tile dashboard has no empty state** | Blank page for new users | Show "Enable your first plugin" with CTA |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- **OAuth Integration:** Often missing token refresh handling — verify refresh flow works when access token expires
-- **HTMX Forms:** Often missing validation feedback — verify error states render correctly without full page reload
-- **Asynq Workers:** Often missing dead letter queue monitoring — verify failed tasks are tracked and alertable
-- **GORM Migrations:** Often missing rollback migrations — verify `down` migrations work for last 3 changes
-- **Templ Components:** Often missing error states — verify templates handle nil/empty data gracefully
-- **Docker Build:** Often missing multi-stage optimization — verify production image is <100MB
-- **Database Indexes:** Often missing composite indexes — verify `EXPLAIN` shows index usage for common queries
-- **HTMX Polling:** Often missing stop condition — verify polling stops after success/max attempts
-- **Gin Middleware:** Often wrong order — verify auth runs before rate limiting, logging runs first
-- **OAuth Encryption:** Often missing key rotation — verify app survives encryption key change
+- [ ] **Plugin YAML Schema:** Often missing default values — verify every field has a default for graceful degradation
+- [ ] **CrewAI Process Management:** Often missing signal handlers — verify Python process dies when Go restarts
+- [ ] **Per-User Scheduling:** Often missing timezone handling — verify schedule respects user's timezone, not server's
+- [ ] **Settings Form Validation:** Often missing type coercion — verify integer/boolean fields work, not just strings
+- [ ] **Tile Dashboard:** Often missing nil checks — verify empty briefing state renders without errors
+- [ ] **Account Tier Checks:** Often only in template — verify enforcement in API handlers, not just UI
+- [ ] **Plugin Metadata Changes:** Often missing migration path — verify schema version updates don't break existing settings
+- [ ] **Asynq Task Uniqueness:** Often missing for manual triggers — verify duplicate "Generate Now" clicks don't create duplicate tasks
+- [ ] **HTMX Polling Cleanup:** Often missing stop condition — verify polling stops when tile shows completed briefing
+- [ ] **Python Virtualenv:** Often missing in Docker — verify CrewAI runs in venv, not system Python
+
+---
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Schema version mismatch breaks settings | MEDIUM | 1. Add `schema_version` to DB, 2. Write migration for old settings, 3. Deploy with version check |
+| Orphaned Python processes | LOW | 1. `pkill -f crewai`, 2. Add signal handlers, 3. Redeploy |
+| O(users) scheduler entries | HIGH | 1. Stop scheduler, 2. Clear Redis scheduled tasks, 3. Implement DB-backed scheduling, 4. Migrate cron configs to DB, 5. Redeploy |
+| N+1 queries on dashboard | LOW | 1. Add query to pre-fetch latest briefings, 2. Pass map to template, 3. Remove template queries, 4. Deploy |
+| Duplicate task queues (Asynq + Celery) | HIGH | 1. Decide on single queue, 2. Refactor Python service to HTTP endpoint, 3. Update Asynq tasks to call Python, 4. Remove Celery, 5. Redeploy both services |
+| Settings logic in templates | MEDIUM | 1. Extract tier service, 2. Move checks to handlers, 3. Update templates to use booleans, 4. Add tests, 5. Deploy |
+| Form data type mismatch | LOW | 1. Add coercion function, 2. Call before validation, 3. Add test cases, 4. Deploy |
+| Tile layout breaks | LOW | 1. Add CSS constraints (line-clamp, min-height), 2. Handle nil in templates, 3. Test with edge cases, 4. Deploy |
 
 ---
 
@@ -557,44 +708,45 @@ Bootstrap phase - Enforce before first async operation.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| GORM Hooks N+1 | Bootstrap | Query count middleware shows <5 queries/request |
-| HTMX Polling Thundering Herd | Bootstrap | Load test with 50 users shows backoff working |
-| Asynq Sensitive Data | Bootstrap | Grep codebase for OAuth/token in task structs (none) |
-| Templ Layout Duplication | Bootstrap | Count layout template imports (should be 1 base) |
-| OAuth Token Refresh Race | Authentication Phase | Concurrent login test with 10 tabs succeeds |
-| Missing Transaction Rollback | Bootstrap | Integration test forces template error, verifies rollback |
-| Asynq Panic Loses Tasks | Worker Phase | Dead queue dashboard shows retry policy working |
-| HTMX OOB Accumulation | Bootstrap | 100 sequential updates don't leak DOM elements |
-| GORM Preload + Select | Database Phase | Test suite includes preload assertions |
-| Gin Context in Goroutines | Bootstrap | Race detector enabled in CI, no warnings |
+| Schema version mismatch | Phase 1 (Plugin Framework) | Settings page loads after YAML update without errors |
+| Orphaned Python processes | Phase 3 (CrewAI Integration) | Kill Go process, verify Python dies within 5s |
+| O(users) scheduler entries | Phase 2 (Per-User Scheduler) | Load test with 1000 users shows <100 Redis keys |
+| Dashboard N+1 queries | Phase 4 (Tile Dashboard) | Query count middleware shows <5 queries regardless of plugin count |
+| Form state loss on validation | Phase 5 (Settings Page) | Submit invalid form, verify all valid fields preserve values |
+| YAML reload issues | Phase 1 (Plugin Framework) | Update YAML, verify old pods serve old metadata until new pods ready |
+| Duplicate task queues | Phase 3 (CrewAI Integration) | Single Asynqmon dashboard shows all tasks, no Celery |
+| Tier logic duplication | Phase 6 (Account Tiers) | Grep codebase for tier checks, find only in service layer |
+| Type coercion failures | Phase 5 (Settings Page) | Test suite includes integer, boolean, array fields |
+| Tile layout breaks | Phase 4 (Tile Dashboard) | Test with 0 plugins, 1 plugin, 50 plugins, long names, nil briefings |
 
 ---
 
 ## Sources
 
-- **GORM Documentation:** https://gorm.io/docs/ (hooks, transactions, preloading)
-- **HTMX Documentation:** https://htmx.org/docs/ (polling, OOB swaps)
-- **Asynq Documentation:** https://github.com/hibiken/asynq/wiki (task serialization, retries)
-- **Gin Documentation:** https://gin-gonic.com/docs/ (context handling, middleware)
-- **Templ Documentation:** https://templ.guide/ (component patterns)
-- **Training Data:** Go best practices, OAuth security patterns, database transaction management
+- **Asynq Documentation:** https://github.com/hibiken/asynq (scheduling, uniqueness, retries)
+- **GORM Documentation:** https://gorm.io/docs/ (queries, window functions, N+1 prevention)
+- **HTMX Documentation:** https://htmx.org/docs/ (form handling, swaps, OOB)
+- **Templ Best Practices:** https://templ.guide/ (component patterns, nil handling)
+- **CrewAI Documentation:** https://docs.crewai.com/ (workflow patterns)
+- **Go Subprocess Management:** https://pkg.go.dev/os/exec (process groups, signal handling)
+- **Training Data:** Plugin architecture patterns, schema versioning, process management, form handling, distributed task queues
 
 **Confidence Assessment:**
-- GORM pitfalls: HIGH (well-documented behavior)
-- HTMX pitfalls: MEDIUM-HIGH (documented, some inference on performance)
-- Asynq pitfalls: HIGH (standard queue patterns)
-- Templ pitfalls: MEDIUM (newer tool, less production data)
-- OAuth pitfalls: HIGH (standard security patterns)
-- Integration patterns: MEDIUM (combination-specific, some inference)
+- Plugin framework pitfalls: MEDIUM (schema versioning is common, plugin-specific is newer pattern)
+- CrewAI integration: MEDIUM (subprocess management is HIGH, CrewAI-specific patterns MEDIUM due to newer tool)
+- Per-user scheduling: HIGH (well-established scalability anti-patterns)
+- Dynamic settings forms: MEDIUM-HIGH (form handling HIGH, schema-driven is MEDIUM)
+- Tile dashboard: MEDIUM (layout patterns HIGH, integration-specific MEDIUM)
+- Account tiers: HIGH (separation of concerns is fundamental)
 
 **Limitations:**
 - Unable to verify with current 2026 sources (WebSearch unavailable)
-- Templ confidence lower due to less community maturity vs established tools
-- Performance numbers are estimates based on typical scenarios
-- Security recommendations based on general OAuth/web security principles
+- CrewAI production patterns less established (newer tool)
+- Plugin framework confidence lower due to application-specific patterns
+- Python-Go integration patterns based on general subprocess management, not CrewAI-specific production experience
 
 ---
 
-*Pitfalls research for: Go web application with Templ + HTMX + GORM + Asynq + OAuth*
-*Researched: 2026-02-10*
-*Confidence: MEDIUM overall (HIGH for established patterns, MEDIUM for tool-specific combinations)*
+*Pitfalls research for: Adding plugin architecture + CrewAI sidecar + per-user scheduling to Go/Gin/Templ/HTMX/GORM/Asynq web app*
+*Researched: 2026-02-13*
+*Confidence: MEDIUM overall (HIGH for established patterns like N+1 and subprocess management, MEDIUM for newer integration patterns like CrewAI and schema-driven settings)*

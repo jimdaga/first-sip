@@ -1,328 +1,367 @@
 # Project Research Summary
 
-**Project:** First Sip - Daily Briefing Application
-**Domain:** Go Web Application with Server-Side Rendering + Background Jobs (Daily Briefing/Personal Dashboard)
-**Researched:** 2026-02-10
+**Project:** First Sip v1.1 Plugin Architecture
+**Domain:** Plugin-Based Personal Briefing System (Go Web App Extension)
+**Researched:** 2026-02-13
 **Confidence:** MEDIUM-HIGH
 
 ## Executive Summary
 
-First Sip is a daily briefing application that aggregates personalized content (news, weather, work updates) using n8n workflows and presents them through a server-rendered web interface. Based on research across modern Go web patterns, successful briefing applications, and production pitfalls, the recommended approach is a Gin + Templ + HTMX frontend with Asynq background workers orchestrating n8n workflows, backed by PostgreSQL for persistence and Redis for session management and job queuing.
+The v1.1 plugin architecture milestone transforms First Sip from a monolithic briefing generator into a modular, user-configurable briefing platform. Research reveals that successful plugin systems prioritize three principles: strong isolation boundaries (each plugin owns its data and schedule), metadata-driven UI generation (JSON Schema reduces code duplication), and graceful degradation (one plugin's failure doesn't break the system). The recommended approach combines Go's plugin framework with a Python CrewAI sidecar for AI workflows, leveraging existing Asynq infrastructure for per-user scheduling.
 
-The core value proposition centers on n8n workflow customization as a differentiator—allowing power users to build custom data sources—while maintaining table stakes features like OAuth authentication, scheduled generation, and mobile-responsive UI. The architecture follows standard Go web patterns with clear handler-service-repository boundaries, Templ component composition for maintainable templates, and HTMX for interactive polling without complex JavaScript. Critical to success is establishing proper transaction boundaries early, implementing HTMX polling with backoff to avoid thundering herd problems, and never passing sensitive data through Asynq task payloads.
+The critical architectural shift is from global cron-based briefing generation to per-minute schedule evaluation with database-backed user-plugin configurations. This enables per-user timezones, per-plugin schedules, and account tier enforcement. The CrewAI sidecar runs as a Kubernetes sidecar container (not a separate service) to avoid network latency and simplify deployment. Plugin metadata lives in YAML files, loaded at startup and cached in memory, with a clear migration path for schema evolution.
 
-Key risks include GORM N+1 query explosions (mitigate with eager loading and query monitoring), OAuth token refresh race conditions (mitigate with distributed locks), and HTMX polling storms under concurrent load (mitigate with exponential backoff and Redis caching). The recommended phase structure prioritizes core authentication and briefing display first, followed by real n8n integration and source customization, with advanced features like email delivery and cross-source synthesis deferred to later phases after validating core value proposition.
+Key risks center on complexity management and scalability. The scheduler pattern must avoid O(users × plugins) Redis entries by using database queries with Redis caching for last-run times. The plugin metadata schema versioning system must be implemented immediately to prevent breaking changes when settings evolve. CrewAI process management requires proper signal handling to prevent orphaned Python processes on Go service restarts. These risks are mitigable with careful architecture from day one, rather than refactoring later at higher cost.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The recommended stack leverages Go 1.23+ with Gin for HTTP routing, Templ for type-safe HTML templating, and HTMX for client-side interactivity. GORM provides ORM capabilities with PostgreSQL, while Asynq handles background job processing via Redis. Authentication uses Goth for multi-provider OAuth with gorilla/sessions for session management. The frontend uses Tailwind CSS + DaisyUI for styling.
+**New dependencies for plugin system (minimal additions):**
+
+The existing Go/Gin/GORM/Asynq/Templ stack already provides most infrastructure needed. Only two new libraries required: `kaptinlin/jsonschema` (Google's official JSON Schema validator for Go, announced January 2026) for dynamic settings validation, and `goccy/go-yaml` for plugin metadata parsing (already in go.mod as indirect dependency). The CrewAI Python sidecar adds FastAPI + CrewAI dependencies but runs as a separate container.
 
 **Core technologies:**
-- **Gin v1.10.0+**: HTTP router and middleware — battle-tested, excellent middleware ecosystem, 15x faster routing than stdlib
-- **Templ v0.2.747+**: Type-safe HTML templating — compile-time type safety, generates Go code, better DX than html/template
-- **HTMX v2.0.0+**: Client-side interactivity — hypermedia-driven, minimal JS, perfect for server-rendered apps
-- **GORM v1.25.11+**: ORM for Postgres — most popular Go ORM, excellent Postgres support, hooks system, migration support
-- **Asynq v0.24.1+**: Background job queue — Redis-backed, built-in retries, scheduled tasks, monitoring UI
-- **Goth v1.80.0+**: Multi-provider OAuth — supports 40+ providers including Google, simple API
-- **PostgreSQL 16+**: Primary database — rock-solid ACID compliance, excellent GORM support, JSON types
-- **Redis 7+**: Job queue and cache — required for Asynq, can also cache session data and status polling results
-- **Tailwind CSS v3.4+ + DaisyUI v4.12+**: Utility-first CSS with component library — industry standard, pre-built components
+- **goccy/go-yaml v1.18.0+**: Plugin metadata parsing — already in go.mod, superior to unmaintained yaml.v3, passes 355+ YAML test suite cases
+- **kaptinlin/jsonschema v0.6.11+**: Dynamic settings validation — Google's official JSON Schema package, preserves extension fields (x-component) for UI hints, full Draft 2020-12 compliance
+- **Asynq v0.26.0 (existing)**: Per-user scheduling — extend with database-backed schedule evaluation, no additional scheduler needed (avoid go-co-op/gocron for now)
+- **CrewAI (Python sidecar)**: AI workflow orchestration — multi-agent briefing generation, runs in sidecar container, HTTP communication with Go
+- **CSS Grid (native)**: Tile-based dashboard — no JavaScript masonry libraries needed, auto-fit with minmax() for responsive layouts
 
-**Critical gotchas:**
-- Templ requires build step (`templ generate`) before `go build`
-- HTMX v2 has breaking changes from v1 (hx-boost behavior, WebSocket syntax)
-- GORM AutoMigrate dangerous in production—use explicit migrations
-- Never use pgx driver with GORM (compatibility issues)—use lib/pq
-- Asynq task payloads must be JSON-serializable
+**What NOT to add:**
+- Additional task queue (Celery) — Asynq is single source of truth
+- JavaScript form libraries — Templ generates server-side from JSON Schema
+- Separate cron daemon — Asynq handles all scheduling
+- Plugin marketplace infrastructure — pre-installed plugins only for v1.1
 
 ### Expected Features
 
-Daily briefing applications have clear table stakes features that users expect, several competitive differentiators, and anti-features that appear valuable but create problems. The Bootstrap phase should focus on proving core value with mock data before investing in complex customization features.
-
 **Must have (table stakes):**
-- **Google OAuth login** — users won't create another password (already in codebase)
-- **Scheduled daily generation** — set-and-forget automation is core value
-- **Mobile-responsive UI** — 60%+ of users consume on mobile
-- **Section-based organization** — weather/news/calendar distinct for scanning
-- **Graceful source failures** — one API down should not break entire briefing
-- **Read/unread tracking** — don't show stale content
+- **Plugin enable/disable** — users expect granular control over what runs
+- **Plugin directory** — discoverable list of available plugins with descriptions
+- **Per-plugin settings** — each plugin has different configuration needs (API keys, location, preferences)
+- **Per-user schedules** — timezone-aware, per-plugin cron expressions (not global 6 AM)
+- **Tile-based dashboard** — scannable grid showing all enabled plugins' latest briefings
+- **Dynamic settings forms** — auto-generated from JSON Schema (no manual form coding per plugin)
+- **Plugin execution status** — clear visibility into last run, next run, errors
 
-**Should have (competitive advantage):**
-- **n8n workflow customization** — power users build their own sources (huge differentiator if done well)
-- **AI summarization quality** — better summaries = more value than competitors
-- **Briefing history/versioning** — "What did I see last Tuesday?" competes with email delivery
-- **Custom source integration** — "Add my GitHub notifications" via n8n
+**Should have (competitive advantages):**
+- **Code-based plugins** — version controlled workflows (differentiates from GUI-only tools like n8n)
+- **CrewAI multi-agent workflows** — best-in-class AI orchestration (differentiates from single-LLM tools)
+- **JSON Schema-driven UI** — schema serves as validation + UI generation + documentation (reduces maintenance)
+- **Transparent scheduling** — users see exact cron expression, can customize per plugin
+- **Account tier scaffolding** — limit plugin count by tier (free vs pro), enforce server-side
 
-**Defer to v2+ (avoid scope creep):**
-- **Cross-source synthesis** — "3 sources mention Ukraine" (complex, validate if summaries matter first)
-- **Contextual follow-up chat** — interactive AI on briefing items (major scope, high LLM costs)
-- **Team dashboards** — shared organizational briefings (multi-tenant complexity)
-- **Voice briefing** — TTS audio version (different UX paradigm)
-
-**Anti-features to avoid:**
-- **Real-time updates** — defeats batching purpose, creates notification spam
-- **Social sharing** — privacy nightmare, spam vector
-- **Infinite customization** — paradox of choice, 80% never customize
-- **Push notifications** — defeats batching, becomes noise
-- **Gamification** — toxic engagement patterns, briefing should reduce anxiety
+**Defer (v2+):**
+- **Plugin marketplace** — external plugins require security review, code signing, sandbox
+- **Multi-agent memory** — CrewAI memory backend for context across briefings (high complexity)
+- **Plugin dependencies** — one plugin using another's output (coupling nightmare)
+- **Real-time plugin execution** — on-demand triggers defeat batching benefits
+- **Visual workflow builder** — CrewAI is code-first, GUI abstraction loses power
 
 ### Architecture Approach
 
-The architecture separates concerns into distinct processes: Gin HTTP server (stateless, horizontally scalable) and Asynq workers (CPU-bound, vertically scalable). HTMX handles client-side polling and DOM updates without complex JavaScript. Templ components compose hierarchically (layout + page + partials) with conditional rendering for HTMX requests versus full page loads. Background jobs communicate with external n8n workflows via HTTP webhooks, aggregate responses, and store results in PostgreSQL. Redis serves dual purpose as session store and job queue.
+The plugin architecture extends existing packages with minimal new surface area. Core additions: `/internal/plugins` for plugin lifecycle management, `/internal/scheduling` for per-user schedule evaluation, `/internal/settings` for plugin configuration UI, and `/plugins` directory (outside Go code) for plugin definitions. The CrewAI sidecar runs as a FastAPI service in the same Kubernetes pod as the worker, communicating via HTTP over localhost to avoid network latency.
 
 **Major components:**
-1. **Gin HTTP Server** — routes requests, middleware pipeline (logging, recovery, CORS, sessions, auth), renders Templ components, enqueues Asynq tasks
-2. **Asynq Worker Process** — executes background jobs (briefing generation, email sending, cleanup), calls n8n webhooks, stores results in Postgres
-3. **Templ Templates** — type-safe HTML generation with component composition, compile-time checked
-4. **GORM Models** — database ORM shared by server and worker processes
-5. **Goth Auth Service** — OAuth flow management with Google, session storage in Redis
-6. **n8n External Service** — workflow orchestration engine, called via HTTP webhooks from workers
+1. **Plugin Manager** (`/internal/plugins`) — Discovers plugins from `/plugins` directory at startup, parses YAML metadata, validates JSON schemas, maintains in-memory registry, provides HTTP client for CrewAI sidecar
+2. **Scheduler** (`/internal/scheduling`) — Runs per-minute evaluation (not per-user cron), queries database for due user-plugin pairs, respects timezones, enqueues Asynq tasks, uses Redis cache for last-run times to reduce DB load
+3. **Plugin Executor** (worker task handler) — Dequeues plugin execution tasks, calls CrewAI sidecar HTTP endpoint, creates Briefing records, handles failures with PluginRun tracking, updates next-run timestamps
+4. **CrewAI Sidecar** (Python/FastAPI) — Loads plugin agents/tasks dynamically, executes workflows synchronously, returns JSON results, no separate task queue (Asynq is authoritative)
+5. **Tile Dashboard** (Templ templates) — CSS Grid layout, pre-fetches latest briefing per plugin (avoids N+1), handles nil briefings gracefully, HTMX updates in-place
+6. **Settings Service** (`/internal/settings`) — Generates forms from JSON Schema, validates with kaptinlin/jsonschema, coerces form strings to schema types, handles schema versioning
 
-**Critical patterns:**
-- **Handler → Service → Repository** — separate HTTP layer, business logic, data access for testability
-- **Templ component composition** — nested layout(header, content, footer) with partial rendering for HTMX
-- **HTMX partial rendering** — check HX-Request header, return fragments vs full pages
-- **Asynq task serialization** — JSON payloads, only pass IDs (never sensitive data)
-- **Transaction boundaries** — render to buffer first, commit only after successful template render
+**Critical architectural decisions:**
+- **Database-backed scheduling** (NOT per-user Asynq cron) — avoids O(users × plugins) Redis memory issue
+- **Sidecar pattern** (NOT separate CrewAI service) — localhost communication, scales with workers, simplified deployment
+- **Single task queue** (Asynq only, not Asynq + Celery) — reduces operational complexity, single monitoring dashboard
+- **Schema versioning from day one** — prevents breaking changes when plugin settings evolve
 
 ### Critical Pitfalls
 
-Research identified 10 critical pitfalls specific to this stack combination. The top 5 that must be addressed in Bootstrap phase:
+1. **Plugin metadata YAML vs runtime state mismatch** — Developer adds field to YAML schema, user's saved settings lack new field, template crashes. **Prevention:** Implement schema versioning immediately (version field in YAML + DB), write migration functions, templates handle missing fields with defaults, never remove schema fields (only deprecate).
 
-1. **GORM Hooks Causing N+1 Queries** — encryption/decryption hooks in AfterFind trigger per-record, multiplying database queries exponentially. Avoid by keeping hooks to pure computation only, never query database inside hooks, monitor query count with middleware that alerts if >5 queries per request.
+2. **CrewAI Python process orphaned on Go restart** — Go crashes, Python sidecar continues running, new Go spawns another Python, duplicate tasks + memory leak. **Prevention:** Use shared process namespace in K8s, register signal handlers to kill subprocess, track PID and clean stale processes on startup, set Setpgid for process group cleanup.
 
-2. **HTMX Polling Without Backoff Creates Thundering Herd** — `hx-trigger="every 2s"` with 100 concurrent users = 50 requests/second. Avoid by returning HX-Trigger headers to stop polling on completion, implement exponential backoff (1s, 2s, 5s, 10s), add Redis cache layer for status endpoints.
+3. **Per-user Asynq scheduler creates O(users × plugins) Redis entries** — 100 users × 10 plugins = 1000 scheduler entries, Redis OOM at scale. **Prevention:** Single per-minute cron task queries database for due schedules (not per-user Asynq cron), store schedule config in Postgres `user_plugin_configs` table with `next_run_at` index.
 
-3. **Asynq Task Serialization Exposes Sensitive Data** — task payloads stored as JSON in Redis, passing OAuth tokens directly exposes them. Avoid by only passing user IDs in payloads, fetch sensitive data inside task handlers, enable Redis encryption at rest, set task retention policies.
+4. **Tile dashboard N+1 query for latest briefing per plugin** — Dashboard loads, queries each plugin's latest briefing separately = 8 plugins = 9 queries. **Prevention:** Single query with window function (`SELECT DISTINCT ON (plugin_id)`), pre-fetch all briefings in handler, pass map to template.
 
-4. **Templ Component Boundaries Cause Layout Duplication** — HTMX needs fragments but developers duplicate layout code per endpoint. Avoid by establishing layout pattern early (layout + content), detect HX-Request header to return fragments vs full pages, create RenderWithLayout helper.
-
-5. **OAuth Token Refresh Race Conditions** — multiple tabs trigger simultaneous refresh, provider invalidates token after first request. Avoid by using Redis distributed lock for refresh operations, implement single-flight pattern with golang.org/x/sync/singleflight, add jitter to expiry checks.
+5. **HTMX form loses client state on validation error** — User fills 8 fields, submits, validation fails, HTMX replaces form, all input lost. **Prevention:** Bind ALL form fields on server (including invalid ones), re-render form with user's input pre-filled, display field-level errors inline.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure emphasizes validating core value proposition before investing in complex customization features. Phase ordering follows dependency chains identified in architecture research and avoids pitfalls flagged in security/performance analysis.
+Based on research, suggested phase structure prioritizes foundation-first with early validation via working plugin:
 
-### Phase 1: Authentication & User Management
-**Rationale:** Foundation for all personalized features. OAuth integration is table stakes and gates access to rest of application. Must establish security patterns early (session management, CSRF protection, token storage).
-
-**Delivers:**
-- Google OAuth login/logout flow
-- Session management with Redis backend
-- User model and database schema
-- Auth middleware for protected routes
-
-**Addresses:**
-- OAuth authentication (table stakes from FEATURES.md)
-- User identity for personalization
-
-**Avoids:**
-- OAuth token refresh race conditions (Critical Pitfall #5) — implement distributed locking from start
-- Storing tokens insecurely (Security Mistakes) — establish encrypted token pattern
-
-**Research flags:** Standard OAuth patterns, unlikely to need phase-specific research
-
-### Phase 2: Core Briefing Display (Mock Data)
-**Rationale:** Prove UI/UX value before investing in backend complexity. Establish Templ component patterns and HTMX interaction patterns with mock data. Validates mobile-responsive design and section organization.
+### Phase 1: Plugin Framework Foundation
+**Rationale:** Database schema and plugin metadata loading must come first — everything depends on these models. Validating the end-to-end flow early with a single working plugin reduces risk before building horizontal features.
 
 **Delivers:**
-- Briefing display page with section layout (news, weather, placeholder)
-- Templ component library (layout, header, footer, briefing card)
-- HTMX status polling mechanism
-- Mock briefing generation (returns hardcoded data)
+- Database migrations (Plugin, UserPluginConfig, PluginRun, AccountTier models)
+- Plugin metadata YAML parsing with schema versioning
+- Plugin discovery and registration at startup
+- Single example plugin (weather or news briefing) working end-to-end
 
-**Addresses:**
-- Mobile-responsive UI (table stakes)
-- Section-based organization (table stakes)
-- Fast load time (table stakes)
-- Status polling UI (already planned)
+**Addresses Features:**
+- Plugin directory (basic list from database)
+- Plugin metadata storage (foundation for settings)
 
-**Avoids:**
-- Templ layout duplication (Critical Pitfall #4) — establish component composition pattern early
-- HTMX polling without backoff (Critical Pitfall #2) — implement exponential backoff from start
-- HTMX OOB swaps accumulation (Pitfall #8) — use outerHTML for replacements
+**Avoids Pitfalls:**
+- Schema versioning from day one (prevents mismatch issues)
+- Plugin metadata validation prevents bad YAML
 
-**Research flags:** Standard patterns, unlikely to need research. Templ + HTMX integration patterns are well-documented.
+**Research Needed:** LOW — GORM migrations and YAML parsing well-documented
 
-### Phase 3: Background Job Infrastructure
-**Rationale:** Required before real briefing generation. Establishes Asynq patterns, task serialization, error handling, and monitoring. Must get this right before connecting to external services.
+---
 
-**Delivers:**
-- Asynq worker process setup
-- Task handler registration and serialization patterns
-- Retry configuration and dead letter queue
-- Basic job status tracking in Postgres
-- Asynqmon monitoring UI (optional)
-
-**Addresses:**
-- Scheduled daily generation (table stakes) — cron-based task enqueuing
-- Graceful failure handling (table stakes) — retry policies
-
-**Avoids:**
-- Asynq sensitive data in payloads (Critical Pitfall #3) — establish ID-only payload pattern
-- Worker panics losing tasks (Pitfall #7) — configure generous retry with error handler
-- GORM connection leaks in workers (Performance Trap) — proper connection pooling
-
-**Research flags:** Standard async job patterns, unlikely to need research. Asynq documentation is comprehensive.
-
-### Phase 4: n8n Workflow Integration
-**Rationale:** Connect to real data sources. This is first integration with external system, needs careful error handling. Start with simple webhook calls before complex orchestration.
+### Phase 2: CrewAI Sidecar Integration
+**Rationale:** Establishing the Go-Python communication pattern early validates the most uncertain architectural component. Proves CrewAI can execute workflows and return results before building scheduling complexity.
 
 **Delivers:**
-- n8n HTTP client library
-- Basic workflow webhook calls (news, weather)
-- Response parsing and validation
-- Error handling for failed webhooks
-- Briefing storage in Postgres
+- FastAPI sidecar with CrewAI executor
+- Go HTTP client for sidecar communication
+- Plugin executor service (Go → CrewAI → Briefing)
+- Process management (signal handlers, PID tracking)
+- Example plugin with real CrewAI agents/tasks
 
-**Addresses:**
-- Real briefing generation (replaces mock data)
-- Multiple data sources (table stakes)
-- Graceful source failures (table stakes) — partial briefing if one source fails
+**Uses Stack:**
+- CrewAI for multi-agent workflows
+- HTTP (not gRPC) for simplicity
 
-**Avoids:**
-- Long-running HTTP requests in handlers (Anti-Pattern #4) — all n8n calls via Asynq
-- Missing transaction boundaries (Pitfall #6) — render to buffer before commit
+**Implements Architecture:**
+- Sidecar pattern (same pod, localhost communication)
+- Single task queue (Asynq enqueues, calls CrewAI HTTP endpoint synchronously)
 
-**Research flags:** Likely needs phase-specific research on n8n webhook API patterns, authentication, and error responses. Low confidence on n8n integration patterns from initial research.
+**Avoids Pitfalls:**
+- Python process lifecycle management with signal handlers
+- No duplicate task queues (Asynq only)
 
-### Phase 5: Source Selection & Customization
-**Rationale:** Now that infrastructure works, add user control over sources. Start simple (checkbox selection) before exposing full n8n workflow builder.
+**Research Needed:** MEDIUM — CrewAI production patterns less established, needs phase-specific research on agent configuration and error handling
 
-**Delivers:**
-- Source selection UI (choose from pre-configured workflows)
-- User preferences storage (which sources enabled)
-- Workflow parameter passing (user-specific context)
-- Preview/test workflow button
+---
 
-**Addresses:**
-- Personalization/source selection (table stakes)
-- Custom source integration (differentiator) — start with presets, expose n8n later
-
-**Avoids:**
-- Infinite customization anti-feature — curated presets first
-- Over-personalization failure pattern — provide sane defaults
-
-**Research flags:** Standard preferences management, unlikely to need research unless exposing n8n UI directly.
-
-### Phase 6: History & Read Tracking
-**Rationale:** Once daily generation works, users want to review past briefings and track what they've read. Relatively independent feature, can be added without changing core flow.
+### Phase 3: Per-User Scheduling
+**Rationale:** With plugin execution proven (Phase 2), add scheduling logic. Database-backed approach avoids O(users) scalability trap. Must come before UI because UI displays schedule information.
 
 **Delivers:**
-- Briefing archive (last 30 days)
-- Read/unread state tracking
-- History page with date navigation
-- "Mark all as read" functionality
+- Per-minute scheduler task (evaluates due schedules)
+- IsDue logic with timezone support
+- Asynq task handler for plugin execution
+- Migration: existing users to new UserPluginConfig records
+- Redis caching for last-run times (performance optimization)
 
-**Addresses:**
-- Read/unread tracking (table stakes)
-- Briefing history/versioning (differentiator)
+**Uses Stack:**
+- Asynq scheduler (modified from global cron to per-minute evaluation)
+- PostgreSQL for schedule storage (`next_run_at` indexed)
 
-**Avoids:**
-- GORM N+1 queries (Critical Pitfall #1) — use Preload for relations
-- GORM Preload + Select incompatibility (Pitfall #9) — include foreign keys
+**Implements Architecture:**
+- Scheduling package (schedule evaluation, cron matching)
 
-**Research flags:** Standard CRUD patterns, unlikely to need research.
+**Avoids Pitfalls:**
+- Database-backed schedules prevent O(users) Redis memory issue
+- Timezone handling prevents "works for developer in UTC, breaks for users in PST"
 
-### Phase 7: Email Delivery (Optional)
-**Rationale:** Defer until validated that dashboard approach works. Email is alternative delivery mechanism, not core to initial value prop. Add only if users request it.
+**Research Needed:** LOW — Asynq patterns well-established, cron parsing standard
+
+---
+
+### Phase 4: Tile-Based Dashboard UI
+**Rationale:** With backend execution and scheduling complete, build the primary user interface. Pre-fetching pattern prevents N+1 queries before they become a problem.
 
 **Delivers:**
-- Email template rendering (reuse Templ components)
-- SMTP integration
-- User preference for email vs dashboard
-- Daily email task in Asynq scheduler
+- Tile grid layout (CSS Grid with auto-fit/minmax)
+- PluginTile Templ components
+- Dashboard handler with optimized query (single query for latest briefings)
+- Empty state handling (no plugins enabled, no briefings yet)
+- HTMX in-place updates for tile status
 
-**Addresses:**
-- Delivery mechanism (table stakes) — dashboard already sufficient, email optional
+**Uses Stack:**
+- CSS Grid (native, no JavaScript masonry)
+- Templ for components
+- HTMX for tile updates
 
-**Avoids:**
-- Adding complexity before validation
+**Implements Architecture:**
+- Tile Dashboard component
 
-**Research flags:** Standard email patterns with Go, unlikely to need research.
+**Avoids Pitfalls:**
+- N+1 queries via pre-fetch pattern
+- Tile layout CSS constraints (line-clamp, min-height) for long names
+- Nil briefing handling in templates
+
+**Research Needed:** LOW — CSS Grid and HTMX patterns well-documented
+
+---
+
+### Phase 5: Dynamic Settings UI
+**Rationale:** Settings come after dashboard because settings management is secondary workflow. JSON Schema validation and form generation are complex but well-bounded.
+
+**Delivers:**
+- Settings page handlers (GET/POST)
+- Dynamic form generation from JSON Schema
+- kaptinlin/jsonschema validation
+- Form type coercion (string → integer/boolean)
+- HTMX form submission with error handling (preserve user input)
+- Plugin enable/disable actions
+
+**Uses Stack:**
+- kaptinlin/jsonschema for validation
+- Templ for dynamic form rendering
+- HTMX for form submission and swap
+
+**Implements Architecture:**
+- Settings Service package
+
+**Avoids Pitfalls:**
+- Form type coercion prevents "invalid type" errors
+- HTMX form state preservation on validation errors
+- Settings validation in service layer (not templates)
+
+**Research Needed:** MEDIUM — JSON Schema extension fields (x-component) need testing, form generation pattern is custom
+
+---
+
+### Phase 6: Account Tier Scaffolding
+**Rationale:** Tiers are infrastructure for future monetization. Scaffold enforcement now, add payment integration later. Comes last because it's pure constraint checking, not core functionality.
+
+**Delivers:**
+- AccountTier models and seeding (free, pro)
+- Tier service with constraint checking
+- Enforcement in plugin enable handler
+- UI messaging for upgrade prompts
+- User.AccountTierID relationship
+
+**Uses Stack:**
+- GORM for tier models
+- Service layer for constraint logic
+
+**Implements Architecture:**
+- Tiers package (constraint enforcement)
+
+**Avoids Pitfalls:**
+- Tier checks in service layer only (not templates)
+- Server-side enforcement (template is UX hint)
+
+**Research Needed:** LOW — Standard constraint checking pattern
+
+---
 
 ### Phase Ordering Rationale
 
-- **Authentication first** because all other features require user identity and session management. OAuth patterns must be correct before building on top.
-- **Mock data display second** to validate UI/UX and establish frontend patterns (Templ/HTMX) without backend complexity. Proves value proposition early.
-- **Background jobs third** because real briefing generation requires async processing. Must establish job patterns before external integrations.
-- **n8n integration fourth** after infrastructure proven stable. External service integration is highest risk, save for when foundation is solid.
-- **Source customization fifth** after proving basic generation works. Customization is differentiator but not required for initial validation.
-- **History/email last** as enhancements after core loop proven. Nice-to-have features that don't block basic functionality.
+**Foundation → Validation → Iteration:**
+- **Phase 1-2** establish core architecture with working example (reduces risk)
+- **Phase 3-4** add horizontal features (scheduling, UI) once execution proven
+- **Phase 5-6** polish and constraints (settings, tiers) after core workflows stable
 
-This ordering follows architecture dependencies (auth → display → jobs → external integrations → enhancements) while frontloading critical pitfall mitigation (OAuth security, HTMX polling, Asynq patterns). Phases are sized to deliver value incrementally while avoiding scope creep from anti-features.
+**Dependency chain:**
+- Database schema (Phase 1) → Everything depends on models
+- CrewAI integration (Phase 2) → Must prove before scheduling
+- Scheduling (Phase 3) → Required before UI shows "next run"
+- Dashboard (Phase 4) → Visual validation of scheduling
+- Settings (Phase 5) → Requires working plugins to configure
+- Tiers (Phase 6) → Constraint layer on top of working system
+
+**Parallelization opportunities:**
+- Phases 1-2 are sequential (foundational)
+- Phase 3 can start after Phase 2 (scheduling independent of UI)
+- Phases 4-5 can partially overlap (dashboard team, settings team)
+- Phase 6 is fully independent (add anytime after Phase 1)
+
+**Pitfall mitigation:**
+- Schema versioning designed in Phase 1 (prevents mismatch)
+- Process management in Phase 2 (prevents orphans)
+- Database scheduling in Phase 3 (prevents O(users) Redis)
+- Pre-fetch pattern in Phase 4 (prevents N+1)
+- Type coercion in Phase 5 (prevents form errors)
+- Service layer in Phase 6 (prevents logic duplication)
 
 ### Research Flags
 
 **Phases likely needing deeper research during planning:**
-- **Phase 4 (n8n Integration):** External system with low confidence from initial research. Needs investigation of n8n webhook API patterns, authentication mechanisms, error response formats, timeout handling, and rate limiting.
-- **Phase 5 (Source Customization):** Depends on whether exposing n8n UI directly or building custom wizard. If exposing n8n, needs UX research on complexity vs power user value trade-off.
+
+- **Phase 2 (CrewAI Sidecar):** CrewAI 2026 production patterns — agent configuration, error handling, memory management, LangChain vs CrewAI tradeoffs. Training data through January 2025, CrewAI evolving rapidly. Use `/gsd:research-phase` before detailed planning.
+
+- **Phase 5 (Settings UI):** JSON Schema extension fields — verify kaptinlin/jsonschema preserves x-component, x-placeholder for UI hints. HTMX form validation error rendering patterns. Custom integration, less library-specific guidance available.
 
 **Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Authentication):** Well-documented OAuth patterns, Goth library examples abundant
-- **Phase 2 (Display):** Standard Go web patterns, Templ/HTMX documented adequately
-- **Phase 3 (Background Jobs):** Asynq documentation comprehensive, standard queue patterns
-- **Phase 6 (History):** Standard CRUD with GORM, no novel patterns
-- **Phase 7 (Email):** Standard Go email libraries, Templ templates reusable
+
+- **Phase 1 (Plugin Framework):** GORM migrations, YAML parsing, model relationships — well-documented, stable patterns
+- **Phase 3 (Scheduling):** Asynq task patterns, cron parsing, timezone handling — established best practices
+- **Phase 4 (Tile Dashboard):** CSS Grid layouts, Templ component patterns, HTMX swaps — mature ecosystem
+- **Phase 6 (Account Tiers):** Service layer constraint checking, GORM relationships — fundamental patterns
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | High confidence on Go stdlib, Gin, GORM, HTMX. Medium-low on Templ (fast-moving), Asynq (version staleness). Critical to verify current versions before starting. |
-| Features | MEDIUM | High confidence on table stakes (stable domain patterns). Medium on differentiators (n8n customization unproven). Low confidence on 2026-specific trends (WebSearch unavailable). |
-| Architecture | MEDIUM-HIGH | High confidence on Go web patterns, GORM, Gin middleware. Medium on Templ + HTMX integration (newer stack combination). Low on n8n integration (external system). |
-| Pitfalls | MEDIUM-HIGH | High confidence on GORM, Asynq, OAuth patterns (well-documented). Medium on HTMX-specific behaviors. Medium-low on Templ pitfalls (newer tool, less production data). |
+| Stack | **MEDIUM-HIGH** | Core Go libraries verified (goccy/go-yaml in go.mod, kaptinlin/jsonschema official Google package). Asynq patterns proven in v1.0. CrewAI specifics based on training data, not 2026 production verification. |
+| Features | **MEDIUM** | Plugin framework features based on WordPress/Zapier/n8n patterns (training data). Table stakes well-established. CrewAI differentiators logical but not market-validated. WebSearch unavailable for 2026 verification. |
+| Architecture | **MEDIUM-HIGH** | Go plugin architecture follows standard patterns. Sidecar pattern well-established in K8s. Database-backed scheduling proven approach. CrewAI HTTP integration straightforward but library-specific internals medium confidence. |
+| Pitfalls | **MEDIUM** | High confidence on established anti-patterns (N+1 queries, O(users) scheduler, subprocess management). Medium confidence on plugin-specific patterns (schema versioning, form coercion). CrewAI production patterns less proven. |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** **MEDIUM-HIGH**
 
-Confident in core Go web patterns, GORM/Postgres, background job architectures, and OAuth security—these are mature, well-documented areas. Less confident in Templ + HTMX integration patterns (newer combination) and n8n webhook integration (external system, sparse documentation in training data). Version numbers are likely dated (training data January 2025, now February 2026)—must verify current releases before implementation.
+Research provides strong foundation for roadmap planning. Core Go architecture patterns are well-understood. Main uncertainty is CrewAI integration specifics, which Phase 2 research will address. Stack choices are conservative (proven libraries), features align with competitor analysis, architecture avoids known scalability traps.
 
 ### Gaps to Address
 
-- **Templ version and API stability:** Fast-moving project, version 0.2.747+ may have changed significantly. Verify current version, check for breaking changes, review official examples for latest patterns. Handle during Phase 2 planning.
+**Needs validation during Phase 2 (CrewAI):**
+- CrewAI agent configuration best practices for briefing use case — Training data through Jan 2025, library evolving. Research specific patterns for multi-agent workflows (researcher → writer → reviewer chains).
+- FastAPI sidecar integration examples with CrewAI — Verify recommended patterns for long-running agent tasks, error propagation, timeout handling.
+- CrewAI performance characteristics — Unknown execution time per workflow (2-5s estimate), memory requirements, concurrency limits. Load test during Phase 2.
 
-- **HTMX v2 adoption and ecosystem:** v2 released mid-2024 with breaking changes. Verify community adoption, check for regression issues, confirm DaisyUI compatibility. Handle during Phase 2 planning.
+**Needs validation during Phase 5 (Settings):**
+- kaptinlin/jsonschema extension field handling — Documentation claims x-* fields preserved, but test round-trip to verify. Confirm extension fields survive validation.
+- HTMX form validation UX patterns — Need standard pattern for displaying jsonschema validation errors (inline per field vs summary). Test user experience early.
 
-- **n8n webhook API patterns:** Low confidence on authentication, error handling, timeout behavior, rate limits. Needs dedicated research during Phase 4 planning—use `/gsd:research-phase` to investigate n8n webhook integration patterns, authentication options, and error response formats.
+**Needs validation during implementation (all phases):**
+- Asynq dynamic queue patterns — Docs mention wildcard queue matching (`plugin:*:user:*`) but examples sparse. Verify behavior in Phase 3.
+- Schema migration strategy — How to handle breaking changes to plugin settings schema after users have saved configs. Design migration functions early.
+- Python virtualenv in Docker — Ensure CrewAI runs in venv, not system Python. Add to Phase 2 Docker setup.
 
-- **n8n workflow customization UX:** Exposing full n8n interface vs building guided wizard is unresolved. Validate with 2-3 potential users during Phase 5 planning to understand power user vs simplicity trade-off.
-
-- **AI summarization model choice:** No research conducted on LLM selection, prompt engineering, context preservation, or cost optimization. Defer to implementation phase, start with simple OpenAI API calls, iterate based on quality feedback.
-
-- **Performance numbers validation:** Database query limits, concurrent user thresholds, polling frequency recommendations are estimates. Establish performance baselines during Phase 2-3 with load testing. Adjust thresholds based on actual measurements.
-
-- **Security compliance requirements:** No research on GDPR, data retention policies, user data export requirements. Clarify legal requirements before Phase 1, especially for OAuth token storage and briefing content retention.
+**Defer to post-v1.1:**
+- Account tier payment integration — v1.1 scaffolds enforcement only, no Stripe integration. Design payment flow in v1.2+.
+- Plugin update mechanism — Version field exists but no automated update flow. Manual plugin updates via deploy acceptable for v1.1.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Go documentation and stdlib patterns (training data through January 2025)
-- Gin framework documentation v1.10.0 patterns
-- GORM documentation on hooks, transactions, preloading
-- HTMX documentation on polling, OOB swaps, headers
-- Asynq documentation on task serialization, retries, dead queues
-- OAuth 2.0 security best practices and token management patterns
-- PostgreSQL documentation on connection pooling and GORM integration
+
+**Stack Research:**
+- [goccy/go-yaml GitHub](https://github.com/goccy/go-yaml) — YAML parsing library, verified as indirect dependency
+- [Google Open Source Blog - JSON Schema package for Go](https://opensource.googleblog.com/2026/01/a-json-schema-package-for-go.html) — Official announcement of kaptinlin/jsonschema
+- [Asynq GitHub](https://github.com/hibiken/asynq) — Task queue patterns, validated in v1.0
+- [How to Build a Job Queue in Go with Asynq](https://oneuptime.com/blog/post/2026-01-07-go-asynq-job-queue-redis/view) — 2026 Asynq tutorial
+- [CSS Grid Layout: Complete Guide 2026](https://devtoolbox.dedyn.io/blog/css-grid-complete-guide) — CSS Grid patterns
+
+**Architecture Research:**
+- Existing First Sip codebase (`cmd/server/main.go`, `internal/worker/`, `internal/models/`) — Current patterns analyzed
+- `/Users/jim/git/jimdaga/first-sip/TODO.md` — Project redesign context
 
 ### Secondary (MEDIUM confidence)
-- Templ documentation and component patterns (v0.2.747+ era)
-- DaisyUI + Tailwind CSS integration patterns
-- Background job queue patterns in Go ecosystems
-- Server-side rendering with HTMX architectural patterns
-- Daily briefing application feature analysis (Apple News, Artifact, Feedbin comparisons)
+
+**Features Research:**
+- WordPress plugin ecosystem (training data) — Plugin architecture patterns
+- Zapier integration model (training data) — SaaS plugin patterns
+- n8n self-hosted workflows (training data) — Workflow automation patterns
+- Grafana plugin architecture (training data) — Dashboard plugin patterns
+
+**Pitfalls Research:**
+- Asynq best practices (training data + recent tutorials) — Scheduler anti-patterns
+- GORM documentation (training data) — N+1 query prevention
+- HTMX documentation (training data) — Form handling patterns
+- Go subprocess management patterns (training data) — Process lifecycle
 
 ### Tertiary (LOW confidence, needs validation)
-- n8n webhook API patterns and integration approaches
-- Templ + HTMX production deployment experiences
-- Current version numbers for all dependencies (January 2025 cutoff)
-- 2026-specific trends in daily briefing applications
-- Cross-source AI synthesis implementation approaches
 
-**Note:** WebSearch and WebFetch were unavailable during research. All findings based on training data with January 2025 cutoff. Strongly recommend verifying current package versions, checking for breaking changes, and consulting official documentation before implementation starts.
+**CrewAI Integration:**
+- CrewAI documentation (training data through Jan 2025) — Multi-agent workflows, task orchestration
+- CrewAI production patterns — Based on general Python-Go integration patterns, not CrewAI-specific production experience
+- FastAPI + CrewAI examples — Inferred from FastAPI patterns + CrewAI docs, not verified production integrations
+
+**JSON Schema Forms:**
+- JSON Schema Form libraries (React JSON Schema Form, training data) — Dynamic form generation concepts
+- kaptinlin/jsonschema extension field behavior — Documented but not tested in First Sip context
 
 ---
-*Research completed: 2026-02-10*
+*Research completed: 2026-02-13*
 *Ready for roadmap: yes*

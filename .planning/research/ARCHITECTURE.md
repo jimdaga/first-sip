@@ -1,560 +1,1137 @@
-# Architecture Patterns
+# Architecture Research: v1.1 Plugin Integration
 
-**Domain:** Go Web Application with Server-Side Rendering + Background Jobs
-**Researched:** 2026-02-10
-**Confidence:** MEDIUM-HIGH (standard patterns, training data through January 2025)
+**Domain:** Go Web Application Plugin Architecture with CrewAI Integration
+**Researched:** 2026-02-13
+**Confidence:** MEDIUM-HIGH
 
-## Recommended Architecture
+## Integration Architecture Overview
+
+The v1.1 plugin architecture integrates with the existing Go/Gin/GORM/Asynq stack by adding a plugin framework layer, a CrewAI Python sidecar, and per-user scheduling capabilities. The architecture preserves existing patterns while extending them to support pluggable briefing types.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          User Browser                           │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐       │
-│  │  HTMX        │   │  Tailwind    │   │  DaisyUI     │       │
-│  │  (CDN)       │   │  CSS (CDN)   │   │  (CDN)       │       │
-│  └──────────────┘   └──────────────┘   └──────────────┘       │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ HTTP (hx-get, hx-post)
-┌───────────────────────────────▼─────────────────────────────────┐
-│                       Gin HTTP Server                           │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Middleware Stack                                          │ │
-│  │  [Logging] → [Recovery] → [CORS] → [Sessions] → [Auth]   │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
-│  │   Auth      │  │  Briefing   │  │   Static    │           │
-│  │  Handlers   │  │  Handlers   │  │   Assets    │           │
-│  │  (Goth)     │  │  (Templ)    │  │             │           │
-│  └─────────────┘  └─────────────┘  └─────────────┘           │
-│         │                 │                                     │
-│         ▼                 ▼                                     │
-│  ┌─────────────┐  ┌─────────────┐                             │
-│  │  Session    │  │  Briefing   │                             │
-│  │  Service    │  │  Service    │◄──────┐                     │
-│  └─────────────┘  └─────────────┘       │                     │
-│         │                 │              │                     │
-└─────────┼─────────────────┼──────────────┼─────────────────────┘
-          │                 │              │
-          ▼                 ▼              │
-    ┌──────────┐      ┌──────────┐        │
-    │  Redis   │      │ Postgres │        │
-    │ (Sessions│      │ (GORM)   │        │
-    │ + Queue) │      │          │        │
-    └──────────┘      └──────────┘        │
-          │                                │
-          ▼                                │
-┌─────────────────────────────────────────┼─────────────────────┐
-│              Asynq Worker Process       │                     │
-│  ┌────────────────────────────────────┐ │                     │
-│  │  Task Handlers                     │ │                     │
-│  │  - GenerateBriefingTask           │ │                     │
-│  │  - SendEmailTask                  │ │                     │
-│  │  - CleanupOldBriefingsTask        │ │                     │
-│  └────────────────────────────────────┘ │                     │
-│                 │                        │                     │
-│                 ▼                        │                     │
-│  ┌────────────────────────────────────┐ │                     │
-│  │  n8n Client                        │ │                     │
-│  │  - HTTP calls to n8n webhooks     │─┼─────────────────────┘
-│  │  - Aggregate responses            │ │
-│  └────────────────────────────────────┘ │
-│                 │                        │
-│                 ▼                        │
-│         ┌──────────────┐                │
-│         │  Postgres    │                │
-│         │  (Store      │                │
-│         │  Briefing)   │                │
-│         └──────────────┘                │
-└─────────────────────────────────────────┘
-          │
-          ▼
-    ┌──────────────┐
-    │     n8n      │
-    │  Workflow    │
-    │  Engine      │
-    │  (External)  │
-    └──────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         User Browser                                 │
+│  HTMX 2.0 + Tailwind CSS + Liquid Glass Design System              │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │ HTTP
+┌────────────────────────────▼────────────────────────────────────────┐
+│                    Gin HTTP Server (EXISTING)                        │
+│  ┌────────────────────┐  ┌────────────────────┐  ┌────────────────┐│
+│  │ Auth Handlers      │  │ Dashboard Handler  │  │ Settings       ││
+│  │ (EXISTING)         │  │ (MODIFIED - tiles) │  │ (NEW)          ││
+│  └────────────────────┘  └────────────────────┘  └────────────────┘│
+│                                  │                       │           │
+│  ┌──────────────────────────────▼───────────────────────▼─────────┐ │
+│  │            Plugin Manager Service (NEW)                         │ │
+│  │  - Plugin discovery & lifecycle                                 │ │
+│  │  - User plugin configuration                                    │ │
+│  │  - Plugin metadata validation                                   │ │
+│  └──────────────────────────────┬──────────────────────────────────┘ │
+└─────────────────────────────────┼───────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼───────────────────────────────────┐
+│                   Database Layer (GORM + Postgres)                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ User         │  │ Plugin       │  │ UserPlugin   │              │
+│  │ (MODIFIED)   │  │ (NEW)        │  │ Config (NEW) │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ Briefing     │  │ AccountTier  │  │ PluginRun    │              │
+│  │ (MODIFIED)   │  │ (NEW)        │  │ (NEW)        │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+└─────────────────────────────────┬───────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼───────────────────────────────────┐
+│              Asynq Scheduler + Worker (MODIFIED)                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  Per-User Scheduler (every minute)                          │    │
+│  │  - Query users due for briefing                             │    │
+│  │  - Check enabled plugins per user                           │    │
+│  │  - Enqueue plugin execution tasks                           │    │
+│  └───────────────────────┬─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  Plugin Execution Handlers (NEW)                            │    │
+│  │  - plugin:execute task handler                              │    │
+│  │  - Calls CrewAI sidecar per plugin                          │    │
+│  │  - Stores results in Briefing table                         │    │
+│  └───────────────────────┬─────────────────────────────────────┘    │
+└─────────────────────────┼───────────────────────────────────────────┘
+                          │ HTTP (internal)
+┌─────────────────────────▼───────────────────────────────────────────┐
+│                   CrewAI Sidecar (FastAPI + Python)                  │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  FastAPI Endpoints                                          │    │
+│  │  POST /plugins/{plugin_id}/execute                          │    │
+│  │  GET  /plugins/{plugin_id}/health                           │    │
+│  └───────────────────────┬─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  CrewAI Plugin Executors                                    │    │
+│  │  - Plugin 1: Weather Briefing (agents + tasks)              │    │
+│  │  - Plugin 2: News Briefing (agents + tasks)                 │    │
+│  │  - Plugin 3: Calendar Briefing (agents + tasks)             │    │
+│  └───────────────────────┬─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  CrewAI Core                                                │    │
+│  │  - Agent orchestration                                      │    │
+│  │  - Task execution                                           │    │
+│  │  - External API calls                                       │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Component Boundaries
+## New Packages Required
 
-| Component | Responsibility | Communicates With | Notes |
-|-----------|---------------|-------------------|-------|
-| **Gin HTTP Server** | Route requests, middleware, render Templ | Browser, Redis (sessions), Postgres (GORM), Asynq (client) | Single process, stateless except sessions |
-| **Templ Templates** | Type-safe HTML generation | Gin handlers (called by handlers) | Compile-time, generates Go code |
-| **HTMX (Browser)** | Client-side HTTP requests, DOM updates | Gin server (AJAX) | CDN-hosted, no build step |
-| **Goth Auth Service** | OAuth flow management | Google OAuth, Redis (sessions) | Middleware + handlers |
-| **Asynq Client** | Enqueue background jobs | Redis (queue) | Embedded in Gin server process |
-| **Asynq Worker** | Execute background jobs | Redis (queue), n8n (HTTP), Postgres (GORM) | Separate process, horizontally scalable |
-| **GORM Models** | Database ORM | Postgres | Shared by server + worker |
-| **Redis** | Session storage, job queue | Gin (sessions), Asynq (queue) | Single instance for MVP, cluster later |
-| **Postgres** | Persistent data storage | GORM (server + worker) | Users, briefings, job metadata |
-| **n8n** | External workflow orchestration | Asynq worker (HTTP webhooks) | Self-hosted or cloud, external to app |
+### 1. `/internal/plugins` (NEW)
 
-## Data Flow Patterns
+Core plugin framework implementation.
 
-### Pattern 1: OAuth Authentication
 ```
-User clicks "Login with Google"
-  → Gin handler: /auth/google
-  → Goth redirects to Google OAuth
-  → User approves
-  → Google redirects to /auth/google/callback
-  → Goth validates, extracts user info
-  → Store session in Redis (gorilla/sessions)
-  → Redirect to /dashboard
-  → Subsequent requests include session cookie
-  → Middleware validates session from Redis
+internal/plugins/
+├── manager.go           # Plugin discovery, lifecycle, registration
+├── registry.go          # In-memory registry of loaded plugins
+├── metadata.go          # Plugin metadata parsing (YAML)
+├── executor.go          # Interface to CrewAI sidecar
+├── validator.go         # Plugin validation logic
+├── loader.go            # Plugin loading from filesystem
+└── crewai_client.go     # HTTP client for CrewAI sidecar
 ```
 
-### Pattern 2: Briefing Generation
+**Responsibilities:**
+- Discover plugins from `/plugins` directory at startup
+- Parse plugin metadata (YAML files)
+- Validate plugin configuration schemas
+- Execute plugins via CrewAI sidecar HTTP calls
+- Handle plugin execution errors and retries
+- Manage plugin lifecycle (load, reload, disable)
+
+### 2. `/internal/tiers` (NEW)
+
+Account tier and constraint enforcement.
+
 ```
-User clicks "Generate Briefing"
-  → HTMX POST to /briefing/generate
-  → Gin handler validates auth (session middleware)
-  → Create Job metadata in Postgres (user_id, status=pending)
-  → Enqueue Asynq task (GenerateBriefingTask)
-  → Return 202 Accepted with hx-trigger to start polling
-  → HTMX polls GET /briefing/status every 2 seconds
-
-Meanwhile (async):
-  → Asynq worker dequeues task
-  → Call n8n webhook(s) with HTTP client
-  → Aggregate responses (news, weather, etc.)
-  → Parse JSON responses
-  → Store briefing in Postgres (GORM)
-  → Update job status to "complete"
-
-Polling:
-  → GET /briefing/status returns job status
-  → When status=complete, hx-trigger swaps content
-  → GET /briefing/latest renders Templ component
-  → HTMX swaps HTML into DOM
+internal/tiers/
+├── models.go            # AccountTier model (GORM)
+├── service.go           # Tier constraint checking
+├── middleware.go        # HTTP middleware for tier enforcement
+└── constants.go         # Tier definitions (free, pro, enterprise)
 ```
 
-### Pattern 3: Scheduled Generation
+**Responsibilities:**
+- Define tier limits (plugin count, execution frequency)
+- Check user tier before plugin operations
+- Enforce constraints at API and worker levels
+- Provide tier upgrade information to UI
+
+### 3. `/internal/scheduling` (NEW)
+
+Per-user scheduling logic extracted from worker package.
+
 ```
-Asynq scheduler (configured at startup)
-  → Enqueues GenerateBriefingTask at cron schedule (7am daily)
-  → Worker executes same flow as manual generation
-  → Stores briefing in Postgres
-  → (Optional) Enqueues SendEmailTask if user has email enabled
+internal/scheduling/
+├── scheduler.go         # Per-user schedule evaluation
+├── matcher.go           # Cron expression matching per timezone
+└── queue.go             # Task queueing for due plugins
 ```
 
-## Patterns to Follow
+**Responsibilities:**
+- Evaluate which users have plugins due for execution
+- Handle per-user timezones and schedules
+- Determine next execution time for plugins
+- Enqueue plugin execution tasks
 
-### Pattern 1: Handler → Service → Repository
-**What:** Separate concerns across layers
-**When:** Always, for testability and clarity
-**Example:**
+### 4. `/internal/settings` (NEW)
+
+Settings UI handlers and services.
+
+```
+internal/settings/
+├── handlers.go          # HTTP handlers for settings pages
+├── templates.templ      # Templ components for settings UI
+├── service.go           # Settings business logic
+└── validation.go        # Settings validation
+```
+
+**Responsibilities:**
+- Render plugin management dashboard
+- Handle plugin enable/disable actions
+- Manage per-plugin user configuration
+- Validate user settings against plugin schemas
+
+### 5. `/plugins` (NEW - not in internal)
+
+Plugin definitions directory (outside Go code).
+
+```
+plugins/
+├── weather-briefing/
+│   ├── plugin.yaml      # Metadata, settings schema, version
+│   └── crewai/          # CrewAI Python code
+│       ├── agents.py    # CrewAI agents
+│       ├── tasks.py     # CrewAI tasks
+│       └── main.py      # Plugin entrypoint
+├── news-briefing/
+│   ├── plugin.yaml
+│   └── crewai/
+│       ├── agents.py
+│       ├── tasks.py
+│       └── main.py
+└── calendar-briefing/
+    ├── plugin.yaml
+    └── crewai/
+        ├── agents.py
+        ├── tasks.py
+        └── main.py
+```
+
+**Responsibilities:**
+- Plugin metadata declarations
+- CrewAI workflow definitions (Python code)
+- Plugin versioning and dependencies
+- Settings schema definitions
+
+### 6. `/cmd/crewai-sidecar` (NEW)
+
+CrewAI sidecar entrypoint (separate process).
+
+```
+cmd/crewai-sidecar/
+├── main.py              # FastAPI app entrypoint
+├── requirements.txt     # Python dependencies (crewai, fastapi)
+└── config.py            # Configuration loading
+```
+
+**Responsibilities:**
+- Start FastAPI server
+- Load plugin executors dynamically
+- Expose HTTP endpoints for plugin execution
+- Handle CrewAI orchestration
+
+## Database Schema Changes
+
+### New Models
+
 ```go
-// Handler (HTTP layer)
-func (h *BriefingHandler) Generate(c *gin.Context) {
-    userID := c.GetString("user_id") // from auth middleware
-
-    job, err := h.briefingService.EnqueueGeneration(userID)
-    if err != nil {
-        c.JSON(500, gin.H{"error": err.Error()})
-        return
-    }
-
-    c.JSON(202, gin.H{"job_id": job.ID})
+// Plugin represents a registered plugin in the system
+type Plugin struct {
+    gorm.Model
+    Slug         string `gorm:"uniqueIndex;not null"`        // e.g., "weather-briefing"
+    Name         string `gorm:"not null"`                     // Display name
+    Description  string
+    Version      string `gorm:"not null"`                     // Semantic version
+    Enabled      bool   `gorm:"not null;default:true"`        // System-wide enable
+    SettingsSchema datatypes.JSON `gorm:"type:jsonb"`        // JSON Schema for settings
+    Metadata     datatypes.JSON `gorm:"type:jsonb"`          // Full plugin.yaml
 }
 
-// Service (business logic)
-func (s *BriefingService) EnqueueGeneration(userID string) (*Job, error) {
-    job := s.jobRepo.Create(userID, "pending")
-
-    task := asynq.NewTask("briefing:generate", []byte(job.ID))
-    s.asynqClient.Enqueue(task)
-
-    return job, nil
+// UserPluginConfig represents a user's configuration for a specific plugin
+type UserPluginConfig struct {
+    gorm.Model
+    UserID    uint           `gorm:"not null;index:idx_user_plugin,unique"`
+    PluginID  uint           `gorm:"not null;index:idx_user_plugin,unique"`
+    User      User           `gorm:"constraint:OnDelete:CASCADE;"`
+    Plugin    Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
+    Enabled   bool           `gorm:"not null;default:false"`
+    Schedule  string         `gorm:"not null;default:'0 6 * * *'"`  // Cron expression
+    Timezone  string         `gorm:"not null;default:'UTC'"`
+    Settings  datatypes.JSON `gorm:"type:jsonb"`                    // Plugin-specific settings
 }
 
-// Repository (data access)
-func (r *JobRepository) Create(userID, status string) *Job {
-    job := &Job{UserID: userID, Status: status}
-    r.db.Create(job)
-    return job
+// PluginRun tracks plugin execution history
+type PluginRun struct {
+    gorm.Model
+    UserID       uint      `gorm:"not null;index"`
+    PluginID     uint      `gorm:"not null;index"`
+    BriefingID   *uint     `gorm:"index"`                  // NULL if failed
+    User         User      `gorm:"constraint:OnDelete:CASCADE;"`
+    Plugin       Plugin    `gorm:"constraint:OnDelete:CASCADE;"`
+    Briefing     *Briefing `gorm:"constraint:OnDelete:SET NULL;"`
+    Status       string    `gorm:"not null;index"`         // pending, processing, completed, failed
+    ErrorMessage string    `gorm:"type:text"`
+    StartedAt    *time.Time
+    CompletedAt  *time.Time
+    Duration     int       `gorm:"default:0"`              // Milliseconds
+}
+
+// AccountTier defines user account tier constraints
+type AccountTier struct {
+    gorm.Model
+    Name             string `gorm:"uniqueIndex;not null"`  // "free", "pro", "enterprise"
+    MaxPlugins       int    `gorm:"not null"`              // Max enabled plugins
+    MaxDailyRuns     int    `gorm:"not null"`              // Max plugin executions per day
+    MinScheduleInterval int `gorm:"not null"`             // Minimum minutes between runs
 }
 ```
 
-### Pattern 2: Templ Component Composition
-**What:** Nested components for reusability
-**When:** Layout + page + partials
-**Example:**
-```templ
-// layout.templ
-templ Layout(title string) {
-    <!DOCTYPE html>
-    <html>
-    <head><title>{title}</title></head>
-    <body>
-        @Header()
-        { children... }
-        @Footer()
-    </body>
-    </html>
+### Modified Models
+
+```go
+// User (MODIFIED - add tier relationship)
+type User struct {
+    gorm.Model
+    Email                string     `gorm:"uniqueIndex:idx_users_email_not_deleted,where:deleted_at IS NULL;not null"`
+    Name                 string     `gorm:"not null;default:''"`
+    Timezone             string     `gorm:"not null;default:'UTC'"`
+    PreferredBriefingTime string    `gorm:"not null;default:'06:00'"` // DEPRECATED in v1.1
+    Role                 string     `gorm:"not null;default:'user'"`
+    AccountTierID        uint       `gorm:"not null;default:1"`  // NEW - FK to AccountTier
+    AccountTier          AccountTier `gorm:"constraint:OnDelete:RESTRICT;"` // NEW
+    LastLoginAt          *time.Time
+    LastBriefingAt       *time.Time
+
+    // Associations
+    AuthIdentities   []AuthIdentity     `gorm:"constraint:OnDelete:CASCADE;"`
+    Briefings        []Briefing         `gorm:"constraint:OnDelete:CASCADE;"`
+    PluginConfigs    []UserPluginConfig `gorm:"constraint:OnDelete:CASCADE;"` // NEW
 }
 
-// briefing.templ
-templ BriefingPage(briefing *Briefing) {
-    @Layout("Your Briefing") {
-        <div class="container">
-            @BriefingCard(briefing)
+// Briefing (MODIFIED - add plugin relationship)
+type Briefing struct {
+    gorm.Model
+    UserID       uint           `gorm:"not null;index"`
+    PluginID     *uint          `gorm:"index"`  // NEW - NULL for legacy briefings
+    User         User           `gorm:"constraint:OnDelete:CASCADE;"`
+    Plugin       *Plugin        `gorm:"constraint:OnDelete:SET NULL;"` // NEW
+    Content      datatypes.JSON `gorm:"type:jsonb"`
+    Status       string         `gorm:"not null;default:'pending';index"`
+    ErrorMessage string         `gorm:"column:error_message;type:text"`
+    GeneratedAt  *time.Time
+    ReadAt       *time.Time
+}
+```
+
+### Migration Strategy
+
+**Phase 1: Additive Migrations (v1.1.0)**
+```go
+// Add new tables (Plugin, UserPluginConfig, PluginRun, AccountTier)
+// Add nullable PluginID column to Briefing
+// Add AccountTierID column to User with default value
+// Seed default AccountTier records
+```
+
+**Phase 2: Data Migration (v1.1.1)**
+```go
+// Create default plugins from /plugins directory
+// Migrate existing User.PreferredBriefingTime to UserPluginConfig records
+// Mark existing Briefings with PluginID = NULL (legacy)
+```
+
+**Phase 3: Cleanup (v1.2.0 - future)**
+```go
+// Remove User.PreferredBriefingTime column (deprecated)
+// Add NOT NULL constraint to Briefing.PluginID after grace period
+```
+
+## Modified Existing Code
+
+### 1. `/internal/worker/scheduler.go` (MAJOR MODIFICATION)
+
+**Before:** Single cron schedule triggers `TaskScheduledBriefingGeneration`
+
+**After:** Per-minute scheduler evaluates users and enqueues per-plugin tasks
+
+```go
+// OLD: Single cron registration
+scheduler.Register(cfg.BriefingSchedule, taskForAllUsers)
+
+// NEW: Per-minute scheduler with per-user evaluation
+scheduler.Register("* * * * *", asynq.NewTask(TaskEvaluateSchedules, nil))
+```
+
+### 2. `/internal/worker/worker.go` (MODIFIED)
+
+**Remove:**
+- `handleScheduledBriefingGeneration` (replaced by scheduling package)
+- `handleGenerateBriefing` using n8n webhook
+
+**Add:**
+- `handleEvaluateSchedules` - determine which user+plugin combos are due
+- `handleExecutePlugin` - call CrewAI sidecar and store result
+
+### 3. `/internal/briefings/handlers.go` (MODIFIED)
+
+**Remove:**
+- Manual "Generate Briefing" endpoint (POST `/api/briefings`)
+
+**Modify:**
+- GET `/api/briefings/:id/status` - still needed for polling plugin execution
+- POST `/api/briefings/:id/read` - still works for plugin-generated briefings
+
+### 4. `/internal/templates/dashboard.templ` (MAJOR MODIFICATION)
+
+**Before:** Single briefing card
+
+**After:** Tile-based grid showing all enabled plugins
+
+```templ
+templ DashboardPage(user User, tiles []PluginTile) {
+    @Layout("Dashboard - First Sip") {
+        <div class="plugin-grid">
+            for _, tile := range tiles {
+                @PluginTileCard(tile)
+            }
         </div>
     }
 }
 
-// Render in handler
-func (h *Handler) Show(c *gin.Context) {
-    briefing := h.service.GetLatest(c.GetString("user_id"))
-    c.Header("Content-Type", "text/html")
-    BriefingPage(briefing).Render(c.Request.Context(), c.Writer)
+templ PluginTileCard(tile PluginTile) {
+    <div class="glass-card plugin-tile">
+        <h3>{tile.PluginName}</h3>
+        if tile.LatestBriefing != nil {
+            @BriefingContent(tile.LatestBriefing)
+        } else {
+            <p class="empty-state">No briefing yet</p>
+        }
+        <div class="tile-footer">
+            <span class="status">{tile.Status}</span>
+            <span class="next-run">Next: {tile.NextRun}</span>
+        </div>
+    </div>
 }
 ```
 
-### Pattern 3: HTMX Partial Rendering
-**What:** Return HTML fragments, not full pages
-**When:** HTMX requests (check HX-Request header)
-**Example:**
-```go
-func (h *Handler) GetStatus(c *gin.Context) {
-    jobID := c.Param("id")
-    job := h.service.GetJob(jobID)
+### 5. `/cmd/server/main.go` (MINOR MODIFICATION)
 
-    if c.GetHeader("HX-Request") == "true" {
-        // Return partial for HTMX swap
-        StatusPartial(job).Render(c.Request.Context(), c.Writer)
-    } else {
-        // Return full page for direct access
-        StatusPage(job).Render(c.Request.Context(), c.Writer)
+**Add:**
+- Plugin manager initialization
+- Plugin discovery at startup
+- CrewAI sidecar health check (optional)
+
+```go
+// After database migrations
+pluginManager := plugins.NewManager(db, cfg.PluginsDir)
+if err := pluginManager.DiscoverAndRegister(); err != nil {
+    log.Fatalf("Failed to discover plugins: %v", err)
+}
+
+// Add to Gin context for handlers
+r.Use(func(c *gin.Context) {
+    c.Set("plugin_manager", pluginManager)
+    c.Next()
+})
+```
+
+## CrewAI Sidecar Integration Pattern
+
+### Communication: HTTP (Internal Network)
+
+**Why HTTP over gRPC:**
+- Simpler deployment (no protobuf compilation)
+- Easier debugging with curl/Postman
+- FastAPI has excellent HTTP support out of box
+- No cross-language schema sync issues
+- Sufficient performance for briefing generation (not high-throughput)
+
+**Trade-offs:**
+- Lower performance than gRPC (acceptable for async job use case)
+- No streaming support (not needed for briefings)
+- Manual JSON schema validation (vs protobuf type safety)
+
+### API Contract
+
+```python
+# FastAPI endpoints in CrewAI sidecar
+
+@app.post("/plugins/{plugin_slug}/execute")
+async def execute_plugin(
+    plugin_slug: str,
+    request: PluginExecutionRequest
+) -> PluginExecutionResponse:
+    """
+    Execute a plugin's CrewAI workflow.
+
+    Request body:
+    {
+        "user_id": 123,
+        "settings": {
+            "location": "San Francisco",
+            "include_forecast": true
+        }
     }
-}
+
+    Response:
+    {
+        "status": "success",
+        "content": {
+            "weather": {...},
+            "forecast": [...]
+        },
+        "metadata": {
+            "execution_time_ms": 3421,
+            "crew_agents_used": 2
+        }
+    }
+    """
+    pass
+
+@app.get("/plugins/{plugin_slug}/health")
+async def plugin_health(plugin_slug: str) -> dict:
+    """Check if plugin is loaded and operational."""
+    pass
 ```
 
-### Pattern 4: Asynq Task Serialization
-**What:** JSON payloads for task data
-**When:** Enqueueing background jobs
-**Example:**
+### Go Client Implementation
+
 ```go
-type GenerateBriefingPayload struct {
-    UserID    string `json:"user_id"`
-    JobID     string `json:"job_id"`
-    Sources   []string `json:"sources"`
+// internal/plugins/crewai_client.go
+
+type CrewAIClient struct {
+    baseURL    string
+    httpClient *http.Client
 }
 
-// Enqueue
-func Enqueue(client *asynq.Client, payload GenerateBriefingPayload) {
-    data, _ := json.Marshal(payload)
-    task := asynq.NewTask("briefing:generate", data)
-    client.Enqueue(task)
+type ExecutionRequest struct {
+    UserID   uint                   `json:"user_id"`
+    Settings map[string]interface{} `json:"settings"`
 }
 
-// Handler
-func HandleGenerateBriefing(ctx context.Context, t *asynq.Task) error {
-    var payload GenerateBriefingPayload
-    json.Unmarshal(t.Payload(), &payload)
-
-    // Execute task...
-}
-```
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Business Logic in Handlers
-**What:** Handlers contain database queries, external API calls, complex logic
-**Why bad:** Untestable, violates SRP, hard to reuse
-**Instead:** Handlers only route, validate, call services
-```go
-// BAD
-func (h *Handler) Generate(c *gin.Context) {
-    db.Where("user_id = ?", c.GetString("user_id")).First(&user)
-    resp, _ := http.Get("https://n8n.example.com/webhook")
-    // ... 50 lines of logic ...
+type ExecutionResponse struct {
+    Status   string                 `json:"status"`
+    Content  map[string]interface{} `json:"content"`
+    Metadata map[string]interface{} `json:"metadata"`
+    Error    string                 `json:"error,omitempty"`
 }
 
-// GOOD
-func (h *Handler) Generate(c *gin.Context) {
-    job, err := h.service.EnqueueGeneration(c.GetString("user_id"))
+func (c *CrewAIClient) ExecutePlugin(ctx context.Context, pluginSlug string, req ExecutionRequest) (*ExecutionResponse, error) {
+    url := fmt.Sprintf("%s/plugins/%s/execute", c.baseURL, pluginSlug)
+
+    jsonData, _ := json.Marshal(req)
+    httpReq, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+    httpReq.Header.Set("Content-Type", "application/json")
+
+    resp, err := c.httpClient.Do(httpReq)
     if err != nil {
-        c.JSON(500, gin.H{"error": err.Error()})
-        return
+        return nil, fmt.Errorf("crewai request failed: %w", err)
     }
-    c.JSON(202, gin.H{"job_id": job.ID})
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        body, _ := io.ReadAll(resp.Body)
+        return nil, fmt.Errorf("crewai returned %d: %s", resp.StatusCode, string(body))
+    }
+
+    var result ExecutionResponse
+    json.NewDecoder(resp.Body).Decode(&result)
+    return &result, nil
 }
 ```
 
-### Anti-Pattern 2: Shared Mutable State
-**What:** Global variables, package-level state
-**Why bad:** Race conditions, hard to test, breaks horizontal scaling
-**Instead:** Dependency injection, immutable config
+### Deployment Patterns
+
+**Development (Docker Compose):**
+```yaml
+services:
+  app:
+    build: .
+    environment:
+      CREWAI_SIDECAR_URL: http://crewai:8000
+    depends_on:
+      - crewai
+
+  crewai:
+    build: ./cmd/crewai-sidecar
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./plugins:/app/plugins
+    environment:
+      PLUGINS_DIR: /app/plugins
+```
+
+**Production (Kubernetes):**
+```yaml
+# Sidecar container pattern (shared pod)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: first-sip-worker
+spec:
+  template:
+    spec:
+      containers:
+      - name: worker
+        image: first-sip-worker:latest
+        env:
+        - name: CREWAI_SIDECAR_URL
+          value: "http://localhost:8000"
+      - name: crewai-sidecar
+        image: first-sip-crewai:latest
+        ports:
+        - containerPort: 8000
+```
+
+**Why Sidecar Pattern:**
+- Worker and CrewAI always deployed together
+- Localhost communication (no network latency)
+- Simplified service discovery
+- Scales together (1:1 ratio)
+- No separate CrewAI service to manage
+
+## Per-User Scheduling Architecture
+
+### Current Scheduler (v1.0)
 ```go
-// BAD
-var db *gorm.DB // global
+// Single global cron
+scheduler.Register("0 6 * * *", taskForAllUsers)
 
-func Init() {
-    db = connectDB()
-}
-
-// GOOD
-type Service struct {
-    db *gorm.DB
-}
-
-func NewService(db *gorm.DB) *Service {
-    return &Service{db: db}
+// Task handler loops users
+func handleScheduledBriefingGeneration() {
+    users := db.Find(&users)
+    for _, user := range users {
+        // Generate for each user
+    }
 }
 ```
 
-### Anti-Pattern 3: GORM N+1 Queries
-**What:** Lazy loading causes query per relation
-**Why bad:** Kills performance, database load
-**Instead:** Eager loading with Preload
+**Problems:**
+- All users briefed at same time
+- No timezone support
+- No per-user schedule customization
+- Single point of failure
+
+### New Scheduler (v1.1)
+
+**Pattern:** Periodic evaluation instead of cron-based triggering
+
 ```go
-// BAD (N+1)
-briefings := []Briefing{}
-db.Find(&briefings) // 1 query
-for _, b := range briefings {
-    db.Model(&b).Association("Sections").Find(&b.Sections) // N queries
-}
+// Run every minute
+scheduler.Register("* * * * *", asynq.NewTask(TaskEvaluateSchedules, nil))
 
-// GOOD (2 queries)
-db.Preload("Sections").Find(&briefings)
+func handleEvaluateSchedules(ctx context.Context, task *asynq.Task) error {
+    now := time.Now()
+
+    // Query users with enabled plugins that are due
+    var configs []UserPluginConfig
+    db.Preload("User").Preload("Plugin").
+       Where("enabled = ?", true).
+       Find(&configs)
+
+    for _, config := range configs {
+        // Check if due based on config.Schedule and config.Timezone
+        if scheduling.IsDue(config, now) {
+            // Enqueue plugin execution
+            worker.EnqueuePluginExecution(config.UserID, config.PluginID)
+        }
+    }
+
+    return nil
+}
 ```
 
-### Anti-Pattern 4: Long-Running Requests
-**What:** Call n8n webhooks directly in HTTP handler
-**Why bad:** Request timeout, blocks server, no retry
-**Instead:** Background job via Asynq
+**Schedule Evaluation Logic:**
+
 ```go
-// BAD
-func (h *Handler) Generate(c *gin.Context) {
-    resp, _ := http.Get("https://n8n.example.com/webhook") // blocks 30+ seconds
-    c.JSON(200, resp)
+// internal/scheduling/matcher.go
+
+func IsDue(config UserPluginConfig, now time.Time) bool {
+    // Parse user's timezone
+    location, err := time.LoadLocation(config.Timezone)
+    if err != nil {
+        location = time.UTC
+    }
+
+    // Convert now to user's timezone
+    userNow := now.In(location)
+
+    // Parse cron expression
+    schedule, err := cron.ParseStandard(config.Schedule)
+    if err != nil {
+        return false
+    }
+
+    // Get next scheduled time after last run
+    lastRun := getLastPluginRun(config.UserID, config.PluginID)
+    nextScheduled := schedule.Next(lastRun)
+
+    // Due if current time >= next scheduled time
+    return userNow.After(nextScheduled) || userNow.Equal(nextScheduled)
+}
+```
+
+**Benefits:**
+- Per-user timezone support
+- Per-plugin schedules
+- Graceful degradation (missed schedules caught on next tick)
+- Easy to add constraints (tier-based limits)
+
+**Trade-offs:**
+- Higher database query frequency (every minute vs daily)
+- Need index on `user_plugin_configs(enabled, user_id, plugin_id)`
+- Potential duplicate task prevention needed
+
+**Optimization: Redis Cache**
+```go
+// Cache last run times in Redis to avoid DB queries every minute
+key := fmt.Sprintf("plugin_run:last:%d:%d", userID, pluginID)
+lastRun := redisClient.Get(key)
+if lastRun == "" {
+    // Fetch from DB
+    lastRun = getLastPluginRunFromDB(userID, pluginID)
+    redisClient.SetEx(key, lastRun, 1*time.Hour)
+}
+```
+
+## Data Flow: Plugin Execution
+
+### End-to-End Flow
+
+```
+1. Scheduler (every minute)
+   → handleEvaluateSchedules
+   → Query enabled UserPluginConfigs
+   → Check if due (IsDue function)
+   → Enqueue plugin:execute task
+
+2. Asynq Worker
+   → Dequeue plugin:execute task
+   → Create PluginRun record (status=pending)
+   → Call internal/plugins/executor.go
+
+3. Plugin Executor
+   → Load plugin metadata
+   → Validate user settings against schema
+   → Call CrewAI sidecar HTTP endpoint
+
+4. CrewAI Sidecar (Python)
+   → Load plugin's agents.py and tasks.py
+   → Execute CrewAI workflow
+   → Return JSON result
+
+5. Plugin Executor (Go)
+   → Parse CrewAI response
+   → Create Briefing record (status=completed, content=JSON)
+   → Update PluginRun (status=completed, briefing_id=X)
+   → Update User.LastBriefingAt
+
+6. User Dashboard (next pageload)
+   → Query latest briefings per plugin
+   → Render plugin tiles
+   → Display briefing content
+```
+
+### Error Handling
+
+```go
+func (e *PluginExecutor) Execute(ctx context.Context, userID, pluginID uint) error {
+    // Create PluginRun record
+    run := &PluginRun{
+        UserID:   userID,
+        PluginID: pluginID,
+        Status:   "pending",
+    }
+    db.Create(run)
+
+    defer func() {
+        if r := recover(); r != nil {
+            db.Model(run).Updates(map[string]interface{}{
+                "status":        "failed",
+                "error_message": fmt.Sprintf("panic: %v", r),
+                "completed_at":  time.Now(),
+            })
+        }
+    }()
+
+    // Update to processing
+    run.Status = "processing"
+    run.StartedAt = time.Now()
+    db.Save(run)
+
+    // Execute plugin
+    result, err := e.crewaiClient.ExecutePlugin(ctx, pluginSlug, request)
+    if err != nil {
+        db.Model(run).Updates(map[string]interface{}{
+            "status":        "failed",
+            "error_message": err.Error(),
+            "completed_at":  time.Now(),
+        })
+        return err
+    }
+
+    // Create briefing
+    briefing := &Briefing{
+        UserID:      userID,
+        PluginID:    &pluginID,
+        Content:     result.Content,
+        Status:      "completed",
+        GeneratedAt: time.Now(),
+    }
+    db.Create(briefing)
+
+    // Update run as completed
+    db.Model(run).Updates(map[string]interface{}{
+        "status":       "completed",
+        "briefing_id":  briefing.ID,
+        "completed_at": time.Now(),
+        "duration":     time.Since(*run.StartedAt).Milliseconds(),
+    })
+
+    return nil
+}
+```
+
+## Plugin Metadata Format
+
+### plugin.yaml Structure
+
+```yaml
+# plugins/weather-briefing/plugin.yaml
+
+slug: weather-briefing
+name: Weather Briefing
+description: Daily weather forecast and conditions for your location
+version: 1.0.0
+author: First Sip Team
+category: lifestyle
+
+# CrewAI entrypoint
+crewai:
+  entrypoint: crewai/main.py
+  python_version: "3.11"
+
+# User-configurable settings
+settings_schema:
+  type: object
+  properties:
+    location:
+      type: string
+      title: Location
+      description: City or zip code for weather data
+      default: ""
+    include_forecast:
+      type: boolean
+      title: Include 5-day forecast
+      default: true
+    units:
+      type: string
+      title: Temperature units
+      enum: [fahrenheit, celsius]
+      default: fahrenheit
+  required: [location]
+
+# Default schedule (user can override)
+default_schedule:
+  cron: "0 6 * * *"
+  timezone: UTC
+
+# Tier requirements
+requires:
+  min_tier: free
+  capabilities: []
+
+# Display configuration
+tile:
+  icon: weather-icon
+  color: "#4A90E2"
+  default_visible: true
+```
+
+### Validation in Go
+
+```go
+// internal/plugins/validator.go
+
+type PluginMetadata struct {
+    Slug        string            `yaml:"slug"`
+    Name        string            `yaml:"name"`
+    Description string            `yaml:"description"`
+    Version     string            `yaml:"version"`
+    CrewAI      CrewAIConfig      `yaml:"crewai"`
+    SettingsSchema json.RawMessage `yaml:"settings_schema"`
+    DefaultSchedule ScheduleConfig `yaml:"default_schedule"`
+    Requires    Requirements      `yaml:"requires"`
 }
 
-// GOOD
-func (h *Handler) Generate(c *gin.Context) {
-    task := asynq.NewTask("briefing:generate", payload)
-    h.asynqClient.Enqueue(task) // returns immediately
-    c.JSON(202, gin.H{"status": "pending"})
+func (v *Validator) ValidatePlugin(path string) error {
+    // Parse plugin.yaml
+    data, err := os.ReadFile(filepath.Join(path, "plugin.yaml"))
+    if err != nil {
+        return fmt.Errorf("missing plugin.yaml: %w", err)
+    }
+
+    var metadata PluginMetadata
+    if err := yaml.Unmarshal(data, &metadata); err != nil {
+        return fmt.Errorf("invalid yaml: %w", err)
+    }
+
+    // Validate slug format
+    if !regexp.MustCompile(`^[a-z0-9-]+$`).MatchString(metadata.Slug) {
+        return fmt.Errorf("invalid slug format")
+    }
+
+    // Validate version (semantic versioning)
+    if !semver.IsValid("v" + metadata.Version) {
+        return fmt.Errorf("invalid version")
+    }
+
+    // Validate settings schema is valid JSON Schema
+    var schema map[string]interface{}
+    if err := json.Unmarshal(metadata.SettingsSchema, &schema); err != nil {
+        return fmt.Errorf("invalid settings schema: %w", err)
+    }
+
+    // Check CrewAI entrypoint exists
+    entrypointPath := filepath.Join(path, metadata.CrewAI.Entrypoint)
+    if _, err := os.Stat(entrypointPath); err != nil {
+        return fmt.Errorf("crewai entrypoint not found: %s", entrypointPath)
+    }
+
+    return nil
 }
 ```
 
-## Scalability Considerations
+## Build Order & Dependencies
 
-| Concern | At 1 User | At 100 Users | At 10K Users |
-|---------|-----------|--------------|--------------|
-| **HTTP Server** | Single Gin process | Same, stateless scales horizontally | Multiple instances behind load balancer (k8s) |
-| **Database** | Single Postgres instance | Connection pooling (max 25) | Read replicas for queries, write to primary |
-| **Redis** | Single instance | Same, Redis handles 10K+ ops/sec | Redis Cluster or Sentinel for HA |
-| **Asynq Workers** | 1 worker, 10 concurrency | 2-3 workers, 20 concurrency each | Worker pool, queue partitioning by priority |
-| **Sessions** | Redis-backed, no issue | Same | Consider TTL cleanup, session size limits |
-| **Static Assets** | Gin serves | Same | CDN (CloudFlare), nginx for static files |
-| **n8n** | Single instance | Same | Multiple n8n instances, webhook routing |
-
-## Deployment Architecture
-
-### Development (Local)
-```
-Docker Compose:
-- app (hot reload with Air)
-- postgres
-- redis
-- n8n (optional, can use cloud)
-
-Single binary: server + worker (combined)
-```
-
-### Production (Kubernetes)
-```
-Deployments:
-- first-sip-server (Gin HTTP server, 2+ replicas)
-- first-sip-worker (Asynq worker, 2+ replicas)
-
-StatefulSets:
-- postgres (or use managed RDS/Cloud SQL)
-- redis (or use managed ElastiCache/Memorystore)
-
-Services:
-- first-sip-server (LoadBalancer/Ingress)
-- postgres (ClusterIP)
-- redis (ClusterIP)
-
-ConfigMaps: env vars
-Secrets: DATABASE_URL, REDIS_URL, GOOGLE_CLIENT_SECRET, SESSION_SECRET
-```
-
-## Security Boundaries
-
-| Boundary | Protection | Implementation |
-|----------|-----------|----------------|
-| **External → Server** | TLS, rate limiting | Traefik/Ingress with cert-manager, Gin rate-limit middleware |
-| **Server → Database** | TLS, credentials | Postgres TLS mode, secrets management |
-| **Server → Redis** | TLS, password | Redis AUTH, TLS connection |
-| **Worker → n8n** | API key, HTTPS | n8n webhook authentication, validate responses |
-| **Session → User** | Secure cookies | HttpOnly, Secure, SameSite=Strict flags |
-| **User → User** | Authorization middleware | Check userID from session matches resource owner |
-
-## Observability
-
-| Layer | Tool | Metrics |
-|-------|------|---------|
-| **HTTP** | Gin middleware + zerolog | Request duration, status codes, error rates |
-| **Database** | GORM logger | Query duration, slow queries (>100ms) |
-| **Jobs** | Asynqmon UI | Queue length, retry count, failure rate |
-| **Redis** | Redis INFO | Memory usage, connection count |
-| **Application** | zerolog JSON logs | Structured logs to stdout (k8s captures) |
-
-## Testing Strategy by Layer
-
-| Layer | Tool | What to Test |
-|-------|------|--------------|
-| **Handlers** | httptest + testify | HTTP status codes, header validation, auth checks |
-| **Services** | testify mocks | Business logic, error handling, service contracts |
-| **Repositories** | testcontainers-go | Database queries, GORM relations, migrations |
-| **Workers** | asynqtest | Task execution, retry logic, idempotency |
-| **Templ** | templ_test | HTML output, XSS prevention, attribute rendering |
-| **Integration** | Docker Compose + go test | End-to-end flows (login → generate → view) |
-
-## Directory Structure
+### Dependency Graph
 
 ```
-/cmd/
-  /server/main.go          - HTTP server entrypoint
-  /worker/main.go          - Asynq worker entrypoint
+Phase 1: Database Schema
+  ├─ Add new models (Plugin, UserPluginConfig, PluginRun, AccountTier)
+  ├─ Modify existing models (User, Briefing)
+  └─ Run migrations
 
-/internal/
-  /auth/
-    handler.go             - Goth OAuth handlers
-    middleware.go          - Session auth middleware
-    service.go             - Auth business logic
-  /briefing/
-    handler.go             - Briefing HTTP handlers
-    service.go             - Briefing business logic
-    repository.go          - GORM database access
-  /models/
-    user.go                - GORM User model
-    briefing.go            - GORM Briefing model
-    job.go                 - GORM Job model
-  /workers/
-    briefing_task.go       - Asynq generate briefing handler
-    email_task.go          - Asynq send email handler
-  /templates/              - Templ components
-    layout.templ
-    briefing.templ
-    auth.templ
-  /middleware/
-    logging.go
-    recovery.go
-    session.go
-  /n8n/
-    client.go              - n8n webhook HTTP client
+Phase 2: Plugin Framework (Core)
+  ├─ Depends on: Phase 1
+  ├─ Create /internal/plugins package
+  ├─ Implement metadata parsing
+  ├─ Implement plugin registry
+  └─ Add plugin discovery to main.go
 
-/pkg/
-  /config/
-    config.go              - Load env vars, validate
-  /logger/
-    logger.go              - zerolog setup
+Phase 3: CrewAI Sidecar
+  ├─ Depends on: Phase 2 (for plugin metadata format)
+  ├─ Create /cmd/crewai-sidecar
+  ├─ Implement FastAPI endpoints
+  ├─ Create example plugin (weather-briefing)
+  └─ Add to Docker Compose
 
-/migrations/               - SQL migration files
-/static/                   - CSS, JS, images (minimal)
-/deployments/              - Helm charts, k8s manifests (already exist)
+Phase 4: Plugin Executor
+  ├─ Depends on: Phase 2, Phase 3
+  ├─ Implement CrewAI client in Go
+  ├─ Create plugin executor service
+  └─ Add worker task handler (plugin:execute)
+
+Phase 5: Per-User Scheduling
+  ├─ Depends on: Phase 1, Phase 4
+  ├─ Create /internal/scheduling package
+  ├─ Modify worker scheduler (per-minute evaluation)
+  ├─ Implement IsDue logic with timezone support
+  └─ Remove old global scheduler
+
+Phase 6: Dashboard UI (Tiles)
+  ├─ Depends on: Phase 4
+  ├─ Modify dashboard.templ (tile-based layout)
+  ├─ Create PluginTile components
+  ├─ Update dashboard handler (query per plugin)
+  └─ Remove manual "Generate Briefing" button
+
+Phase 7: Settings UI
+  ├─ Depends on: Phase 2, Phase 6
+  ├─ Create /internal/settings package
+  ├─ Implement plugin management page
+  ├─ Add plugin enable/disable handlers
+  ├─ Dynamic settings form generation from schema
+  └─ Add settings routes to main.go
+
+Phase 8: Account Tiers (Scaffold)
+  ├─ Depends on: Phase 1
+  ├─ Create /internal/tiers package
+  ├─ Seed default tiers (free, pro)
+  ├─ Add tier checking to plugin operations
+  └─ Add tier enforcement middleware
 ```
 
-## Configuration Management
+### Suggested Build Order
 
-| Environment | Source | Notes |
-|-------------|--------|-------|
-| **Development** | .env file (godotenv) | Not committed to git |
-| **Testing** | .env.test | Overrides for test database |
-| **Production** | Kubernetes ConfigMap + Secrets | Mounted as env vars |
+**Iteration 1: Plugin Foundation (1-2 days)**
+- Phase 1: Database Schema
+- Phase 2: Plugin Framework (Core)
+- Phase 3: CrewAI Sidecar (minimal FastAPI stub)
 
-**Required Config:**
-```bash
-# Server
-PORT=8080
-GIN_MODE=release
+**Goal:** Load plugins from /plugins directory, parse metadata, register in DB
 
-# Database
-DATABASE_URL=postgres://...
+**Iteration 2: Plugin Execution (2-3 days)**
+- Phase 4: Plugin Executor
+- Implement one working plugin end-to-end (weather-briefing)
 
-# Redis
-REDIS_URL=redis://...
+**Goal:** Manual execution of a plugin via API call (bypass scheduler)
 
-# OAuth
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://app.example.com/auth/google/callback
+**Iteration 3: Scheduling (1-2 days)**
+- Phase 5: Per-User Scheduling
+- Migrate existing users to new model
 
-# Session
-SESSION_SECRET=... # 32+ random bytes
+**Goal:** Automated plugin execution based on per-user schedules
 
-# n8n
-N8N_WEBHOOK_BASE_URL=https://n8n.example.com
+**Iteration 4: UI (2-3 days)**
+- Phase 6: Dashboard UI (Tiles)
+- Phase 7: Settings UI
 
-# Asynq
-ASYNQ_CONCURRENCY=10
+**Goal:** Users can enable plugins and see results in tiles
+
+**Iteration 5: Tiers (1 day)**
+- Phase 8: Account Tiers (Scaffold)
+
+**Goal:** Free tier limits enforced, upgrade messaging in UI
+
+**Total estimated time:** 7-11 days
+
+### Critical Path
+
+```
+Database Schema → Plugin Framework → Plugin Executor → Scheduling → Dashboard UI
 ```
 
-## Process Lifecycle
+Settings UI and Account Tiers can be built in parallel after Dashboard UI.
 
-### Server Process
-```
-main()
-  → Load config
-  → Connect to Postgres (GORM)
-  → Connect to Redis
-  → Initialize Goth providers
-  → Initialize Asynq client
-  → Setup Gin router
-  → Register middleware
-  → Register handlers
-  → Start HTTP server (blocking)
-  → On SIGTERM: graceful shutdown (30s timeout)
-```
+## Scaling Considerations
 
-### Worker Process
+| Concern | v1.1 (100 users) | v1.2 (1K users) | v2.0 (10K users) |
+|---------|------------------|-----------------|------------------|
+| **Scheduler** | Per-minute DB query OK | Add Redis cache for last run times | Partition evaluation (shard users by ID % 10) |
+| **CrewAI Sidecar** | Single sidecar per worker | Same (scales with workers) | Add sidecar pool (1:N worker:sidecar ratio) |
+| **Plugin Execution** | Synchronous HTTP calls | Add timeout + circuit breaker | Queue plugin executions separately from evaluation |
+| **Database** | UserPluginConfig index on (enabled, user_id) | Composite index on (enabled, user_id, plugin_id) | Read replica for dashboard queries |
+| **Plugin Registry** | In-memory registry OK | Same | Add Redis-backed registry for multi-instance |
+
+### Bottleneck Analysis
+
+**First bottleneck:** CrewAI sidecar execution time (2-5s per plugin)
+- **Solution:** Increase worker concurrency, add more worker pods
+- **When:** 500+ active users with 3+ plugins each = 1500+ executions/day
+
+**Second bottleneck:** Per-minute scheduler query overhead
+- **Solution:** Redis cache for last run times, reduce DB round trips
+- **When:** 5000+ user+plugin combinations
+
+**Third bottleneck:** Plugin execution failures impact scheduler performance
+- **Solution:** Separate Asynq queues (high priority: evaluation, low priority: execution)
+- **When:** Failure rate > 10% and plugin count > 1000
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Plugin Code in Go Binary
+
+**What people do:** Implement plugin logic in Go, compile into binary
+**Why it's wrong:**
+- Forces app rebuild for every plugin change
+- No runtime plugin loading
+- CrewAI is Python-native, bridging to Go adds complexity
+**Do this instead:**
+- Plugin logic lives in Python (CrewAI)
+- Go binary only orchestrates via HTTP
+- Plugins deployed as code in /plugins directory
+
+### Anti-Pattern 2: Synchronous Plugin Execution in HTTP Handler
+
+**What people do:**
+```go
+func CreateBriefing(c *gin.Context) {
+    result := executor.ExecutePlugin(userID, pluginID) // Blocks 5+ seconds
+    c.JSON(200, result)
+}
 ```
-main()
-  → Load config
-  → Connect to Postgres (GORM)
-  → Connect to Redis
-  → Initialize Asynq server
-  → Register task handlers
-  → Start Asynq server (blocking)
-  → On SIGTERM: graceful shutdown (finish in-flight tasks)
-```
+**Why it's wrong:**
+- Request timeout
+- No retry on failure
+- Can't show progress to user
+**Do this instead:**
+- Enqueue Asynq task
+- Return 202 Accepted immediately
+- HTMX polls for status
+
+### Anti-Pattern 3: Shared CrewAI Sidecar Service
+
+**What people do:** Deploy single CrewAI service for all workers
+**Why it's wrong:**
+- Network latency (workers → service over network)
+- Service becomes bottleneck
+- Complex service discovery
+**Do this instead:**
+- Sidecar pattern (CrewAI container in same pod as worker)
+- Localhost communication
+- Scales linearly with workers
+
+### Anti-Pattern 4: Plugin Settings in Code
+
+**What people do:** Hardcode plugin settings in Go structs
+**Why it's wrong:**
+- Settings not configurable per user
+- Adding settings requires code change
+- No UI generation possible
+**Do this instead:**
+- Settings schema in plugin.yaml (JSON Schema)
+- Dynamic settings validation in Go
+- Auto-generate settings forms from schema
+
+### Anti-Pattern 5: Global Scheduler with User Loop
+
+**What people do:** Keep global cron, add timezone conversion in loop
+**Why it's wrong:**
+- All users processed at once (load spike)
+- No per-user schedule customization
+- Single failure point
+**Do this instead:**
+- Per-minute evaluation scheduler
+- Check which users are due
+- Spread load naturally across time
+
+## Integration Points
+
+### External Integrations
+
+| Service | Integration Pattern | Location | Notes |
+|---------|---------------------|----------|-------|
+| **CrewAI APIs** | HTTP from Python sidecar | CrewAI plugin code | Each plugin configures its own API keys |
+| **Google OAuth** | Existing via Goth | /internal/auth | No changes needed |
+| **Weather APIs** | CrewAI plugin | weather-briefing/crewai/ | Plugin-specific, not app-level |
+| **News APIs** | CrewAI plugin | news-briefing/crewai/ | Plugin-specific, not app-level |
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| **Gin Server ↔ Plugin Manager** | Direct function calls | Plugin manager injected via Gin context |
+| **Worker ↔ Plugin Executor** | Direct function calls | Executor is internal package |
+| **Plugin Executor ↔ CrewAI Sidecar** | HTTP (localhost) | JSON request/response |
+| **Scheduler ↔ Database** | GORM | Query UserPluginConfigs every minute |
+| **Dashboard ↔ Plugin Registry** | Direct function calls | Registry provides metadata for UI |
+
+### Data Ownership
+
+| Data | Owner | Access Pattern |
+|------|-------|----------------|
+| **Plugin Metadata** | Plugin Manager | Read-only after discovery |
+| **User Plugin Settings** | Settings Service | CRUD via settings UI |
+| **Briefing Content** | Briefing Service | Created by executor, read by dashboard |
+| **Execution History** | Plugin Executor | PluginRun records for observability |
+| **Account Tier Limits** | Tiers Service | Read-only enforcement checks |
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Gin + HTMX patterns | HIGH | Well-established, training data recent |
-| GORM + Postgres | HIGH | Mature, stable patterns |
-| Asynq architecture | MEDIUM | Training data includes best practices, but version-specific features unknown |
-| Templ integration | MEDIUM | Newer library, patterns still emerging |
-| n8n integration | LOW | External system, depends on n8n's API stability |
-| Kubernetes deployment | HIGH | Standard patterns, existing Helm charts |
+| Go plugin architecture | HIGH | Standard patterns, based on existing codebase |
+| CrewAI HTTP integration | MEDIUM-HIGH | HTTP is well-understood, CrewAI is Python-native |
+| Per-user scheduling | HIGH | Asynq patterns well-established |
+| Database schema | HIGH | GORM migrations, standard relational model |
+| Sidecar deployment | HIGH | K8s pattern, used in production widely |
+| CrewAI internals | MEDIUM | Dependent on CrewAI library stability (not verified) |
+| Tile-based UI | HIGH | Standard HTMX patterns, existing design system |
 
 ## Sources
 
 Based on:
-- Go web service architecture patterns (training data)
-- Gin framework best practices (training data)
-- Background job queue patterns (training data)
-- Server-side rendering with HTMX patterns (training data)
-- Microservice deployment patterns (training data)
-- Existing project structure (read from codebase)
+- Existing codebase analysis (cmd/server/main.go, internal/worker/, internal/models/)
+- Go plugin architecture patterns (training data)
+- Asynq scheduler best practices (training data)
+- FastAPI + Go integration patterns (training data)
+- Kubernetes sidecar patterns (training data)
+- TODO documents (redesign-system-around-plugin-based-briefing-architecture.md)
 
-**Unable to verify:**
-- Latest Asynq monitoring best practices
-- Templ + HTMX integration patterns (newer stack)
-- n8n webhook API stability and versioning
+**Unable to verify without external access:**
+- Latest CrewAI API patterns (2026)
+- CrewAI production deployment best practices
+- Specific CrewAI performance characteristics
 
 ---
-*Architecture research for: Daily Briefing Go Web App*
-*Researched: 2026-02-10*
-*Confidence: MEDIUM-HIGH (standard patterns, external verification unavailable)*
+*Architecture research for: First Sip v1.1 Plugin Integration*
+*Researched: 2026-02-13*
+*Confidence: MEDIUM-HIGH (patterns verified from codebase, CrewAI specifics based on training data)*
