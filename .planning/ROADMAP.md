@@ -64,11 +64,12 @@
   3. Plugin, UserPluginConfig, and PluginRun database models exist with GORM migrations applied
   4. Schema versioning field exists in plugin metadata and templates handle missing fields with defaults
   5. At least one example plugin (daily news digest) exists with complete metadata and settings schema
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md — Plugin metadata struct, YAML loader, directory discovery, and in-memory registry
+- [ ] 08-02-PLAN.md — GORM models (Plugin, UserPluginConfig, PluginRun), JSON Schema validator, SQL migrations
+- [ ] 08-03-PLAN.md — Daily news digest example plugin, startup wiring, and seed data
 
 ---
 
@@ -178,7 +179,7 @@ Plans:
 | 5. Briefing Display | v1.0 | 1/1 | Complete | 2026-02-12 |
 | 6. Scheduled Generation | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 7. Briefing History | v1.0 | 1/1 | Complete | 2026-02-13 |
-| 8. Plugin Framework Foundation | v1.1 | 0/2 | Not started | - |
+| 8. Plugin Framework Foundation | v1.1 | 0/3 | Planning | - |
 | 9. CrewAI Sidecar Integration | v1.1 | 0/2 | Not started | - |
 | 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
 | 11. Tile-Based Dashboard | v1.1 | 0/2 | Not started | - |
@@ -187,4 +188,4 @@ Plans:
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-14 after v1.1 roadmap creation*
+*Last updated: 2026-02-14 after Phase 8 planning*
