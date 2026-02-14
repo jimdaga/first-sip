@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A web application that generates personalized daily briefings through a plugin-based architecture. Each briefing type is an independent plugin with its own n8n workflow, schedule, and configuration. Users log in with Google OAuth, configure which plugins they want, and see their latest briefings on a tile-based dashboard — all through a liquid glass UI built with Go, Templ, and HTMX.
+A web application that generates personalized daily briefings through a plugin-based architecture. Each briefing type is an independent plugin with its own CrewAI workflow, schedule, and configuration. Users log in with Google OAuth, configure which plugins they want, and see their latest briefings on a tile-based dashboard — all through a liquid glass UI built with Go, Templ, and HTMX.
 
 ## Core Value
 
@@ -41,7 +41,7 @@ A user's configured briefing plugins run on schedule and their latest results ap
 - Centralized per-user, per-plugin scheduler replacing global cron
 - Tile-based homepage with plugin tiles showing latest briefing and status
 - Full settings page with plugin management, enable/disable, schedule config, manual trigger
-- Daily news digest plugin with real n8n workflow integration
+- Daily news digest plugin with real CrewAI workflow integration
 - Basic account tier scaffolding (tier field, limit checks, no enforcement yet)
 
 ### Out of Scope
@@ -66,12 +66,12 @@ A user's configured briefing plugins run on schedule and their latest results ap
 
 **Tech stack:** Go 1.24, Gin, Templ, HTMX 2.0, GORM (PostgreSQL), Asynq (Redis), Goth (Google OAuth), custom liquid glass CSS design system.
 
-**Architecture:** `/cmd/server/main.go` (entry point with embedded worker), `/internal/auth` (OAuth), `/internal/config`, `/internal/database` (GORM + migrations), `/internal/models` (User, AuthIdentity, Briefing), `/internal/briefings` (handlers), `/internal/templates` (Templ layouts + components), `/internal/webhook` (n8n client), `/internal/worker` (Asynq server + tasks).
+**Architecture:** `/cmd/server/main.go` (entry point with embedded worker), `/internal/auth` (OAuth), `/internal/config`, `/internal/database` (GORM + migrations), `/internal/models` (User, AuthIdentity, Briefing), `/internal/briefings` (handlers), `/internal/templates` (Templ layouts + components), `/internal/worker` (Asynq server + tasks). AI workflows powered by CrewAI (Python sidecar service).
 
-**Current state:** v1.0 shipped with monolithic briefing generation (mock data, global cron). v1.1 redesigns around plugin-based architecture — each briefing type becomes an independent plugin with its own n8n workflow, schedule, and user configuration.
+**Current state:** v1.0 shipped with monolithic briefing generation (mock data, global cron). v1.1 redesigns around plugin-based architecture — each briefing type becomes an independent plugin with its own CrewAI workflow, schedule, and user configuration.
 
 **Known issues / tech debt:**
-- n8n integration is mock/stub only — v1.1 adds real workflow for news digest
+- n8n webhook client to be replaced by CrewAI integration — v1.1 adds real workflow for news digest
 - No per-user schedule configuration (global cron only) — v1.1 replaces with per-plugin scheduler
 - Session store is cookie-based (Redis-backed sessions deferred)
 - No error recovery UI for failed briefings (just shows "Failed" badge)
@@ -98,6 +98,7 @@ A user's configured briefing plugins run on schedule and their latest results ap
 | Embedded worker in dev mode | Single process for HTTP + worker + scheduler | ✓ Good — eliminates tmux/multiple terminal requirement |
 | Cookie sessions, defer Redis | Simplest session store for v1 personal use | ⚠️ Revisit — move to Redis sessions for multi-instance deployment |
 | Global cron schedule | Single schedule for all users via env var | ⚠️ Revisit — per-user schedules needed for multi-user |
+| CrewAI over n8n | Code-first AI workflows (Python), large community, easily bundled per plugin | Decision — replaces n8n webhook stub for v1.1 plugin architecture |
 
 ---
 *Last updated: 2026-02-13 after v1.1 milestone start*
