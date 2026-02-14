@@ -81,48 +81,56 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLUG-01 | TBD | Pending |
-| PLUG-02 | TBD | Pending |
-| PLUG-03 | TBD | Pending |
-| PLUG-04 | TBD | Pending |
-| PLUG-05 | TBD | Pending |
-| PLUG-06 | TBD | Pending |
-| CREW-01 | TBD | Pending |
-| CREW-02 | TBD | Pending |
-| CREW-03 | TBD | Pending |
-| CREW-04 | TBD | Pending |
-| CREW-05 | TBD | Pending |
-| CREW-06 | TBD | Pending |
-| CREW-07 | TBD | Pending |
-| SCHED-01 | TBD | Pending |
-| SCHED-02 | TBD | Pending |
-| SCHED-03 | TBD | Pending |
-| SCHED-04 | TBD | Pending |
-| SCHED-05 | TBD | Pending |
-| SCHED-06 | TBD | Pending |
-| TILE-01 | TBD | Pending |
-| TILE-02 | TBD | Pending |
-| TILE-03 | TBD | Pending |
-| TILE-04 | TBD | Pending |
-| TILE-05 | TBD | Pending |
-| TILE-06 | TBD | Pending |
-| SET-01 | TBD | Pending |
-| SET-02 | TBD | Pending |
-| SET-03 | TBD | Pending |
-| SET-04 | TBD | Pending |
-| SET-05 | TBD | Pending |
-| SET-06 | TBD | Pending |
-| TIER-01 | TBD | Pending |
-| TIER-02 | TBD | Pending |
-| TIER-03 | TBD | Pending |
-| TIER-04 | TBD | Pending |
-| TIER-05 | TBD | Pending |
+| PLUG-01 | Phase 8 | Pending |
+| PLUG-02 | Phase 8 | Pending |
+| PLUG-03 | Phase 8 | Pending |
+| PLUG-04 | Phase 8 | Pending |
+| PLUG-05 | Phase 8 | Pending |
+| PLUG-06 | Phase 8 | Pending |
+| CREW-01 | Phase 9 | Pending |
+| CREW-02 | Phase 9 | Pending |
+| CREW-03 | Phase 9 | Pending |
+| CREW-04 | Phase 9 | Pending |
+| CREW-05 | Phase 9 | Pending |
+| CREW-06 | Phase 9 | Pending |
+| CREW-07 | Phase 9 | Pending |
+| SCHED-01 | Phase 10 | Pending |
+| SCHED-02 | Phase 10 | Pending |
+| SCHED-03 | Phase 10 | Pending |
+| SCHED-04 | Phase 10 | Pending |
+| SCHED-05 | Phase 10 | Pending |
+| SCHED-06 | Phase 10 | Pending |
+| TILE-01 | Phase 11 | Pending |
+| TILE-02 | Phase 11 | Pending |
+| TILE-03 | Phase 11 | Pending |
+| TILE-04 | Phase 11 | Pending |
+| TILE-05 | Phase 11 | Pending |
+| TILE-06 | Phase 11 | Pending |
+| SET-01 | Phase 12 | Pending |
+| SET-02 | Phase 12 | Pending |
+| SET-03 | Phase 12 | Pending |
+| SET-04 | Phase 12 | Pending |
+| SET-05 | Phase 12 | Pending |
+| SET-06 | Phase 12 | Pending |
+| TIER-01 | Phase 13 | Pending |
+| TIER-02 | Phase 13 | Pending |
+| TIER-03 | Phase 13 | Pending |
+| TIER-04 | Phase 13 | Pending |
+| TIER-05 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 36 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 36
+- Mapped to phases: 36 (100% coverage)
+- Unmapped: 0
+
+**Phase breakdown:**
+- Phase 8: 6 requirements (PLUG-01 through PLUG-06)
+- Phase 9: 7 requirements (CREW-01 through CREW-07)
+- Phase 10: 6 requirements (SCHED-01 through SCHED-06)
+- Phase 11: 6 requirements (TILE-01 through TILE-06)
+- Phase 12: 6 requirements (SET-01 through SET-06)
+- Phase 13: 5 requirements (TIER-01 through TIER-05)
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-14*
+*Last updated: 2026-02-14 after roadmap creation*
