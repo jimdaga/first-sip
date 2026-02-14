@@ -23,6 +23,7 @@ type Config struct {
 	LogFormat          string
 	Env                string
 	Port               string
+	PluginDir          string
 }
 
 // Load reads configuration from environment variables
@@ -44,6 +45,7 @@ func Load() *Config {
 		LogFormat:          getEnvWithDefault("LOG_FORMAT", "text"),
 		Env:                getEnvWithDefault("ENV", "development"),
 		Port:               getEnvWithDefault("PORT", "8080"),
+		PluginDir:          getEnvWithDefault("PLUGIN_DIR", "./plugins"),
 	}
 
 	// Warn if using default session secret (insecure for production)

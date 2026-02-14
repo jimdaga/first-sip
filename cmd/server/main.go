@@ -17,6 +17,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/config"
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/plugins"
 	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/webhook"
 	"github.com/jimdaga/first-sip/internal/worker"
@@ -75,6 +76,18 @@ func main() {
 			if err := database.SeedDevData(db); err != nil {
 				log.Printf("Warning: seed data failed: %v", err)
 			}
+		}
+	}
+
+	// Initialize plugin registry
+	var pluginRegistry *plugins.Registry
+	if db != nil {
+		var err error
+		pluginRegistry, err = plugins.InitPlugins(db, cfg.PluginDir)
+		if err != nil {
+			log.Printf("Warning: plugin initialization failed: %v", err)
+		} else {
+			log.Printf("Plugin registry loaded: %d plugin(s)", pluginRegistry.Count())
 		}
 	}
 

@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/plugins"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -81,6 +82,24 @@ func SeedDevData(db *gorm.DB) error {
 		return err
 	}
 
-	log.Println("Seeded dev data: 1 user, 1 auth identity, 2 briefings")
+	// Create plugin configuration for dev user
+	var plugin plugins.Plugin
+	result = db.Where("name = ?", "daily-news-digest").First(&plugin)
+	if result.Error == nil {
+		// Plugin exists - create user configuration
+		userPluginConfig := plugins.UserPluginConfig{
+			UserID:   user.ID,
+			PluginID: plugin.ID,
+			Enabled:  true,
+			Settings: datatypes.JSON([]byte(`{"frequency":"daily","preferred_time":"07:00","topics":["technology","business"]}`)),
+		}
+		db.Where("user_id = ? AND plugin_id = ?", user.ID, plugin.ID).FirstOrCreate(&userPluginConfig)
+		log.Println("Seeded dev data: 1 user, 1 auth identity, 2 briefings, 1 plugin config")
+	} else {
+		// Plugin not found - log warning but don't fail
+		log.Printf("Warning: daily-news-digest plugin not found, skipping plugin config seed: %v", result.Error)
+		log.Println("Seeded dev data: 1 user, 1 auth identity, 2 briefings")
+	}
+
 	return nil
 }
