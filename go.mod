@@ -1,6 +1,6 @@
 module github.com/jimdaga/first-sip
 
-go 1.24.0
+go 1.26
 
 require (
 	github.com/a-h/templ v0.3.977
@@ -9,6 +9,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/gorilla/sessions v1.4.0
 	github.com/hibiken/asynq v0.26.0
+	github.com/kaptinlin/jsonschema v0.6.15
 	github.com/markbates/goth v1.82.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/datatypes v1.2.7
@@ -27,12 +28,13 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.2 // indirect
+	github.com/go-json-experiment/json v0.0.0-20251027170946-4849db3c2f7e // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/goccy/go-yaml v1.18.0 // indirect
+	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
@@ -44,6 +46,9 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kaptinlin/go-i18n v0.2.7 // indirect
+	github.com/kaptinlin/jsonpointer v0.4.14 // indirect
+	github.com/kaptinlin/messageformat-go v0.4.16 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
