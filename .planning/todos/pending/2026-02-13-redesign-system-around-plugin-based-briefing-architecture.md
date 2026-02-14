@@ -16,7 +16,9 @@ Major architectural redesign with 6 pillars:
 ### 1. Core Plugin Model
 - Each briefing type = independent plugin
 - Plugin generates its own briefing records in the database
-- Plugin owns its own backend AI workflows (bundled within the plugin)
+- Plugin owns its own backend AI workflows (bundled within the plugin) — **using CrewAI (NOT n8n)**
+- AI workflows implemented as CrewAI agents/tasks in Python, triggered by Go scheduler via internal HTTP (FastAPI sidecar)
+- CrewAI chosen for: easiest workflow authoring, large community, code-first (workflows are versionable Python code)
 - YAML metadata file per plugin: name, description, owner, version, required capabilities, default configuration
 - Settings schema/template defining configurable options (schedule time, frequency, plugin-specific inputs)
 
