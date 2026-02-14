@@ -45,7 +45,7 @@ func DashboardPage(name string, email string, latestBriefing *models.Briefing) t
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"glass-navbar\"><div class=\"navbar-inner\"><div class=\"navbar-brand\"><a href=\"/dashboard\" class=\"navbar-brand-link\"><img src=\"/static/img/logo.png\" alt=\"\" class=\"navbar-logo\"> <span class=\"navbar-title\">First Sip</span></a></div><div class=\"navbar-actions\"><a href=\"/history\" class=\"navbar-link\">History</a> <span class=\"navbar-user\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"glass-navbar\"><div class=\"navbar-inner\"><div class=\"navbar-brand\"><a href=\"/dashboard\" class=\"navbar-brand-link\"><img src=\"/static/img/coffeeicon.png\" alt=\"\" class=\"navbar-logo\"> <span class=\"navbar-title\">First Sip</span></a></div><div class=\"navbar-actions\"><a href=\"/history\" class=\"navbar-link\">History</a> <span class=\"navbar-user\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

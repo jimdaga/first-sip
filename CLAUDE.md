@@ -20,11 +20,15 @@ The visual identity is a **glass morphism** aesthetic with warm, coffee-inspired
 | `--accent`               | `#D4915E`                      | Primary CTA, links, bullet markers |
 | `--accent-hover`         | `#C07A48`                      | Hover state for accent   |
 | `--accent-glow`          | `rgba(212, 145, 94, 0.3)`     | Button glow shadows      |
-| `--text-primary`         | `#1C1C2E`                      | Headings, body text      |
-| `--text-secondary`       | `rgba(28, 28, 46, 0.55)`      | Supporting text          |
-| `--text-tertiary`        | `rgba(28, 28, 46, 0.35)`      | Placeholder, empty state |
+| `--text-primary`         | `#2A1F18`                      | Headings, body text (warm charcoal) |
+| `--text-secondary`       | `rgba(42, 31, 24, 0.58)`      | Supporting text          |
+| `--text-tertiary`        | `rgba(42, 31, 24, 0.35)`      | Placeholder, empty state |
 | `--status-unread-text`   | `#C94040`                      | Unread badge, errors     |
-| `--status-read-text`     | `#1E8C52`                      | Read badge               |
+| `--status-read-text`     | `#2D7A4A`                      | Read badge (botanical fern green) |
+| `--navbar-bg`            | Dark espresso gradient          | Navbar background        |
+| `--navbar-text`          | `#FEF5ED`                      | Navbar primary text (cream) |
+| `--navbar-text-secondary`| `rgba(254, 245, 237, 0.6)`    | Navbar secondary text    |
+| `--navbar-border`        | `rgba(212, 145, 94, 0.15)`    | Navbar bottom border (warm accent) |
 
 ### Glass Material Tokens
 

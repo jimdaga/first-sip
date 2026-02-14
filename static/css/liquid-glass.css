@@ -26,17 +26,17 @@
   --accent: #D4915E;
   --accent-hover: #C07A48;
   --accent-glow: rgba(212, 145, 94, 0.3);
-  --text-primary: #1C1C2E;
-  --text-secondary: rgba(28, 28, 46, 0.55);
-  --text-tertiary: rgba(28, 28, 46, 0.35);
+  --text-primary: #2A1F18;
+  --text-secondary: rgba(42, 31, 24, 0.58);
+  --text-tertiary: rgba(42, 31, 24, 0.35);
 
   /* Status */
   --status-unread-bg: rgba(235, 87, 87, 0.1);
   --status-unread-text: #C94040;
   --status-unread-border: rgba(235, 87, 87, 0.2);
-  --status-read-bg: rgba(39, 174, 96, 0.1);
-  --status-read-text: #1E8C52;
-  --status-read-border: rgba(39, 174, 96, 0.2);
+  --status-read-bg: rgba(45, 122, 74, 0.1);
+  --status-read-text: #2D7A4A;
+  --status-read-border: rgba(45, 122, 74, 0.2);
 
   /* Radius */
   --radius-xl: 28px;
@@ -44,20 +44,32 @@
   --radius-md: 14px;
   --radius-sm: 10px;
 
-  /* Shadows */
+  /* Shadows — warm-cast (Edison pendant glow) */
   --shadow-glass:
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.04);
+    0 8px 32px rgba(42, 31, 24, 0.08),
+    0 2px 8px rgba(42, 31, 24, 0.05);
   --shadow-glass-hover:
-    0 16px 48px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.05);
+    0 16px 48px rgba(42, 31, 24, 0.10),
+    0 4px 12px rgba(42, 31, 24, 0.06);
   --shadow-glass-elevated:
-    0 24px 64px rgba(0, 0, 0, 0.10),
-    0 8px 20px rgba(0, 0, 0, 0.06);
+    0 24px 64px rgba(42, 31, 24, 0.12),
+    0 8px 20px rgba(42, 31, 24, 0.07);
 
   /* Typography */
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body: 'Outfit', sans-serif;
+
+  /* Navbar — dark espresso bar */
+  --navbar-bg: linear-gradient(
+    180deg,
+    #1E1612 0%,
+    #28201A 100%
+  );
+  --navbar-text: #FEF5ED;
+  --navbar-text-secondary: rgba(254, 245, 237, 0.6);
+  --navbar-border: rgba(212, 145, 94, 0.15);
+  --navbar-glow: 0 2px 20px rgba(0, 0, 0, 0.25),
+    0 1px 6px rgba(0, 0, 0, 0.15);
 
   /* Motion */
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
@@ -140,7 +152,7 @@ body {
   height: 45vw;
   max-width: 500px;
   max-height: 500px;
-  background: rgba(210, 185, 165, 0.3);
+  background: rgba(85, 145, 95, 0.12);
   bottom: -10%;
   left: 25%;
   animation: float3 22s ease-in-out infinite;
@@ -248,15 +260,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.3) 0%,
-    rgba(255, 255, 255, 0.15) 100%
-  );
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+  background: var(--navbar-bg);
+  border-bottom: 1px solid var(--navbar-border);
+  box-shadow: var(--navbar-glow);
 }
 
 .navbar-inner {
@@ -285,7 +291,7 @@ body {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.15rem;
-  color: var(--text-primary);
+  color: var(--navbar-text);
   letter-spacing: -0.02em;
 }
 
@@ -298,7 +304,7 @@ body {
 .navbar-user {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--navbar-text-secondary);
 }
 
 
@@ -812,17 +818,30 @@ body {
 .navbar-link {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--navbar-text-secondary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .navbar-link:hover {
-  color: var(--text-primary);
+  color: var(--navbar-text);
 }
 
 .navbar-link-active {
   color: var(--accent);
+}
+
+/* Ghost button inside navbar */
+.glass-navbar .glass-btn-ghost {
+  background: rgba(254, 245, 237, 0.08);
+  color: var(--navbar-text-secondary);
+  border-color: rgba(254, 245, 237, 0.12);
+}
+
+.glass-navbar .glass-btn-ghost:hover {
+  background: rgba(254, 245, 237, 0.16);
+  color: var(--navbar-text);
+  border-color: rgba(254, 245, 237, 0.25);
 }
 
 .navbar-brand-link {
