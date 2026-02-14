@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-13)
+See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** A user's configured briefing plugins run on schedule and their latest results appear automatically on a tile-based dashboard — no manual action needed to receive fresh, personalized briefings every day.
 **Current focus:** v1.1 Plugin Architecture
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 8 — Plugin Framework Foundation
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-13 — Milestone v1.1 started
+Status: Ready for planning
+Last activity: 2026-02-14 — v1.1 roadmap created (6 phases, 36 requirements)
 
 ## Performance Metrics
 
@@ -39,23 +39,31 @@ Last activity: 2026-02-13 — Milestone v1.1 started
 
 All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
+**v1.1 decisions:**
+- CrewAI over n8n for AI workflows (code-first, large community, bundleable per plugin)
+- Redis Streams for Go → CrewAI communication (no new infra, async decoupling, independent scaling)
+- Database-backed per-user scheduling (NOT per-user Asynq cron entries — avoids O(users × plugins) Redis)
+- kaptinlin/jsonschema for dynamic settings validation (Google's official JSON Schema for Go)
+- Schema versioning from day one (prevents metadata/state mismatch)
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-1. **Per-user briefing schedule configuration** (worker) — Add per-user BriefingSchedule/BriefingTimezone fields to User model so users can configure their own daily briefing time from profile settings
-2. **Redesign system around plugin-based briefing architecture** (planning) — Major architectural redesign: plugin model for briefing types, per-user config, centralized scheduler, tile-based homepage, account tiers, plugin management dashboard
+1. **Per-user briefing schedule configuration** (worker) — Addressed by Phase 10 (SCHED-01 through SCHED-06)
+2. **Redesign system around plugin-based briefing architecture** (planning) — Addressed by v1.1 milestone (Phases 8-13)
 
 ### Blockers/Concerns
 
-None.
+- CrewAI 2026 production patterns need validation (Phase 9 flagged for deeper research)
+- kaptinlin/jsonschema extension field preservation (x-component) needs testing (Phase 12 flagged)
 
 ## Session Continuity
 
-Last session: 2026-02-13 (v1.1 milestone initialization)
-Stopped at: Defining requirements for v1.1 Plugin Architecture
-Resume with: /gsd:new-milestone (in progress)
+Last session: 2026-02-14 (v1.1 milestone planning complete)
+Stopped at: Roadmap created, ready to plan Phase 8
+Resume with: /gsd:plan-phase 8
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-13 after v1.1 milestone start*
+*Last updated: 2026-02-14 after v1.1 roadmap creation*
