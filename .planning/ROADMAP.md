@@ -54,22 +54,16 @@
 
 ---
 
-#### Phase 8: Plugin Framework Foundation
+#### Phase 8: Plugin Framework Foundation ✅
 **Goal**: Plugin metadata system with database-backed registry and end-to-end working example plugin
 **Depends on**: v1.0 infrastructure
 **Requirements**: PLUG-01, PLUG-02, PLUG-03, PLUG-04, PLUG-05, PLUG-06
-**Success Criteria** (what must be TRUE):
-  1. Plugin metadata defined in YAML files with name, description, version, default settings schema
-  2. Plugin registry discovers and loads all plugins from `/plugins` directory at startup
-  3. Plugin, UserPluginConfig, and PluginRun database models exist with GORM migrations applied
-  4. Schema versioning field exists in plugin metadata and templates handle missing fields with defaults
-  5. At least one example plugin (daily news digest) exists with complete metadata and settings schema
-**Plans**: 3 plans
+**Completed**: 2026-02-14
 
 Plans:
-- [ ] 08-01-PLAN.md — Plugin metadata struct, YAML loader, directory discovery, and in-memory registry
-- [ ] 08-02-PLAN.md — GORM models (Plugin, UserPluginConfig, PluginRun), JSON Schema validator, SQL migrations
-- [ ] 08-03-PLAN.md — Daily news digest example plugin, startup wiring, and seed data
+- [x] 08-01-PLAN.md — Plugin metadata struct, YAML loader, directory discovery, and in-memory registry
+- [x] 08-02-PLAN.md — GORM models (Plugin, UserPluginConfig, PluginRun), JSON Schema validator, SQL migrations
+- [x] 08-03-PLAN.md — Daily news digest example plugin, startup wiring, and seed data
 
 ---
 
@@ -179,7 +173,7 @@ Plans:
 | 5. Briefing Display | v1.0 | 1/1 | Complete | 2026-02-12 |
 | 6. Scheduled Generation | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 7. Briefing History | v1.0 | 1/1 | Complete | 2026-02-13 |
-| 8. Plugin Framework Foundation | v1.1 | 0/3 | Planning | - |
+| 8. Plugin Framework Foundation | v1.1 | 3/3 | Complete | 2026-02-14 |
 | 9. CrewAI Sidecar Integration | v1.1 | 0/2 | Not started | - |
 | 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
 | 11. Tile-Based Dashboard | v1.1 | 0/2 | Not started | - |
@@ -188,4 +182,4 @@ Plans:
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-14 after Phase 8 planning*
+*Last updated: 2026-02-14 after Phase 8 execution complete*
