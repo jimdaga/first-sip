@@ -11,6 +11,7 @@ require (
 	github.com/hibiken/asynq v0.26.0
 	github.com/kaptinlin/jsonschema v0.6.15
 	github.com/markbates/goth v1.82.0
+	github.com/redis/go-redis/v9 v9.17.3
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/datatypes v1.2.7
 	gorm.io/driver/postgres v1.5.9
@@ -58,7 +59,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.0 // indirect
-	github.com/redis/go-redis/v9 v9.14.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
