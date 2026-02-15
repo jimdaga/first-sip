@@ -45,6 +45,31 @@ services:
       - redis
     restart: unless-stopped
 
+  sidecar:
+    build:
+      context: .
+      dockerfile: sidecar/Dockerfile
+    container_name: first-sip-sidecar
+    environment:
+      REDIS_URL: redis://redis:6379
+      PLUGIN_DIR: /app/plugins
+      CREW_TIMEOUT_SECONDS: "300"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./plugins:/app/plugins:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   postgres_data:
   redis_data:

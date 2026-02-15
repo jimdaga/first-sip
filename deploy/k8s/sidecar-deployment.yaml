@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: first-sip-sidecar
+  labels:
+    app: first-sip-sidecar
+    component: crewai-executor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: first-sip-sidecar
+  template:
+    metadata:
+      labels:
+        app: first-sip-sidecar
+        component: crewai-executor
+    spec:
+      containers:
+        - name: sidecar
+          image: first-sip-sidecar:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: first-sip-secrets
+                  key: redis-url
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: first-sip-secrets
+                  key: openai-api-key
+            - name: PLUGIN_DIR
+              value: "/app/plugins"
+            - name: CREW_TIMEOUT_SECONDS
+              value: "300"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: first-sip-sidecar
+  labels:
+    app: first-sip-sidecar
+spec:
+  selector:
+    app: first-sip-sidecar
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: first-sip-sidecar
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: first-sip-sidecar
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
