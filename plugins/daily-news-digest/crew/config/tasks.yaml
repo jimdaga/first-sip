@@ -1,0 +1,29 @@
+research_task:
+  description: >
+    Research breaking news in these topics: {topics}.
+    Find 3-5 high-quality stories from reputable sources.
+    For each story, note: headline, source, key facts, why it matters.
+  expected_output: >
+    JSON array of stories with fields: headline, source_url,
+    summary (2-3 sentences), relevance_score (1-10)
+
+write_task:
+  description: >
+    Using the research findings, write a news digest.
+    Format: Brief intro paragraph, then 3-5 story summaries.
+    Each summary: headline, 2-3 sentence explanation, source credit.
+    Tone: Professional but conversational. Max 500 words total.
+    Summary length preference: {summary_length}.
+  expected_output: >
+    Markdown-formatted news digest ready for display
+
+review_task:
+  description: >
+    Review the news digest for:
+    - Factual accuracy (check claims against research)
+    - Clarity (no jargon, clear explanations)
+    - Formatting (proper Markdown, consistent style)
+    - Bias detection (neutral tone maintained)
+    If issues found, return revised version. If acceptable, approve as-is.
+  expected_output: >
+    Final approved news digest in Markdown format, with quality score (1-10)
