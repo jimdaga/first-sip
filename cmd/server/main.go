@@ -18,6 +18,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/plugins"
+	"github.com/jimdaga/first-sip/internal/streams"
 	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/webhook"
 	"github.com/jimdaga/first-sip/internal/worker"
@@ -101,6 +102,14 @@ func main() {
 		}
 		defer stopScheduler()
 
+		// Start Redis Streams result consumer for CrewAI responses
+		stopResultConsumer, err := streams.StartResultConsumer(cfg.RedisURL, db)
+		if err != nil {
+			log.Printf("Warning: result consumer failed to start: %v", err)
+		} else {
+			defer stopResultConsumer()
+		}
+
 		if err := worker.Run(cfg, db, webhookClient); err != nil {
 			log.Fatalf("Worker failed: %v", err)
 		}
@@ -110,6 +119,7 @@ func main() {
 	// Start embedded worker in development mode (non-blocking)
 	var stopWorker func()
 	var stopScheduler func()
+	var stopResultConsumer func()
 	if cfg.Env == "development" && cfg.RedisURL != "" {
 		log.Println("Starting embedded worker for development")
 		var err error
@@ -123,6 +133,13 @@ func main() {
 		stopScheduler, err = worker.StartScheduler(cfg)
 		if err != nil {
 			log.Fatalf("Failed to start embedded scheduler: %v", err)
+		}
+
+		// Start embedded result consumer for CrewAI responses
+		log.Println("Starting embedded result consumer for development")
+		stopResultConsumer, err = streams.StartResultConsumer(cfg.RedisURL, db)
+		if err != nil {
+			log.Printf("Warning: result consumer failed to start: %v", err)
 		}
 	}
 
@@ -252,6 +269,11 @@ func main() {
 	// Shut down embedded scheduler
 	if stopScheduler != nil {
 		stopScheduler()
+	}
+
+	// Shut down embedded result consumer
+	if stopResultConsumer != nil {
+		stopResultConsumer()
 	}
 
 	// Shut down embedded worker
