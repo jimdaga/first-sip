@@ -10,15 +10,15 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 9 — CrewAI Sidecar Integration
-Plan: 1/3 complete
+Plan: 2/3 complete
 Status: In progress
-Last activity: 2026-02-14 — Plan 09-01 executed (Redis Streams infrastructure)
+Last activity: 2026-02-15 — Plan 09-02 executed (FastAPI sidecar service)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 15
-- Average duration: 8.3 min
+- Total plans completed: 16
+- Average duration: 7.9 min
 - Total execution time: 2.1 hours
 
 **By Phase:**
@@ -33,7 +33,7 @@ Last activity: 2026-02-14 — Plan 09-01 executed (Redis Streams infrastructure)
 | 06 | 1 | 14 min | 14.0 min |
 | 07 | 1 | 9 min | 9.0 min |
 | 08 | 3 | 5 min | 1.7 min |
-| 09 | 1 | 3 min | 3.0 min |
+| 09 | 2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -57,6 +57,11 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - PluginDir config field with PLUGIN_DIR env var support for environment-based override
 - [Phase 09]: Redis Streams for Go-CrewAI communication with consumer groups and XACK pattern
 - [Phase 09]: Non-fatal result consumer errors for graceful degradation (v1.0 still works if streams fail)
+- [Phase 09-02]: FastAPI lifespan context manager for startup/shutdown (replaces deprecated on_event)
+- [Phase 09-02]: Separate Redis client for health checks prevents blocking worker XREADGROUP
+- [Phase 09-02]: Two-phase consumer loop recovers unACKed messages before reading new ones
+- [Phase 09-02]: Dynamic crew loading via importlib with create_crew(settings) factory convention
+- [Phase 09-02]: asyncio.timeout wrapper around CrewAI workflows prevents thread leaks
 
 ### Pending Todos
 
@@ -72,10 +77,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-14 (Phase 9 Plan 01 execution)
-Stopped at: Completed 09-01-PLAN.md
-Resume with: /gsd:execute-phase 09 (continue with plan 02)
+Last session: 2026-02-15 (Phase 9 Plan 02 execution)
+Stopped at: Completed 09-02-PLAN.md
+Resume with: /gsd:execute-phase 09 (continue with plan 03)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-14 after Phase 9 Plan 01 execution*
+*Last updated: 2026-02-15 after Phase 9 Plan 02 execution*
