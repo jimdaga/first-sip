@@ -1,0 +1,17 @@
+[project]
+name = "first-sip-sidecar"
+version = "0.1.0"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "crewai>=1.9.3",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "redis>=6.1.0",
+]
+
+[project.scripts]
+sidecar = "main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
