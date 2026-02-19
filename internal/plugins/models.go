@@ -1,8 +1,10 @@
 package plugins
 
 import (
+	"fmt"
 	"time"
 
+	cron "github.com/robfig/cron/v3"
 	"github.com/jimdaga/first-sip/internal/models"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -30,15 +32,17 @@ type Plugin struct {
 	Enabled            bool           `gorm:"default:true"`
 }
 
-// UserPluginConfig stores per-user per-plugin settings
+// UserPluginConfig stores per-user per-plugin settings including optional scheduling
 type UserPluginConfig struct {
 	gorm.Model
-	UserID   uint           `gorm:"not null;uniqueIndex:idx_user_plugin"`
-	PluginID uint           `gorm:"not null;uniqueIndex:idx_user_plugin"`
-	Settings datatypes.JSON `gorm:"type:jsonb"`
-	Enabled  bool           `gorm:"default:false"`
-	User     models.User    `gorm:"constraint:OnDelete:CASCADE;"`
-	Plugin   Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
+	UserID         uint           `gorm:"not null;uniqueIndex:idx_user_plugin"`
+	PluginID       uint           `gorm:"not null;uniqueIndex:idx_user_plugin"`
+	Settings       datatypes.JSON `gorm:"type:jsonb"`
+	Enabled        bool           `gorm:"default:false"`
+	CronExpression string         `gorm:"column:cron_expression"` // nullable — empty means no schedule
+	Timezone       string         `gorm:"column:timezone;not null;default:'UTC'"` // IANA timezone name
+	User           models.User    `gorm:"constraint:OnDelete:CASCADE;"`
+	Plugin         Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // PluginRun tracks a single plugin execution
@@ -55,4 +59,21 @@ type PluginRun struct {
 	CompletedAt  *time.Time     `gorm:"column:completed_at"`
 	User         models.User    `gorm:"constraint:OnDelete:CASCADE;"`
 	Plugin       Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
+}
+
+// cronParser is a shared parser for standard 5-field cron expressions.
+var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+
+// ValidateCronExpression parses a 5-field cron expression and returns an error
+// if the expression is invalid. Returns nil if the expression is valid.
+// Used at write time (settings UI) and evaluation time (scheduler).
+func ValidateCronExpression(expr string) error {
+	if expr == "" {
+		return fmt.Errorf("cron expression must not be empty")
+	}
+	_, err := cronParser.Parse(expr)
+	if err != nil {
+		return fmt.Errorf("invalid cron expression %q: %w", expr, err)
+	}
+	return nil
 }
