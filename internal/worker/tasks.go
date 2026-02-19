@@ -11,8 +11,9 @@ import (
 
 // Task type constants
 const (
-	TaskGenerateBriefing           = "briefing:generate"
+	TaskGenerateBriefing            = "briefing:generate"
 	TaskScheduledBriefingGeneration = "briefing:scheduled_generation"
+	TaskExecutePlugin               = "plugin:execute"
 )
 
 // Package-level Asynq client (singleton)
@@ -66,6 +67,40 @@ func EnqueueGenerateBriefing(briefingID uint) error {
 		// Check if duplicate task error (not a failure condition)
 		if errors.Is(err, asynq.ErrDuplicateTask) {
 			log.Printf("Briefing %d already queued (duplicate), skipping", briefingID)
+			return nil // Not an error - task already enqueued
+		}
+		return err
+	}
+	return nil
+}
+
+// EnqueueExecutePlugin enqueues a plugin execution task.
+// Uses a 10-minute timeout (CrewAI workflows are long-running), retries up to 2 times,
+// retains for 24 hours, and prevents duplicate executions within 30 minutes.
+func EnqueueExecutePlugin(pluginID uint, userID uint, pluginName string, settings map[string]interface{}) error {
+	payload, err := json.Marshal(map[string]interface{}{
+		"plugin_id":   pluginID,
+		"user_id":     userID,
+		"plugin_name": pluginName,
+		"settings":    settings,
+	})
+	if err != nil {
+		return err
+	}
+
+	task := asynq.NewTask(
+		TaskExecutePlugin,
+		payload,
+		asynq.MaxRetry(2),
+		asynq.Timeout(10*time.Minute),
+		asynq.Retention(24*time.Hour),
+		asynq.Unique(30*time.Minute), // Prevent duplicate plugin executions
+	)
+
+	_, err = client.Enqueue(task)
+	if err != nil {
+		if errors.Is(err, asynq.ErrDuplicateTask) {
+			log.Printf("Plugin %s (user %d) already queued (duplicate), skipping", pluginName, userID)
 			return nil // Not an error - task already enqueued
 		}
 		return err

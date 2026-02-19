@@ -8,9 +8,12 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/jimdaga/first-sip/internal/config"
 	"github.com/jimdaga/first-sip/internal/models"
+	"github.com/jimdaga/first-sip/internal/plugins"
+	"github.com/jimdaga/first-sip/internal/streams"
 	"github.com/jimdaga/first-sip/internal/webhook"
 	"gorm.io/gorm"
 )
@@ -44,8 +47,8 @@ func (a *asynqLoggerAdapter) Fatal(args ...interface{}) {
 
 // Run starts the Asynq worker server and blocks until shutdown signal.
 // Use this for standalone worker mode.
-func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
-	srv, mux, err := newServer(cfg, db, webhookClient)
+func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client, publisher *streams.Publisher) error {
+	srv, mux, err := newServer(cfg, db, webhookClient, publisher)
 	if err != nil {
 		return err
 	}
@@ -58,8 +61,8 @@ func Run(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) error {
 
 // Start starts the Asynq worker in non-blocking mode and returns a stop function.
 // Use this for embedded mode so the caller can coordinate shutdown.
-func Start(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (stop func(), err error) {
-	srv, mux, err := newServer(cfg, db, webhookClient)
+func Start(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client, publisher *streams.Publisher) (stop func(), err error) {
+	srv, mux, err := newServer(cfg, db, webhookClient, publisher)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +72,7 @@ func Start(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (stop
 	return func() { srv.Shutdown() }, nil
 }
 
-func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (*asynq.Server, *asynq.ServeMux, error) {
+func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client, publisher *streams.Publisher) (*asynq.Server, *asynq.ServeMux, error) {
 	redisOpt, err := asynq.ParseRedisURI(cfg.RedisURL)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse Redis URL: %w", err)
@@ -90,6 +93,7 @@ func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client) (
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger, db, webhookClient))
 	mux.HandleFunc(TaskScheduledBriefingGeneration, handleScheduledBriefingGeneration(logger, db))
+	mux.HandleFunc(TaskExecutePlugin, handleExecutePlugin(logger, db, publisher))
 
 	logger.Info("Worker starting", "concurrency", 5, "redis", cfg.RedisURL)
 	return srv, mux, nil
@@ -247,6 +251,99 @@ func handleGenerateBriefing(logger *slog.Logger, db *gorm.DB, webhookClient *web
 		logger.Info(
 			"Briefing generation completed",
 			"briefing_id", payload.BriefingID,
+		)
+
+		return nil
+	}
+}
+
+// handleExecutePlugin processes plugin execution tasks by creating a PluginRun record
+// and publishing the request to the Redis Stream for the CrewAI sidecar to consume.
+func handleExecutePlugin(logger *slog.Logger, db *gorm.DB, publisher *streams.Publisher) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, task *asynq.Task) error {
+		// Unmarshal the payload
+		var payload struct {
+			PluginID   uint                   `json:"plugin_id"`
+			UserID     uint                   `json:"user_id"`
+			PluginName string                 `json:"plugin_name"`
+			Settings   map[string]interface{} `json:"settings"`
+		}
+		if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+			return fmt.Errorf("invalid payload: %w", asynq.SkipRetry)
+		}
+
+		logger.Info(
+			"Processing plugin:execute task",
+			"plugin_name", payload.PluginName,
+			"plugin_id", payload.PluginID,
+			"user_id", payload.UserID,
+		)
+
+		// Generate a unique plugin_run_id for external tracking
+		pluginRunID := uuid.New().String()
+
+		// Marshal settings to JSON for storage
+		settingsJSON, err := json.Marshal(payload.Settings)
+		if err != nil {
+			return fmt.Errorf("failed to marshal settings: %w", asynq.SkipRetry)
+		}
+
+		// Create PluginRun record with pending status
+		now := time.Now()
+		pluginRun := plugins.PluginRun{
+			PluginRunID: pluginRunID,
+			UserID:      payload.UserID,
+			PluginID:    payload.PluginID,
+			Status:      plugins.PluginRunStatusPending,
+			Input:       settingsJSON,
+			StartedAt:   &now,
+		}
+		if err := db.WithContext(ctx).Create(&pluginRun).Error; err != nil {
+			return fmt.Errorf("failed to create plugin run record: %w", err)
+		}
+
+		logger.Info("Created PluginRun record", "plugin_run_id", pluginRunID, "db_id", pluginRun.ID)
+
+		// Graceful degradation: if publisher is not configured, fail the run
+		if publisher == nil {
+			logger.Warn("Streams publisher not configured — cannot publish plugin request",
+				"plugin_run_id", pluginRunID)
+			db.Model(&pluginRun).Updates(map[string]interface{}{
+				"status":        plugins.PluginRunStatusFailed,
+				"error_message": "streams publisher not configured",
+			})
+			return fmt.Errorf("streams publisher not configured: %w", asynq.SkipRetry)
+		}
+
+		// Build and publish the plugin request to Redis Stream
+		req := streams.PluginRequest{
+			PluginRunID: pluginRunID,
+			PluginName:  payload.PluginName,
+			UserID:      payload.UserID,
+			Settings:    payload.Settings,
+		}
+		msgID, err := publisher.PublishPluginRequest(ctx, req)
+		if err != nil {
+			logger.Error("Failed to publish plugin request to stream",
+				"plugin_run_id", pluginRunID,
+				"error", err.Error(),
+			)
+			db.Model(&pluginRun).Updates(map[string]interface{}{
+				"status":        plugins.PluginRunStatusFailed,
+				"error_message": err.Error(),
+			})
+			// Return error (retryable — stream may be temporarily unavailable)
+			return fmt.Errorf("failed to publish to stream: %w", err)
+		}
+
+		// Update PluginRun to processing status
+		db.Model(&pluginRun).Update("status", plugins.PluginRunStatusProcessing)
+
+		logger.Info(
+			"Plugin request published to stream",
+			"plugin_run_id", pluginRunID,
+			"stream_msg_id", msgID,
+			"plugin_name", payload.PluginName,
 		)
 
 		return nil

@@ -49,6 +49,18 @@ func main() {
 	// Create webhook client
 	webhookClient := webhook.NewClient(cfg.N8NWebhookURL, cfg.N8NWebhookSecret, cfg.N8NStubMode)
 
+	// Initialize streams Publisher for Go -> CrewAI communication
+	var publisher *streams.Publisher
+	if cfg.RedisURL != "" {
+		var err error
+		publisher, err = streams.NewPublisher(cfg.RedisURL)
+		if err != nil {
+			log.Printf("Warning: streams publisher failed to initialize: %v", err)
+		} else {
+			defer publisher.Close()
+		}
+	}
+
 	// Initialize Asynq client (runs in BOTH modes so server can enqueue tasks)
 	if cfg.RedisURL != "" {
 		if err := worker.InitClient(cfg.RedisURL); err != nil {
@@ -110,7 +122,7 @@ func main() {
 			defer stopResultConsumer()
 		}
 
-		if err := worker.Run(cfg, db, webhookClient); err != nil {
+		if err := worker.Run(cfg, db, webhookClient, publisher); err != nil {
 			log.Fatalf("Worker failed: %v", err)
 		}
 		return
@@ -123,7 +135,7 @@ func main() {
 	if cfg.Env == "development" && cfg.RedisURL != "" {
 		log.Println("Starting embedded worker for development")
 		var err error
-		stopWorker, err = worker.Start(cfg, db, webhookClient)
+		stopWorker, err = worker.Start(cfg, db, webhookClient, publisher)
 		if err != nil {
 			log.Fatalf("Failed to start embedded worker: %v", err)
 		}
