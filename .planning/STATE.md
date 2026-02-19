@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 9 — CrewAI Sidecar Integration
-Plan: 4/4 complete
-Status: Complete
-Last activity: 2026-02-18 — Plan 09-04 executed (publisher wiring / gap closure)
+Phase: 10 — Per-User Scheduling
+Plan: 1/? complete
+Status: In Progress
+Last activity: 2026-02-19 — Plan 10-01 executed (scheduling engine: migration, model, scheduler)
 
 ## Performance Metrics
 
@@ -34,6 +34,7 @@ Last activity: 2026-02-18 — Plan 09-04 executed (publisher wiring / gap closur
 | 07 | 1 | 9 min | 9.0 min |
 | 08 | 3 | 5 min | 1.7 min |
 | 09 | 4 | 15 min | 3.8 min |
+| 10 | 1 | 3 min | 3.0 min |
 
 ## Accumulated Context
 
@@ -70,6 +71,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 09-04]: PluginRun record created before stream publish attempt (audit trail exists regardless of publish outcome)
 - [Phase 09-04]: Publish failures retryable (stream down); nil publisher non-retryable (misconfiguration)
 - [Phase 09-04]: Publisher initialized in main.go with non-fatal warning so app serves v1.0 even if streams fail to initialize
+- [Phase 10-01]: Per-minute Asynq scheduler fires TaskPerMinuteScheduler; handler queries DB and dispatches due user-plugin pairs (not O(users*plugins) Redis entries)
+- [Phase 10-01]: CRON_TZ=<timezone> prefix on cron expressions for robfig/cron/v3 timezone-aware parsing
+- [Phase 10-01]: Cold-cache protection — zero lastRunAt treated as one minute ago prevents mass-fire on startup
+- [Phase 10-01]: Redis hash HSET/HGET for last-run cache (scheduler:last_run key, userID:pluginID fields) avoids DB round-trips per tick
 
 ### Pending Todos
 
@@ -85,10 +90,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-18 (Phase 9 Plan 04 execution — gap closure)
-Stopped at: Completed 09-04-PLAN.md (Phase 9 fully complete including gap closure)
-Resume with: /gsd:execute-phase 10 (next phase)
+Last session: 2026-02-19 (Phase 10 Plan 01 execution — scheduling engine)
+Stopped at: Completed 10-01-PLAN.md (scheduling engine: migration 000006, per-minute scheduler, Redis cache)
+Resume with: /gsd:execute-phase 10 (continue phase 10 plan 02)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-18 after Phase 9 Plan 04 execution*
+*Last updated: 2026-02-19 after Phase 10 Plan 01 execution*
