@@ -108,7 +108,7 @@ func main() {
 	if *workerMode {
 		log.Println("Starting in WORKER mode")
 		// Start scheduler in worker mode
-		stopScheduler, err := worker.StartScheduler(cfg)
+		stopScheduler, err := worker.StartPerMinuteScheduler(cfg)
 		if err != nil {
 			log.Fatalf("Failed to start scheduler: %v", err)
 		}
@@ -142,7 +142,7 @@ func main() {
 
 		// Start embedded scheduler
 		log.Println("Starting embedded scheduler for development")
-		stopScheduler, err = worker.StartScheduler(cfg)
+		stopScheduler, err = worker.StartPerMinuteScheduler(cfg)
 		if err != nil {
 			log.Fatalf("Failed to start embedded scheduler: %v", err)
 		}

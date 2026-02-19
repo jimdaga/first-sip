@@ -90,90 +90,20 @@ func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client, p
 		},
 	)
 
+	// Create a dedicated Redis client for the per-minute scheduler's last-run cache.
+	// This is separate from the Asynq internal connection.
+	rdb, err := newSchedulerRedisClient(cfg.RedisURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create scheduler Redis client: %w", err)
+	}
+
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskGenerateBriefing, handleGenerateBriefing(logger, db, webhookClient))
-	mux.HandleFunc(TaskScheduledBriefingGeneration, handleScheduledBriefingGeneration(logger, db))
 	mux.HandleFunc(TaskExecutePlugin, handleExecutePlugin(logger, db, publisher))
+	mux.HandleFunc(TaskPerMinuteScheduler, handlePerMinuteScheduler(logger, db, rdb))
 
 	logger.Info("Worker starting", "concurrency", 5, "redis", cfg.RedisURL)
 	return srv, mux, nil
-}
-
-// handleScheduledBriefingGeneration processes the daily scheduled briefing generation
-// by creating briefing records for all users and enqueueing individual generation tasks.
-func handleScheduledBriefingGeneration(logger *slog.Logger, db *gorm.DB) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, task *asynq.Task) error {
-		logger.Info("Starting scheduled briefing generation for all users")
-
-		// Query all active users
-		var users []models.User
-		if err := db.WithContext(ctx).Find(&users).Error; err != nil {
-			return fmt.Errorf("failed to query users: %w", err)
-		}
-
-		successCount := 0
-		skippedCount := 0
-		errorCount := 0
-
-		for _, user := range users {
-			// Skip users who already have a pending or processing briefing.
-			// This prevents orphaned records when tasks don't get processed
-			// (e.g., during app restarts or Asynq task recovery).
-			var existing models.Briefing
-			err := db.WithContext(ctx).
-				Where("user_id = ? AND status IN ?", user.ID, []string{
-					models.BriefingStatusPending,
-					models.BriefingStatusProcessing,
-				}).
-				First(&existing).Error
-			if err == nil {
-				// Mark stale pending briefings as failed (older than 10 minutes)
-				if existing.CreatedAt.Before(time.Now().Add(-10 * time.Minute)) {
-					db.Model(&existing).Updates(map[string]interface{}{
-						"status":        models.BriefingStatusFailed,
-						"error_message": "Stale: task was not processed within 10 minutes",
-					})
-					logger.Warn("Marked stale briefing as failed",
-						"briefing_id", existing.ID, "user_id", user.ID)
-				} else {
-					logger.Info("Skipping user with existing pending briefing",
-						"user_id", user.ID, "briefing_id", existing.ID)
-					skippedCount++
-					continue
-				}
-			}
-
-			// Create briefing record
-			briefing := models.Briefing{
-				UserID: user.ID,
-				Status: models.BriefingStatusPending,
-			}
-			if err := db.WithContext(ctx).Create(&briefing).Error; err != nil {
-				logger.Error("Failed to create briefing", "user_id", user.ID, "error", err)
-				errorCount++
-				continue
-			}
-
-			// Enqueue task (Unique option prevents duplicates)
-			if err := EnqueueGenerateBriefing(briefing.ID); err != nil {
-				logger.Error("Failed to enqueue briefing", "briefing_id", briefing.ID, "error", err)
-				errorCount++
-				continue
-			}
-
-			successCount++
-		}
-
-		logger.Info(
-			"Scheduled briefing generation completed",
-			"total_users", len(users),
-			"enqueued", successCount,
-			"skipped", skippedCount,
-			"errors", errorCount,
-		)
-
-		return nil
-	}
 }
 
 // handleGenerateBriefing processes briefing generation tasks by calling the webhook

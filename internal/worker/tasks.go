@@ -11,9 +11,9 @@ import (
 
 // Task type constants
 const (
-	TaskGenerateBriefing            = "briefing:generate"
-	TaskScheduledBriefingGeneration = "briefing:scheduled_generation"
-	TaskExecutePlugin               = "plugin:execute"
+	TaskGenerateBriefing   = "briefing:generate"
+	TaskExecutePlugin      = "plugin:execute"
+	TaskPerMinuteScheduler = "scheduler:per_minute"
 )
 
 // Package-level Asynq client (singleton)
