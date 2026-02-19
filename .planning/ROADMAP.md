@@ -91,11 +91,11 @@ Plans:
   3. Schedule matching respects user's local timezone (user in PST sees 6 AM PST, not 6 AM UTC)
   4. Global cron scheduler removed — all briefing generation driven by per-user per-plugin schedules
   5. Redis caches last-run times to reduce database load during per-minute evaluation
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
+- [ ] 10-01-PLAN.md — Migration, model update, per-minute scheduler engine with timezone-aware cron evaluation and Redis cache
+- [ ] 10-02-PLAN.md — Wire scheduler into main.go, remove global scheduler, add critical queue priority
 
 ---
 
@@ -176,4 +176,4 @@ Plans:
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-18 after Phase 9 execution complete*
+*Last updated: 2026-02-19 after Phase 10 planning complete*
