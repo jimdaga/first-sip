@@ -67,24 +67,17 @@ Plans:
 
 ---
 
-#### Phase 9: CrewAI Sidecar Integration
+#### Phase 9: CrewAI Sidecar Integration ✅
 **Goal**: Go-to-CrewAI communication pipeline working end-to-end with real multi-agent workflow execution
 **Depends on**: Phase 8
 **Requirements**: CREW-01, CREW-02, CREW-03, CREW-04, CREW-05, CREW-06, CREW-07
-**Success Criteria** (what must be TRUE):
-  1. FastAPI Python sidecar service runs with health check endpoint responding
-  2. Go publishes plugin execution requests to Redis Stream and CrewAI consumes them
-  3. CrewAI multi-agent workflow executes (researcher -> writer -> reviewer pattern) and publishes results to response stream
-  4. Go worker consumes CrewAI results from Redis Stream and creates Briefing records in database
-  5. Long-running AI workflows timeout gracefully after configurable duration (no hung processes)
-  6. CrewAI pods scale independently from Go workers in Kubernetes deployment
-**Plans:** 4 plans
+**Completed**: 2026-02-18
 
 Plans:
-- [ ] 09-01-PLAN.md — Redis Streams Go infrastructure (publisher, consumer, result handler)
-- [ ] 09-02-PLAN.md — FastAPI Python sidecar (health endpoints, worker loop, CrewAI executor with timeout)
-- [ ] 09-03-PLAN.md — CrewAI workflow for daily-news-digest, docker-compose sidecar, K8s deployment
-- [ ] 09-04-PLAN.md — Gap closure: wire Publisher into worker task handler with PluginRun record creation
+- [x] 09-01-PLAN.md — Redis Streams Go infrastructure (publisher, consumer, result handler)
+- [x] 09-02-PLAN.md — FastAPI Python sidecar (health endpoints, worker loop, CrewAI executor with timeout)
+- [x] 09-03-PLAN.md — CrewAI workflow for daily-news-digest, docker-compose sidecar, K8s deployment
+- [x] 09-04-PLAN.md — Gap closure: wire Publisher into worker task handler with PluginRun record creation
 
 ---
 
@@ -175,7 +168,7 @@ Plans:
 | 6. Scheduled Generation | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 7. Briefing History | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 8. Plugin Framework Foundation | v1.1 | 3/3 | Complete | 2026-02-14 |
-| 9. CrewAI Sidecar Integration | v1.1 | 0/4 | Gap closure | - |
+| 9. CrewAI Sidecar Integration | v1.1 | 4/4 | Complete | 2026-02-18 |
 | 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
 | 11. Tile-Based Dashboard | v1.1 | 0/2 | Not started | - |
 | 12. Dynamic Settings UI | v1.1 | 0/2 | Not started | - |
@@ -183,4 +176,4 @@ Plans:
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-14 after Phase 9 planning complete*
+*Last updated: 2026-02-18 after Phase 9 execution complete*
