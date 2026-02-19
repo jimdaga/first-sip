@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 9 — CrewAI Sidecar Integration
-Plan: 3/3 complete
+Plan: 4/4 complete
 Status: Complete
-Last activity: 2026-02-15 — Plan 09-03 executed (daily-news-digest CrewAI crew)
+Last activity: 2026-02-18 — Plan 09-04 executed (publisher wiring / gap closure)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 7.7 min
-- Total execution time: 2.2 hours
+- Total execution time: 2.4 hours
 
 **By Phase:**
 
@@ -33,7 +33,7 @@ Last activity: 2026-02-15 — Plan 09-03 executed (daily-news-digest CrewAI crew
 | 06 | 1 | 14 min | 14.0 min |
 | 07 | 1 | 9 min | 9.0 min |
 | 08 | 3 | 5 min | 1.7 min |
-| 09 | 3 | 7 min | 2.3 min |
+| 09 | 4 | 15 min | 3.8 min |
 
 ## Accumulated Context
 
@@ -66,6 +66,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 09-03]: Sequential task pipeline with context dependencies (research → write → review)
 - [Phase 09-03]: Docker Compose mounts plugins read-only (no rebuild for crew changes)
 - [Phase 09-03]: K8s HPA scales sidecar 1-5 replicas based on CPU (CrewAI is CPU-bound)
+- [Phase 09-04]: Graceful degradation pattern — nil publisher marks PluginRun failed with SkipRetry (not infinite retry on misconfiguration)
+- [Phase 09-04]: PluginRun record created before stream publish attempt (audit trail exists regardless of publish outcome)
+- [Phase 09-04]: Publish failures retryable (stream down); nil publisher non-retryable (misconfiguration)
+- [Phase 09-04]: Publisher initialized in main.go with non-fatal warning so app serves v1.0 even if streams fail to initialize
 
 ### Pending Todos
 
@@ -81,10 +85,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-15 (Phase 9 Plan 03 execution)
-Stopped at: Completed 09-03-PLAN.md (Phase 9 complete)
+Last session: 2026-02-18 (Phase 9 Plan 04 execution — gap closure)
+Stopped at: Completed 09-04-PLAN.md (Phase 9 fully complete including gap closure)
 Resume with: /gsd:execute-phase 10 (next phase)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-15 after Phase 9 Plan 03 execution*
+*Last updated: 2026-02-18 after Phase 9 Plan 04 execution*
