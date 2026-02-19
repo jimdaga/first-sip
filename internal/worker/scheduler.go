@@ -45,6 +45,7 @@ func StartPerMinuteScheduler(cfg *config.Config) (stop func(), err error) {
 	task := asynq.NewTask(
 		TaskPerMinuteScheduler,
 		nil,
+		asynq.Queue("critical"),       // Process before default-queue plugin:execute tasks
 		asynq.MaxRetry(0),             // Don't retry — next minute catches up
 		asynq.Timeout(50*time.Second), // Leave 10 s headroom before the next tick
 		asynq.Unique(55*time.Second),  // Prevent duplicate tasks if scheduler restarts
