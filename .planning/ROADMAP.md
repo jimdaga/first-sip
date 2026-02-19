@@ -78,12 +78,13 @@ Plans:
   4. Go worker consumes CrewAI results from Redis Stream and creates Briefing records in database
   5. Long-running AI workflows timeout gracefully after configurable duration (no hung processes)
   6. CrewAI pods scale independently from Go workers in Kubernetes deployment
-**Plans:** 3 plans
+**Plans:** 4 plans
 
 Plans:
 - [ ] 09-01-PLAN.md — Redis Streams Go infrastructure (publisher, consumer, result handler)
 - [ ] 09-02-PLAN.md — FastAPI Python sidecar (health endpoints, worker loop, CrewAI executor with timeout)
 - [ ] 09-03-PLAN.md — CrewAI workflow for daily-news-digest, docker-compose sidecar, K8s deployment
+- [ ] 09-04-PLAN.md — Gap closure: wire Publisher into worker task handler with PluginRun record creation
 
 ---
 
@@ -174,7 +175,7 @@ Plans:
 | 6. Scheduled Generation | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 7. Briefing History | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 8. Plugin Framework Foundation | v1.1 | 3/3 | Complete | 2026-02-14 |
-| 9. CrewAI Sidecar Integration | v1.1 | 0/3 | Planned | - |
+| 9. CrewAI Sidecar Integration | v1.1 | 0/4 | Gap closure | - |
 | 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
 | 11. Tile-Based Dashboard | v1.1 | 0/2 | Not started | - |
 | 12. Dynamic Settings UI | v1.1 | 0/2 | Not started | - |
