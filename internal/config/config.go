@@ -17,8 +17,6 @@ type Config struct {
 	N8NWebhookURL      string
 	N8NWebhookSecret   string
 	N8NStubMode        bool
-	BriefingSchedule   string
-	BriefingTimezone   string
 	LogLevel           string
 	LogFormat          string
 	Env                string
@@ -39,8 +37,6 @@ func Load() *Config {
 		N8NWebhookURL:      os.Getenv("N8N_WEBHOOK_URL"),
 		N8NWebhookSecret:   os.Getenv("N8N_WEBHOOK_SECRET"),
 		N8NStubMode:        parseStubMode(getEnvWithDefault("N8N_STUB_MODE", "true")),
-		BriefingSchedule:   getEnvWithDefault("BRIEFING_SCHEDULE", "0 6 * * *"),
-		BriefingTimezone:   getEnvWithDefault("BRIEFING_TIMEZONE", "UTC"),
 		LogLevel:           getEnvWithDefault("LOG_LEVEL", "debug"),
 		LogFormat:          getEnvWithDefault("LOG_FORMAT", "text"),
 		Env:                getEnvWithDefault("ENV", "development"),
