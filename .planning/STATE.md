@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 10 — Per-User Scheduling
-Plan: 1/? complete
+Plan: 2/? complete
 Status: In Progress
-Last activity: 2026-02-19 — Plan 10-01 executed (scheduling engine: migration, model, scheduler)
+Last activity: 2026-02-19 — Plan 10-02 executed (scheduler wiring complete, config cleanup)
 
 ## Performance Metrics
 
@@ -34,7 +34,7 @@ Last activity: 2026-02-19 — Plan 10-01 executed (scheduling engine: migration,
 | 07 | 1 | 9 min | 9.0 min |
 | 08 | 3 | 5 min | 1.7 min |
 | 09 | 4 | 15 min | 3.8 min |
-| 10 | 1 | 3 min | 3.0 min |
+| 10 | 2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -75,6 +75,8 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 10-01]: CRON_TZ=<timezone> prefix on cron expressions for robfig/cron/v3 timezone-aware parsing
 - [Phase 10-01]: Cold-cache protection — zero lastRunAt treated as one minute ago prevents mass-fire on startup
 - [Phase 10-01]: Redis hash HSET/HGET for last-run cache (scheduler:last_run key, userID:pluginID fields) avoids DB round-trips per tick
+- [Phase 10-02]: asynq.Queue("critical") on TaskPerMinuteScheduler prevents scheduler starvation by long-running plugin:execute tasks
+- [Phase 10-02]: BriefingSchedule/BriefingTimezone env vars retired — scheduling fully database-backed per-user (cron_expression + timezone columns)
 
 ### Pending Todos
 
@@ -90,10 +92,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-19 (Phase 10 Plan 01 execution — scheduling engine)
-Stopped at: Completed 10-01-PLAN.md (scheduling engine: migration 000006, per-minute scheduler, Redis cache)
-Resume with: /gsd:execute-phase 10 (continue phase 10 plan 02)
+Last session: 2026-02-19 (Phase 10 Plan 02 execution — scheduler wiring and config cleanup)
+Stopped at: Completed 10-02-PLAN.md (critical queue wiring, BriefingSchedule/BriefingTimezone removal)
+Resume with: /gsd:execute-phase 10 (continue phase 10 plan 03)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-19 after Phase 10 Plan 01 execution*
+*Last updated: 2026-02-19 after Phase 10 Plan 02 execution*
