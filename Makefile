@@ -27,7 +27,7 @@ docker-build:
 	docker build -t jimdaga/first-sip:local .
 
 db-up:
-	docker compose up -d
+	docker compose up -d postgres redis asynqmon
 
 db-down:
 	docker compose down

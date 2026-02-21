@@ -85,8 +85,15 @@ func newServer(cfg *config.Config, db *gorm.DB, webhookClient *webhook.Client, p
 		asynq.Config{
 			Concurrency:     5,
 			ShutdownTimeout: 30 * time.Second,
-			ErrorHandler:    asynq.ErrorHandlerFunc(makeErrorHandler(logger)),
-			Logger:          &asynqLoggerAdapter{logger: logger},
+			// critical queue (priority 6) is processed before default queue (priority 3).
+			// TaskPerMinuteScheduler runs on critical so it is never delayed by
+			// long-running plugin:execute tasks on the default queue.
+			Queues: map[string]int{
+				"critical": 6,
+				"default":  3,
+			},
+			ErrorHandler: asynq.ErrorHandlerFunc(makeErrorHandler(logger)),
+			Logger:       &asynqLoggerAdapter{logger: logger},
 		},
 	)
 

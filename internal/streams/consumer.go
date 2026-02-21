@@ -3,9 +3,12 @@ package streams
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -24,6 +27,10 @@ func NewResultConsumer(redisURL, consumerName string) (*ResultConsumer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse redis URL: %w", err)
 	}
+
+	// Read timeout must exceed the XReadGroup Block duration (5s)
+	// to avoid spurious i/o timeout errors on idle streams.
+	opts.ReadTimeout = 10 * time.Second
 
 	client := redis.NewClient(opts)
 
@@ -66,6 +73,12 @@ func (c *ResultConsumer) ConsumeResults(ctx context.Context, handler func(Plugin
 		}
 
 		if err != nil {
+			// Blocking reads return a timeout when no messages arrive
+			// within the Block duration — this is normal, not an error.
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				continue
+			}
 			slog.Error("Failed to read from stream", "error", err)
 			continue
 		}
