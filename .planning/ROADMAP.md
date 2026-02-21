@@ -110,11 +110,12 @@ Plans:
   4. Dashboard pre-fetches latest briefing per plugin in single query (window function, avoids N+1)
   5. Empty states display gracefully (no plugins enabled shows prompt, plugin enabled but no briefings shows waiting state)
   6. HTMX updates tile status in-place when briefing generation completes
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
+- [ ] 11-01-PLAN.md — Schema migration, model updates (icon, tile_size, display_order), plugin YAML metadata
+- [ ] 11-02-PLAN.md — Dashboard handler package with view model, DISTINCT ON query, tile order API, route wiring
+- [ ] 11-03-PLAN.md — CSS Grid tile layout, Templ components, SortableJS drag-and-drop, HTMX polling, visual verification
 
 ---
 
@@ -170,10 +171,10 @@ Plans:
 | 8. Plugin Framework Foundation | v1.1 | 3/3 | Complete | 2026-02-14 |
 | 9. CrewAI Sidecar Integration | v1.1 | 4/4 | Complete | 2026-02-18 |
 | 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
-| 11. Tile-Based Dashboard | v1.1 | 0/2 | Not started | - |
+| 11. Tile-Based Dashboard | v1.1 | 0/3 | Not started | - |
 | 12. Dynamic Settings UI | v1.1 | 0/2 | Not started | - |
 | 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-19 after Phase 10 planning complete*
+*Last updated: 2026-02-21 after Phase 11 planning complete*
