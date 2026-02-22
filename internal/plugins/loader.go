@@ -56,6 +56,12 @@ func syncPluginToDB(db *gorm.DB, meta *PluginMetadata) error {
 	var dbPlugin Plugin
 	result := db.Where("name = ?", meta.Name).First(&dbPlugin)
 
+	// Default TileSize to "1x1" if not specified in plugin YAML
+	tileSize := meta.TileSize
+	if tileSize == "" {
+		tileSize = "1x1"
+	}
+
 	if result.Error == gorm.ErrRecordNotFound {
 		// Plugin doesn't exist - create new record
 		dbPlugin = Plugin{
@@ -64,6 +70,8 @@ func syncPluginToDB(db *gorm.DB, meta *PluginMetadata) error {
 			Owner:              meta.Owner,
 			Version:            meta.Version,
 			SchemaVersion:      meta.SchemaVersion,
+			Icon:               meta.Icon,
+			TileSize:           tileSize,
 			Capabilities:       datatypes.JSON(capabilitiesJSON),
 			DefaultConfig:      datatypes.JSON(defaultConfigJSON),
 			SettingsSchemaPath: meta.SettingsSchemaPath,
@@ -80,6 +88,8 @@ func syncPluginToDB(db *gorm.DB, meta *PluginMetadata) error {
 		"owner":                meta.Owner,
 		"version":              meta.Version,
 		"schema_version":       meta.SchemaVersion,
+		"icon":                 meta.Icon,
+		"tile_size":            tileSize,
 		"capabilities":         datatypes.JSON(capabilitiesJSON),
 		"default_config":       datatypes.JSON(defaultConfigJSON),
 		"settings_schema_path": meta.SettingsSchemaPath,

@@ -16,6 +16,8 @@ type PluginMetadata struct {
 	Owner              string                 `yaml:"owner"`
 	Version            string                 `yaml:"version"`
 	SchemaVersion      string                 `yaml:"schema_version"`
+	Icon               string                 `yaml:"icon"`      // emoji or SVG reference for dashboard tile
+	TileSize           string                 `yaml:"tile_size"` // "1x1", "2x1", "2x2"
 	Capabilities       []string               `yaml:"capabilities"`
 	DefaultConfig      map[string]interface{} `yaml:"default_config"`
 	SettingsSchemaPath string                 `yaml:"settings_schema_path"`

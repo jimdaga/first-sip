@@ -3,6 +3,8 @@ description: Generates a personalized daily news digest based on your selected t
 owner: first-sip
 version: 1.0.0
 schema_version: v1
+icon: "📰"
+tile_size: "2x1"
 
 capabilities:
   - briefing

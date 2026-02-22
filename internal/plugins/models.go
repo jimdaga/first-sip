@@ -26,6 +26,8 @@ type Plugin struct {
 	Owner              string
 	Version            string         `gorm:"not null"`
 	SchemaVersion      string         `gorm:"column:schema_version;not null;default:'v1'"`
+	Icon               string         `gorm:"column:icon;not null;default:''"`
+	TileSize           string         `gorm:"column:tile_size;not null;default:'1x1'"`
 	Capabilities       datatypes.JSON `gorm:"type:jsonb"`
 	DefaultConfig      datatypes.JSON `gorm:"type:jsonb;column:default_config"`
 	SettingsSchemaPath string         `gorm:"column:settings_schema_path"`
@@ -41,6 +43,7 @@ type UserPluginConfig struct {
 	Enabled        bool           `gorm:"default:false"`
 	CronExpression string         `gorm:"column:cron_expression"` // nullable — empty means no schedule
 	Timezone       string         `gorm:"column:timezone;not null;default:'UTC'"` // IANA timezone name
+	DisplayOrder   *int           `gorm:"column:display_order"`                   // nullable — nil means unordered
 	User           models.User    `gorm:"constraint:OnDelete:CASCADE;"`
 	Plugin         Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
 }
