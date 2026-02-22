@@ -213,6 +213,7 @@ func main() {
 		protected.GET("/dashboard", dashboard.DashboardHandler(db))
 		protected.GET("/api/tiles/:pluginID", dashboard.TileStatusHandler(db))
 		protected.POST("/api/tiles/order", dashboard.UpdateTileOrderHandler(db))
+		protected.POST("/api/user/timezone", dashboard.UpdateTimezoneHandler(db))
 		protected.GET("/logout", auth.HandleLogout)
 
 		// Briefing API routes

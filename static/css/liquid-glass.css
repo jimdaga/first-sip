@@ -949,7 +949,6 @@ body {
 .tile-card {
   cursor: pointer;
   transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-spring);
-  overflow: hidden;
   position: relative;
 }
 .tile-card:hover {
@@ -960,6 +959,8 @@ body {
 .tile-card.tile-expanded {
   grid-column: 1 / -1;
   cursor: default;
+  min-height: 300px;
+  overflow: hidden;
 }
 .tile-card.tile-expanded .tile-collapsed-content {
   display: none;
@@ -1038,7 +1039,15 @@ body {
   color: var(--text-primary);
 }
 
-/* CSS Tooltip — pure CSS, no JS */
+/* Tile Footer */
+.tile-footer {
+  padding: 0 1rem 0.75rem;
+}
+.tile-card.tile-expanded .tile-footer {
+  display: none;
+}
+
+/* Tooltip trigger */
 .tile-info-badge {
   position: relative;
   display: inline-flex;
@@ -1046,12 +1055,8 @@ body {
   cursor: default;
   color: var(--text-tertiary);
 }
-.tile-info-badge[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+.tile-tooltip {
+  position: fixed;
   background: rgba(42, 31, 24, 0.92);
   color: var(--navbar-text);
   font-family: var(--font-body);
@@ -1060,11 +1065,11 @@ body {
   padding: 0.4rem 0.75rem;
   border-radius: var(--radius-sm);
   pointer-events: none;
+  z-index: 100;
   opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 10;
+  transition: opacity 0.15s ease;
 }
-.tile-info-badge[data-tooltip]:hover::after {
+.tile-tooltip.visible {
   opacity: 1;
 }
 

@@ -59,6 +59,40 @@ templ DashboardPage(greeting string, date string, tiles []tiles.TileViewModel, h
 					expanded.classList.remove('tile-expanded');
 				}
 			});
+			// Tooltip: append a fixed-position div to body on hover (escapes overflow:hidden)
+			(function() {
+				var tip = document.createElement('div');
+				tip.className = 'tile-tooltip';
+				document.body.appendChild(tip);
+				document.addEventListener('mouseover', function(e) {
+					var badge = e.target.closest('.tile-info-badge[data-tooltip]');
+					if (!badge) return;
+					tip.textContent = badge.getAttribute('data-tooltip');
+					var rect = badge.getBoundingClientRect();
+					tip.style.left = rect.left + rect.width / 2 + 'px';
+					tip.style.top = rect.top - 8 + 'px';
+					tip.style.transform = 'translate(-50%, -100%)';
+					tip.classList.add('visible');
+				});
+				document.addEventListener('mouseout', function(e) {
+					if (e.target.closest('.tile-info-badge[data-tooltip]')) {
+						tip.classList.remove('visible');
+					}
+				});
+			})();
+			// Auto-detect browser timezone and send to server (once per session)
+			(function() {
+				if (sessionStorage.getItem('tz_sent')) return;
+				var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				if (tz) {
+					fetch('/api/user/timezone', {
+						method: 'POST',
+						headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+						body: 'timezone=' + encodeURIComponent(tz)
+					});
+					sessionStorage.setItem('tz_sent', '1');
+				}
+			})();
 			// SortableJS initialization (re-runs on HTMX swap)
 			htmx.onLoad(function(content) {
 				var sortables = content.querySelectorAll ? content.querySelectorAll('.sortable') : [];
@@ -129,13 +163,6 @@ templ TileCard(tile tiles.TileViewModel) {
 					</svg>
 				}
 			</span>
-			<span class="tile-info-badge" data-tooltip={ tile.TimingTooltip }>
-				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="10"></circle>
-					<line x1="12" y1="16" x2="12" y2="12"></line>
-					<line x1="12" y1="8" x2="12.01" y2="8"></line>
-				</svg>
-			</span>
 		</div>
 
 		<!-- Collapsed Content: visible by default, hidden when .tile-expanded is added -->
@@ -180,6 +207,17 @@ templ TileCard(tile tiles.TileViewModel) {
 			} else {
 				<p class="tile-waiting">Your first briefing will run soon</p>
 			}
+		</div>
+
+		<!-- Tile Footer: info badge bottom-left -->
+		<div class="tile-footer">
+			<span class="tile-info-badge" data-tooltip={ tile.TimingTooltip }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"></circle>
+					<line x1="12" y1="16" x2="12" y2="12"></line>
+					<line x1="12" y1="8" x2="12.01" y2="8"></line>
+				</svg>
+			</span>
 		</div>
 	</div>
 }

@@ -109,6 +109,39 @@ func TileStatusHandler(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// UpdateTimezoneHandler returns a Gin handler for POST /api/user/timezone.
+// Detects the browser timezone via JS and updates the user's timezone if still UTC.
+func UpdateTimezoneHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := getAuthUser(c, db)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		tz := c.PostForm("timezone")
+		if tz == "" {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		// Only update if user still has the default UTC timezone.
+		if user.Timezone != "" && user.Timezone != "UTC" {
+			c.Status(http.StatusOK)
+			return
+		}
+
+		// Validate the IANA timezone.
+		if _, err := time.LoadLocation(tz); err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		db.Model(user).Update("timezone", tz)
+		c.Status(http.StatusOK)
+	}
+}
+
 // UpdateTileOrderHandler returns a Gin handler for POST /api/tiles/order.
 // Persists drag-to-reorder display_order values for the authenticated user.
 // Expects form values: plugin_id[] (ordered list of plugin IDs from SortableJS).
