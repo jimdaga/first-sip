@@ -929,3 +929,250 @@ body {
     padding: 0.65rem 1rem;
   }
 }
+
+
+/* ── Tile Dashboard ──────────────────────── */
+
+/* Tile Grid Container */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* Tile Size Modifiers via data attributes (avoids Templ CSS sanitization) */
+[data-tile-size="2x1"] { grid-column: span 2; }
+[data-tile-size="2x2"] { grid-column: span 2; grid-row: span 2; }
+
+/* Tile Card Styling — extends glass-card for tiles */
+.tile-card {
+  cursor: pointer;
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-spring);
+  overflow: hidden;
+  position: relative;
+}
+.tile-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Tile Expanded State */
+.tile-card.tile-expanded {
+  grid-column: 1 / -1;
+  cursor: default;
+}
+.tile-card.tile-expanded .tile-collapsed-content {
+  display: none;
+}
+.tile-card.tile-expanded .tile-expanded-content {
+  display: block;
+}
+.tile-card:not(.tile-expanded) .tile-expanded-content {
+  display: none;
+}
+
+/* Tile Header */
+.tile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
+}
+.tile-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.tile-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+.tile-status-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Tile Summary */
+.tile-summary {
+  padding: 0 1rem 1rem;
+}
+.tile-summary-text {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tile-waiting {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Tile Expanded Content */
+.tile-expanded-content {
+  padding: 0 1rem 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.tile-close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease;
+  z-index: 5;
+}
+.tile-close-btn:hover {
+  color: var(--text-primary);
+}
+
+/* CSS Tooltip — pure CSS, no JS */
+.tile-info-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  color: var(--text-tertiary);
+}
+.tile-info-badge[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(42, 31, 24, 0.92);
+  color: var(--navbar-text);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+.tile-info-badge[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* Skeleton Loading */
+.tile-skeleton {
+  pointer-events: none;
+}
+.skeleton-icon,
+.skeleton-line {
+  background: linear-gradient(90deg, rgba(42,31,24,0.06) 25%, rgba(42,31,24,0.12) 50%, rgba(42,31,24,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+.skeleton-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  margin: 1rem 1rem 0.5rem;
+}
+.skeleton-line {
+  height: 0.75rem;
+  margin: 0.375rem 1rem;
+}
+.skeleton-line-title {
+  width: 60%;
+  height: 1rem;
+}
+.skeleton-line-short {
+  width: 40%;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Fade Transition for New Content (HTMX swap) */
+.tile-card.htmx-added {
+  opacity: 0;
+}
+.tile-card {
+  opacity: 1;
+  transition: opacity 0.6s var(--ease-out);
+}
+
+/* Small Spinner Variant (for status icon in tile header) */
+.glass-spinner-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 2px;
+}
+
+/* Dashboard Greeting Header */
+.dashboard-greeting {
+  margin-bottom: 1.5rem;
+}
+.dashboard-greeting h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+.dashboard-greeting .dashboard-date {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Onboarding Empty State */
+.tile-onboarding {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+.tile-onboarding p {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* Error Icon Overlay */
+.tile-error-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: var(--status-unread-text);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .tile-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-tile-size="2x1"],
+  [data-tile-size="2x2"] {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+}
+
+/* Drag Handle visual cue */
+.tile-drag-handle {
+  cursor: grab;
+}
+.tile-drag-handle:active {
+  cursor: grabbing;
+}
+.sortable-ghost {
+  opacity: 0.4;
+}
