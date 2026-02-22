@@ -15,6 +15,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/auth"
 	"github.com/jimdaga/first-sip/internal/briefings"
 	"github.com/jimdaga/first-sip/internal/config"
+	"github.com/jimdaga/first-sip/internal/dashboard"
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/plugins"
@@ -209,35 +210,9 @@ func main() {
 	protected := r.Group("/")
 	protected.Use(auth.RequireAuth())
 	{
-		protected.GET("/dashboard", func(c *gin.Context) {
-			// Extract user info from context (set by RequireAuth middleware)
-			name, _ := c.Get("user_name")
-			email, _ := c.Get("user_email")
-
-			nameStr := ""
-			emailStr := ""
-			if name != nil {
-				nameStr = name.(string)
-			}
-			if email != nil {
-				emailStr = email.(string)
-			}
-
-			// Query latest briefing for the user
-			var latestBriefing models.Briefing
-			var latestBriefingPtr *models.Briefing
-			if db != nil && emailStr != "" {
-				var user models.User
-				if err := db.Where("email = ?", emailStr).First(&user).Error; err == nil {
-					result := db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&latestBriefing)
-					if result.Error == nil {
-						latestBriefingPtr = &latestBriefing
-					}
-				}
-			}
-
-			render(c, templates.DashboardPage(nameStr, emailStr, latestBriefingPtr))
-		})
+		protected.GET("/dashboard", dashboard.DashboardHandler(db))
+		protected.GET("/api/tiles/:pluginID", dashboard.TileStatusHandler(db))
+		protected.POST("/api/tiles/order", dashboard.UpdateTileOrderHandler(db))
 		protected.GET("/logout", auth.HandleLogout)
 
 		// Briefing API routes
