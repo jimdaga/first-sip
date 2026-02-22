@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 11 — Tile-Based Dashboard
-Plan: 2/? complete
-Status: In Progress
-Last activity: 2026-02-22 — Plan 11-02 executed (dashboard backend: handler package, 3-query tile assembly, API routes)
+Phase: 11 — Tile-Based Dashboard (COMPLETE)
+Plan: 3/3 complete
+Status: Complete
+Last activity: 2026-02-22 — Plan 11-03 executed + UAT verified (tile dashboard frontend with expand, tooltip, timezone detection)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 19
-- Average duration: 7.5 min
-- Total execution time: 2.4 hours
+- Total plans completed: 22
+- Average duration: 7.2 min
+- Total execution time: 2.6 hours
 
 **By Phase:**
 
@@ -35,7 +35,7 @@ Last activity: 2026-02-22 — Plan 11-02 executed (dashboard backend: handler pa
 | 08 | 3 | 5 min | 1.7 min |
 | 09 | 4 | 15 min | 3.8 min |
 | 10 | 2 | 5 min | 2.5 min |
-| 11 | 2 | 4 min | 2.0 min |
+| 11 | 3 | 34 min | 11.3 min |
 
 ## Accumulated Context
 
@@ -84,6 +84,9 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 11-02]: DashboardHandler calls existing DashboardPage template signature to keep build green until Plan 03 updates template
 - [Phase 11-02]: TileStatusHandler is working stub (200 OK) — Plan 03 provides Templ tile component to render
 - [Phase 11-02]: UpdateTileOrderHandler skips malformed plugin_id values rather than failing the entire reorder request
+- [Phase 11-03]: JS fixed-position tooltip over CSS ::after — glass-card overflow:hidden clips pseudo-elements
+- [Phase 11-03]: Info badge in tile footer (bottom-left) not header — avoids close button overlap
+- [Phase 11-03]: Browser timezone auto-detection via Intl API on dashboard load (fires once per session if user timezone is UTC)
 
 ### Pending Todos
 
@@ -99,10 +102,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-22 (Phase 11 Plan 02 execution — dashboard backend: handler package, tile query assembly, API routes)
-Stopped at: Completed 11-02-PLAN.md (DashboardHandler, TileStatusHandler, UpdateTileOrderHandler, routes wired)
-Resume with: /gsd:execute-phase 11 (continue phase 11 plan 03)
+Last session: 2026-02-22 (Phase 11 complete — all 3 plans executed, UAT verified)
+Stopped at: Phase 11 complete. Next: Phase 12 — Dynamic Settings UI
+Resume with: /gsd:plan-phase 12 (or /gsd:discuss-phase 12 for context gathering first)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-22 after Phase 11 Plan 02 execution*
+*Last updated: 2026-02-22 after Phase 11 complete (all plans + UAT)*
