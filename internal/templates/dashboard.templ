@@ -1,10 +1,16 @@
 package templates
 
 import (
-	"github.com/jimdaga/first-sip/internal/models"
+	"fmt"
+	"github.com/jimdaga/first-sip/internal/tiles"
 )
 
-templ DashboardPage(name string, email string, latestBriefing *models.Briefing) {
+// DashboardPage renders the full tile-based dashboard.
+// greeting is the time-aware greeting string (e.g. "Good morning, Alice").
+// date is the formatted date string (e.g. "Sunday, February 22, 2026").
+// tiles is the ordered list of enabled plugin tiles for this user.
+// hasPlugins is true when at least one plugin is enabled.
+templ DashboardPage(greeting string, date string, tiles []tiles.TileViewModel, hasPlugins bool) {
 	@Layout("Dashboard - First Sip") {
 		<nav class="glass-navbar">
 			<div class="navbar-inner">
@@ -16,32 +22,189 @@ templ DashboardPage(name string, email string, latestBriefing *models.Briefing) 
 				</div>
 				<div class="navbar-actions">
 					<a href="/history" class="navbar-link">History</a>
-					<span class="navbar-user">{ name }</span>
 					<a href="/logout" class="glass-btn glass-btn-ghost glass-btn-sm">Logout</a>
 				</div>
 			</div>
 		</nav>
 		<main class="dashboard-content">
-			<div class="dashboard-header">
-				<h1 class="greeting">Welcome, { name }</h1>
+			<div class="dashboard-greeting">
+				<h1>{ greeting }</h1>
+				<p class="dashboard-date">{ date }</p>
 			</div>
-			<div class="dashboard-actions">
-				<button
-					class="glass-btn glass-btn-primary"
-					hx-post="/api/briefings"
-					hx-target="#briefing-area"
-					hx-swap="outerHTML"
-				>
-					Generate Daily Summary
-				</button>
-			</div>
-			if latestBriefing != nil {
-				@BriefingCard(*latestBriefing)
+			if !hasPlugins {
+				@TileOnboarding()
 			} else {
-				<div id="briefing-area" class="empty-state">
-					<p>No briefings yet. Click Generate to create your first one.</p>
-				</div>
+				@TileGrid(tiles)
 			}
 		</main>
+		<script>
+			function expandTile(el) {
+				// Don't re-expand an already expanded tile
+				if (el.classList.contains('tile-expanded')) return;
+				// Collapse any currently expanded tile
+				var expanded = document.querySelector('.tile-expanded');
+				if (expanded) expanded.classList.remove('tile-expanded');
+				// Expand this tile — CSS toggles visibility of collapsed/expanded content divs
+				el.classList.add('tile-expanded');
+			}
+			function collapseTile(btn) {
+				var tile = btn.closest('.tile-card');
+				if (tile) tile.classList.remove('tile-expanded');
+				event.stopPropagation();
+			}
+			// Click outside to collapse
+			document.addEventListener('click', function(e) {
+				var expanded = document.querySelector('.tile-expanded');
+				if (expanded && !expanded.contains(e.target)) {
+					expanded.classList.remove('tile-expanded');
+				}
+			});
+			// SortableJS initialization (re-runs on HTMX swap)
+			htmx.onLoad(function(content) {
+				var sortables = content.querySelectorAll ? content.querySelectorAll('.sortable') : [];
+				for (var i = 0; i < sortables.length; i++) {
+					(function(sortable) {
+						var instance = new Sortable(sortable, {
+							animation: 150,
+							ghostClass: 'sortable-ghost',
+							onEnd: function() {
+								instance.option('disabled', true);
+							}
+						});
+						sortable.addEventListener('htmx:afterRequest', function() {
+							instance.option('disabled', false);
+						});
+					})(sortables[i]);
+				}
+			});
+		</script>
 	}
+}
+
+// TileGrid renders the sortable CSS Grid container holding all tile cards.
+templ TileGrid(tiles []tiles.TileViewModel) {
+	<div
+		class="tile-grid sortable"
+		hx-post="/api/tiles/order"
+		hx-trigger="end"
+		hx-swap="none"
+	>
+		for _, tile := range tiles {
+			<div class="tile-wrapper" data-plugin-id={ fmt.Sprintf("%d", tile.PluginID) }>
+				<input type="hidden" name="plugin_id" value={ fmt.Sprintf("%d", tile.PluginID) }/>
+				@TileCard(tile)
+			</div>
+		}
+	</div>
+}
+
+// TileCard renders a single plugin tile with collapsed and expanded content both embedded.
+// The expand/collapse is purely client-side CSS class toggling via expandTile()/collapseTile().
+// No server round-trip on expand — full BriefingContent is pre-loaded in the hidden expanded div.
+templ TileCard(tile tiles.TileViewModel) {
+	<div
+		id={ fmt.Sprintf("tile-%d", tile.PluginID) }
+		class="glass-card tile-card"
+		data-tile-size={ tile.TileSize }
+		data-plugin-id={ fmt.Sprintf("%d", tile.PluginID) }
+		onclick="expandTile(this)"
+		if tile.LatestRunStatus == "pending" || tile.LatestRunStatus == "processing" {
+			hx-get={ fmt.Sprintf("/api/tiles/%d", tile.PluginID) }
+			hx-trigger="every 30s"
+			hx-swap="outerHTML settle:0.6s"
+		}
+	>
+		<!-- Tile Header -->
+		<div class="tile-header">
+			<span class="tile-icon">{ tile.PluginIcon }</span>
+			<span class="tile-name">{ tile.PluginName }</span>
+			<span class="tile-status-icon">
+				if tile.LatestRunStatus == "pending" || tile.LatestRunStatus == "processing" {
+					<div class="glass-spinner glass-spinner-sm"></div>
+				} else if tile.HasError {
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--status-unread-text)">
+						<circle cx="12" cy="12" r="10"></circle>
+						<line x1="12" y1="8" x2="12" y2="12"></line>
+						<line x1="12" y1="16" x2="12.01" y2="16"></line>
+					</svg>
+				}
+			</span>
+			<span class="tile-info-badge" data-tooltip={ tile.TimingTooltip }>
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"></circle>
+					<line x1="12" y1="16" x2="12" y2="12"></line>
+					<line x1="12" y1="8" x2="12.01" y2="8"></line>
+				</svg>
+			</span>
+		</div>
+
+		<!-- Collapsed Content: visible by default, hidden when .tile-expanded is added -->
+		<div class="tile-collapsed-content tile-summary">
+			if tile.HasError && tile.LastSuccessfulSummary != "" {
+				<p class="tile-summary-text">{ tile.LastSuccessfulSummary }</p>
+			} else if tile.BriefingSummary != "" {
+				<p class="tile-summary-text">{ tile.BriefingSummary }</p>
+			} else if tile.NextRunAt != nil {
+				<p class="tile-waiting">Your first briefing is scheduled for { tile.NextRunAt.Format("3:04 PM") }</p>
+			} else {
+				<p class="tile-waiting">Your first briefing will run soon</p>
+			}
+		</div>
+
+		<!-- Expanded Content: hidden by default, shown when .tile-expanded is added -->
+		<div class="tile-expanded-content">
+			<button class="tile-close-btn" onclick="collapseTile(this)" aria-label="Close">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			</button>
+			if tile.HasError {
+				<div class="glass-alert glass-alert-error" style="margin-bottom: 1rem;">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="briefing-error-icon">
+						<circle cx="12" cy="12" r="10"></circle>
+						<line x1="12" y1="8" x2="12" y2="12"></line>
+						<line x1="12" y1="16" x2="12.01" y2="16"></line>
+					</svg>
+					Latest run failed — showing last successful briefing
+				</div>
+				if tile.LastSuccessfulContent != "" {
+					@templ.Raw(tile.LastSuccessfulContent)
+				} else {
+					<p class="tile-waiting">No previous successful briefing available</p>
+				}
+			} else if tile.BriefingContent != "" {
+				@templ.Raw(tile.BriefingContent)
+			} else if tile.NextRunAt != nil {
+				<p class="tile-waiting">Your first briefing is scheduled for { tile.NextRunAt.Format("3:04 PM") }</p>
+			} else {
+				<p class="tile-waiting">Your first briefing will run soon</p>
+			}
+		</div>
+	</div>
+}
+
+// TileSkeleton renders a placeholder tile that auto-loads content via HTMX on mount.
+templ TileSkeleton(pluginID uint, tileSize string) {
+	<div
+		class="glass-card tile-card tile-skeleton"
+		data-tile-size={ tileSize }
+		hx-get={ fmt.Sprintf("/api/tiles/%d", pluginID) }
+		hx-trigger="load"
+		hx-swap="outerHTML"
+	>
+		<div class="skeleton-icon"></div>
+		<div class="skeleton-line skeleton-line-title"></div>
+		<div class="skeleton-line"></div>
+		<div class="skeleton-line"></div>
+		<div class="skeleton-line skeleton-line-short"></div>
+	</div>
+}
+
+// TileOnboarding renders the empty state when no plugins are enabled.
+templ TileOnboarding() {
+	<div class="glass-card tile-onboarding">
+		<p>Enable your first plugin to get started</p>
+		<a href="/settings" class="glass-btn glass-btn-primary">Browse Plugins</a>
+	</div>
 }

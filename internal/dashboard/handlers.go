@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
@@ -37,50 +38,52 @@ func getAuthUser(c *gin.Context, db *gorm.DB) (*models.User, error) {
 	return &user, nil
 }
 
+// formatDashboardDate returns a formatted date string for the dashboard header,
+// e.g. "Sunday, February 22, 2026", using the user's IANA timezone.
+func formatDashboardDate(timezone string) string {
+	loc, err := time.LoadLocation(timezone)
+	if err != nil || loc == nil {
+		loc = time.UTC
+	}
+	return time.Now().In(loc).Format("Monday, January 2, 2006")
+}
+
 // DashboardHandler returns a Gin handler for GET /dashboard.
 // It fetches enabled plugin tiles for the authenticated user and renders the
-// dashboard page. For now it calls the existing DashboardPage template signature
-// (name, email, latestBriefing) to keep compilation working until Plan 03 updates
-// the template to accept []TileViewModel.
-//
-// TODO(11-03): Update this handler to call the new tile-aware template once Plan 03
-// introduces templates.DashboardPage(greeting string, tiles []dashboard.TileViewModel).
+// tile-based dashboard page with a time-aware greeting and current date.
 func DashboardHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		nameVal, _ := c.Get("user_name")
-		nameStr := ""
-		if nameVal != nil {
-			nameStr = nameVal.(string)
-		}
-
-		emailVal, _ := c.Get("user_email")
-		emailStr := ""
-		if emailVal != nil {
-			emailStr = emailVal.(string)
-		}
-
-		// Query latest briefing for the user — keeps the existing template happy.
-		var latestBriefing models.Briefing
-		var latestBriefingPtr *models.Briefing
-		if db != nil && emailStr != "" {
-			var user models.User
-			if err := db.Where("email = ?", emailStr).First(&user).Error; err == nil {
-				result := db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&latestBriefing)
-				if result.Error == nil {
-					latestBriefingPtr = &latestBriefing
-				}
+		user, err := getAuthUser(c, db)
+		if err != nil {
+			// Fall back gracefully if DB lookup fails.
+			nameVal, _ := c.Get("user_name")
+			nameStr := ""
+			if nameVal != nil {
+				nameStr = nameVal.(string)
 			}
+			greeting := timeAwareGreeting(nameStr, "UTC")
+			date := formatDashboardDate("UTC")
+			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false))
+			return
 		}
 
-		render(c, templates.DashboardPage(nameStr, emailStr, latestBriefingPtr))
+		tiles, err := getDashboardTiles(db, user.ID)
+		if err != nil {
+			// On query error, render with no tiles rather than a 500 page.
+			greeting := timeAwareGreeting(user.Name, user.Timezone)
+			date := formatDashboardDate(user.Timezone)
+			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false))
+			return
+		}
+
+		greeting := timeAwareGreeting(user.Name, user.Timezone)
+		date := formatDashboardDate(user.Timezone)
+		render(c, templates.DashboardPage(greeting, date, tiles, len(tiles) > 0))
 	}
 }
 
 // TileStatusHandler returns a Gin handler for GET /api/tiles/:pluginID.
-// Used by HTMX polling to refresh a single tile's status.
-//
-// TODO(11-03): Render the actual tile Templ component once Plan 03 creates it.
-// For now this is a working stub that returns 200 OK.
+// Used by HTMX polling to refresh a single tile's HTML fragment (outerHTML swap).
 func TileStatusHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := getAuthUser(c, db)
@@ -96,14 +99,13 @@ func TileStatusHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		_, err = GetSingleTile(db, user.ID, uint(pluginIDParsed))
-		if err != nil {
+		tile, err := GetSingleTile(db, user.ID, uint(pluginIDParsed))
+		if err != nil || tile == nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 
-		// TODO(11-03): render actual tile component once templates.TileCard exists.
-		c.Status(http.StatusOK)
+		render(c, templates.TileCard(*tile))
 	}
 }
 

@@ -6,37 +6,17 @@ import (
 	"time"
 
 	cron "github.com/robfig/cron/v3"
+	"github.com/jimdaga/first-sip/internal/tiles"
 	"gorm.io/gorm"
 )
 
 // cronParser is a standard 5-field cron expression parser (same options as in plugins/models.go).
 var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 
-// TileViewModel holds all data needed to render a single dashboard tile.
-type TileViewModel struct {
-	PluginID     uint
-	PluginName   string
-	PluginIcon   string // emoji from plugin YAML
-	TileSize     string // "1x1", "2x1", "2x2"
-	DisplayOrder *int
-	Enabled      bool
-
-	// Latest run data (zero values if no runs yet)
-	LatestRunStatus string     // pending/processing/completed/failed or ""
-	LatestRunAt     *time.Time // created_at of the latest run
-	NextRunAt       *time.Time
-	BriefingSummary string // 2-3 line summary from PluginRun.Output JSON
-	BriefingContent string // Full briefing content from PluginRun.Output JSON (for expand-in-place)
-	HasContent      bool   // true if a completed run exists
-
-	// Error overlay: show last successful content even if latest run failed
-	LastSuccessfulSummary string
-	LastSuccessfulContent string // Full content from last successful run
-	HasError              bool   // true if latest run is failed
-
-	// Formatted tooltip text
-	TimingTooltip string
-}
+// TileViewModel is an alias for tiles.TileViewModel.
+// The type lives in internal/tiles to avoid an import cycle between
+// internal/dashboard (query layer) and internal/templates (render layer).
+type TileViewModel = tiles.TileViewModel
 
 // PluginRunOutput is the JSONB structure stored in plugin_runs.output.
 type PluginRunOutput struct {
