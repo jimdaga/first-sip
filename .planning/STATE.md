@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 10 — Per-User Scheduling
-Plan: 2/? complete
+Phase: 11 — Tile-Based Dashboard
+Plan: 1/? complete
 Status: In Progress
-Last activity: 2026-02-19 — Plan 10-02 executed (scheduler wiring complete, config cleanup)
+Last activity: 2026-02-22 — Plan 11-01 executed (tile schema: icon, tile_size, display_order, migration 000007)
 
 ## Performance Metrics
 
@@ -35,6 +35,7 @@ Last activity: 2026-02-19 — Plan 10-02 executed (scheduler wiring complete, co
 | 08 | 3 | 5 min | 1.7 min |
 | 09 | 4 | 15 min | 3.8 min |
 | 10 | 2 | 5 min | 2.5 min |
+| 11 | 1 | 2 min | 2.0 min |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 10-01]: Redis hash HSET/HGET for last-run cache (scheduler:last_run key, userID:pluginID fields) avoids DB round-trips per tick
 - [Phase 10-02]: asynq.Queue("critical") on TaskPerMinuteScheduler prevents scheduler starvation by long-running plugin:execute tasks
 - [Phase 10-02]: BriefingSchedule/BriefingTimezone env vars retired — scheduling fully database-backed per-user (cron_expression + timezone columns)
+- [Phase 11-01]: DisplayOrder as nullable *int avoids zero-value ambiguity between "unordered" and "first position"
+- [Phase 11-01]: TileSize defaults to "1x1" in syncPluginToDB (not in YAML or struct) — plugins without tile_size still get valid DB value
+- [Phase 11-01]: Migration 000007 uses IF NOT EXISTS guards for idempotent re-runs during development
 
 ### Pending Todos
 
@@ -92,10 +96,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-19 (Phase 10 Plan 02 execution — scheduler wiring and config cleanup)
-Stopped at: Completed 10-02-PLAN.md (critical queue wiring, BriefingSchedule/BriefingTimezone removal)
-Resume with: /gsd:execute-phase 10 (continue phase 10 plan 03)
+Last session: 2026-02-22 (Phase 11 Plan 01 execution — tile schema foundation)
+Stopped at: Completed 11-01-PLAN.md (icon/tile_size/display_order fields, migration 000007)
+Resume with: /gsd:execute-phase 11 (continue phase 11 plan 02)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-19 after Phase 10 Plan 02 execution*
+*Last updated: 2026-02-22 after Phase 11 Plan 01 execution*
