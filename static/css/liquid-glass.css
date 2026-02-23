@@ -22,21 +22,21 @@
   --glass-saturate: 180%;
 
   /* Palette */
-  --bg-base: #FEF5ED;
-  --accent: #D4915E;
-  --accent-hover: #C07A48;
-  --accent-glow: rgba(212, 145, 94, 0.3);
-  --text-primary: #2A1F18;
-  --text-secondary: rgba(42, 31, 24, 0.58);
-  --text-tertiary: rgba(42, 31, 24, 0.35);
+  --bg-base: #F7F6F3;
+  --accent: #2A7D5F;
+  --accent-hover: #1E5C45;
+  --accent-glow: rgba(42, 125, 95, 0.25);
+  --text-primary: #1A1815;
+  --text-secondary: rgba(26, 24, 21, 0.55);
+  --text-tertiary: rgba(26, 24, 21, 0.32);
 
   /* Status */
   --status-unread-bg: rgba(235, 87, 87, 0.1);
   --status-unread-text: #C94040;
   --status-unread-border: rgba(235, 87, 87, 0.2);
-  --status-read-bg: rgba(45, 122, 74, 0.1);
-  --status-read-text: #2D7A4A;
-  --status-read-border: rgba(45, 122, 74, 0.2);
+  --status-read-bg: rgba(42, 125, 95, 0.1);
+  --status-read-text: #2A7D5F;
+  --status-read-border: rgba(42, 125, 95, 0.2);
 
   /* Radius */
   --radius-xl: 28px;
@@ -46,14 +46,14 @@
 
   /* Shadows — warm-cast (Edison pendant glow) */
   --shadow-glass:
-    0 8px 32px rgba(42, 31, 24, 0.08),
-    0 2px 8px rgba(42, 31, 24, 0.05);
+    0 8px 32px rgba(26, 24, 21, 0.08),
+    0 2px 8px rgba(26, 24, 21, 0.05);
   --shadow-glass-hover:
-    0 16px 48px rgba(42, 31, 24, 0.10),
-    0 4px 12px rgba(42, 31, 24, 0.06);
+    0 16px 48px rgba(26, 24, 21, 0.10),
+    0 4px 12px rgba(26, 24, 21, 0.06);
   --shadow-glass-elevated:
-    0 24px 64px rgba(42, 31, 24, 0.12),
-    0 8px 20px rgba(42, 31, 24, 0.07);
+    0 24px 64px rgba(26, 24, 21, 0.12),
+    0 8px 20px rgba(26, 24, 21, 0.07);
 
   /* Typography */
   --font-display: 'Bricolage Grotesque', sans-serif;
@@ -62,12 +62,12 @@
   /* Navbar — dark espresso bar */
   --navbar-bg: linear-gradient(
     180deg,
-    #1E1612 0%,
-    #28201A 100%
+    #171614 0%,
+    #211F1C 100%
   );
-  --navbar-text: #FEF5ED;
-  --navbar-text-secondary: rgba(254, 245, 237, 0.6);
-  --navbar-border: rgba(212, 145, 94, 0.15);
+  --navbar-text: #F7F6F3;
+  --navbar-text-secondary: rgba(247, 246, 243, 0.6);
+  --navbar-border: rgba(42, 125, 95, 0.12);
   --navbar-glow: 0 2px 20px rgba(0, 0, 0, 0.25),
     0 1px 6px rgba(0, 0, 0, 0.15);
 
@@ -129,7 +129,7 @@ body {
   height: 60vw;
   max-width: 700px;
   max-height: 700px;
-  background: rgba(235, 195, 155, 0.35);
+  background: rgba(180, 210, 190, 0.25);
   top: -15%;
   left: -10%;
   animation: float1 25s ease-in-out infinite;
@@ -140,7 +140,7 @@ body {
   height: 50vw;
   max-width: 600px;
   max-height: 600px;
-  background: rgba(220, 190, 160, 0.25);
+  background: rgba(200, 195, 185, 0.20);
   top: 20%;
   right: -15%;
   animation: float2 30s ease-in-out infinite;
@@ -152,7 +152,7 @@ body {
   height: 45vw;
   max-width: 500px;
   max-height: 500px;
-  background: rgba(85, 145, 95, 0.12);
+  background: rgba(42, 125, 95, 0.08);
   bottom: -10%;
   left: 25%;
   animation: float3 22s ease-in-out infinite;
@@ -164,7 +164,7 @@ body {
   height: 30vw;
   max-width: 350px;
   max-height: 350px;
-  background: rgba(225, 200, 175, 0.2);
+  background: rgba(215, 210, 200, 0.15);
   top: 50%;
   left: 10%;
   animation: float1 28s ease-in-out infinite reverse;
@@ -216,9 +216,9 @@ body {
   border-radius: calc(var(--radius-lg) + 1px);
   background: linear-gradient(
     135deg,
-    rgba(212, 145, 94, 0.15),
-    rgba(255, 220, 190, 0.1),
-    rgba(212, 145, 94, 0.12)
+    rgba(42, 125, 95, 0.12),
+    rgba(180, 210, 190, 0.08),
+    rgba(42, 125, 95, 0.10)
   );
   opacity: 0;
   transition: opacity 0.6s ease;
@@ -441,7 +441,7 @@ body {
 .glass-spinner {
   width: 22px;
   height: 22px;
-  border: 2.5px solid rgba(212, 145, 94, 0.2);
+  border: 2.5px solid rgba(42, 125, 95, 0.2);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
@@ -833,15 +833,15 @@ body {
 
 /* Ghost button inside navbar */
 .glass-navbar .glass-btn-ghost {
-  background: rgba(254, 245, 237, 0.08);
+  background: rgba(247, 246, 243, 0.08);
   color: var(--navbar-text-secondary);
-  border-color: rgba(254, 245, 237, 0.12);
+  border-color: rgba(247, 246, 243, 0.12);
 }
 
 .glass-navbar .glass-btn-ghost:hover {
-  background: rgba(254, 245, 237, 0.16);
+  background: rgba(247, 246, 243, 0.16);
   color: var(--navbar-text);
-  border-color: rgba(254, 245, 237, 0.25);
+  border-color: rgba(247, 246, 243, 0.25);
 }
 
 .navbar-brand-link {
@@ -1057,7 +1057,7 @@ body {
 }
 .tile-tooltip {
   position: fixed;
-  background: rgba(42, 31, 24, 0.92);
+  background: rgba(26, 24, 21, 0.92);
   color: var(--navbar-text);
   font-family: var(--font-body);
   font-size: 0.75rem;
@@ -1079,7 +1079,7 @@ body {
 }
 .skeleton-icon,
 .skeleton-line {
-  background: linear-gradient(90deg, rgba(42,31,24,0.06) 25%, rgba(42,31,24,0.12) 50%, rgba(42,31,24,0.06) 75%);
+  background: linear-gradient(90deg, rgba(26,24,21,0.06) 25%, rgba(26,24,21,0.12) 50%, rgba(26,24,21,0.06) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
@@ -1180,4 +1180,318 @@ body {
 }
 .sortable-ghost {
   opacity: 0.4;
+}
+
+/* ==========================================
+   SETTINGS PAGE
+   ========================================== */
+
+/* Settings page header */
+.settings-page-header {
+  margin-bottom: 1.5rem;
+}
+.settings-page-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+.settings-page-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Plugin row wrapper — carries the .settings-expanded class */
+.settings-plugin-row-wrapper {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.75rem;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  overflow: hidden;
+  box-shadow: var(--shadow-glass);
+  transition: box-shadow 0.2s var(--ease-spring);
+}
+.settings-plugin-row-wrapper:hover {
+  box-shadow: var(--shadow-glass-hover);
+}
+
+/* Plugin row header — always visible */
+.settings-plugin-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Keep the old .settings-plugin-row class for backward compat */
+.settings-plugin-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Status dot */
+.settings-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.settings-status-green { background: var(--status-read-text); }
+.settings-status-yellow { background: var(--accent); }
+.settings-status-red { background: var(--status-unread-text); }
+.settings-status-gray { background: var(--text-tertiary); }
+
+/* Plugin icon + name */
+.settings-plugin-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.settings-plugin-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-grow: 1;
+  font-size: 1rem;
+}
+
+/* Toggle switch */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.settings-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--text-tertiary);
+  border-radius: 24px;
+  transition: background 0.2s var(--ease-spring);
+  cursor: pointer;
+}
+.settings-toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s var(--ease-spring);
+}
+.settings-toggle input:checked + .settings-toggle-slider {
+  background: var(--accent);
+}
+.settings-toggle input:checked + .settings-toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* Inline toggle (inside form fields for boolean type) */
+.settings-toggle-inline {
+  margin-top: 0.25rem;
+}
+
+/* Chevron */
+.settings-chevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: transform 0.2s var(--ease-spring);
+}
+.settings-expanded .settings-chevron {
+  transform: rotate(180deg);
+}
+
+/* Expanded content — hidden by default, shown when wrapper has .settings-expanded */
+.settings-plugin-expanded {
+  display: none;
+  border-top: 1px solid var(--glass-border-subtle);
+}
+.settings-expanded .settings-plugin-expanded {
+  display: block;
+}
+
+/* Two-column grid for form + status on desktop */
+.settings-expanded-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 1.25rem 1.5rem;
+}
+@media (max-width: 768px) {
+  .settings-expanded-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Section headings inside accordion */
+.settings-section-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+}
+.settings-subsection {
+  margin-bottom: 1.25rem;
+}
+.settings-subsection-heading {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem 0;
+}
+
+/* Form fields */
+.settings-form-section form {
+  display: flex;
+  flex-direction: column;
+}
+.settings-field-group {
+  margin-bottom: 1rem;
+}
+.settings-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.375rem;
+}
+.settings-required-marker {
+  color: var(--status-unread-text);
+  font-size: 0.75rem;
+  cursor: default;
+}
+.settings-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: help;
+  flex-shrink: 0;
+}
+.settings-input,
+.settings-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: border-color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring);
+}
+.settings-input:focus,
+.settings-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.settings-field-error {
+  color: var(--status-unread-text);
+  font-size: 0.775rem;
+  margin-top: 0.25rem;
+  min-height: 1em;
+  font-family: var(--font-body);
+}
+
+/* Radio and checkbox groups */
+.settings-radio-group,
+.settings-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.settings-radio-label,
+.settings-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+.settings-radio,
+.settings-checkbox {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Status section */
+.settings-status-section {
+  font-family: var(--font-body);
+}
+.settings-status-items {
+  margin-bottom: 1rem;
+}
+.settings-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--glass-border-subtle);
+  font-size: 0.85rem;
+}
+.settings-status-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.settings-status-value {
+  color: var(--text-primary);
+}
+.settings-errors-section {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+.settings-error-item {
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.375rem;
+  background: rgba(201, 64, 64, 0.08);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+.settings-error-time {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  margin-bottom: 0.125rem;
+}
+.settings-error-message {
+  color: var(--status-unread-text);
+  display: block;
+}
+.settings-run-now-section {
+  margin-top: 1rem;
 }

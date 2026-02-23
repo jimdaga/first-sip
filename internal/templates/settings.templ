@@ -6,7 +6,6 @@ import (
 )
 
 // SettingsPage renders the full settings page with plugin accordion list.
-// Plan 02 replaces this stub with the complete accordion UI.
 templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 	@Layout("Settings - First Sip") {
 		<nav class="glass-navbar">
@@ -26,33 +25,392 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 			</div>
 		</nav>
 		<main class="dashboard-content">
-			<h1 class="settings-page-title">Settings</h1>
-			<p class="settings-page-subtitle">Manage your plugins and schedule</p>
+			<div class="settings-page-header">
+				<h1 class="settings-page-title">Plugin Settings</h1>
+				<p class="settings-page-subtitle">Manage your plugins, schedules, and configuration</p>
+			</div>
 			<div id="settings-plugin-list">
-				for _, plugin := range plugins {
-					@PluginAccordionRow(plugin)
+				if len(plugins) == 0 {
+					<div class="empty-state">No plugins available. Check your plugin directory configuration.</div>
+				} else {
+					for _, plugin := range plugins {
+						@PluginAccordionRow(plugin)
+					}
 				}
 			</div>
 		</main>
+		<script>
+			// Accordion expand/collapse — clicking the row header toggles .settings-expanded
+			document.addEventListener('click', function(e) {
+				var header = e.target.closest('.settings-plugin-header');
+				if (!header) return;
+				// Don't toggle if clicking the enable/disable toggle switch
+				if (e.target.closest('.settings-toggle')) return;
+				var row = header.closest('.settings-plugin-row-wrapper');
+				if (!row) return;
+				row.classList.toggle('settings-expanded');
+			});
+
+			// "Saved ✓" revert: after HTMX swaps in a row with data-saved="true" on the save button,
+			// revert the button text back to "Save" after 2 seconds.
+			htmx.on('htmx:afterSwap', function(evt) {
+				var target = evt.detail.target;
+				if (!target) return;
+				var savedBtn = target.querySelector('[data-saved="true"]');
+				if (!savedBtn) return;
+				// Re-expand the row that was just re-rendered
+				target.classList.add('settings-expanded');
+				setTimeout(function() {
+					if (savedBtn && savedBtn.parentNode) {
+						savedBtn.textContent = 'Save';
+						savedBtn.removeAttribute('data-saved');
+					}
+				}, 2000);
+			});
+
+			// Auto-expand on enable: when the toggle response sends HX-Trigger: settings-auto-expand,
+			// expand the row that was just swapped in.
+			htmx.on('htmx:afterSwap', function(evt) {
+				var xhr = evt.detail.xhr;
+				if (!xhr) return;
+				var trigger = xhr.getResponseHeader('HX-Trigger');
+				if (trigger && trigger.indexOf('settings-auto-expand') !== -1) {
+					var row = evt.detail.target;
+					if (row) row.classList.add('settings-expanded');
+				}
+			});
+
+			// Preserve expanded state after HTMX row re-render (save / validate returns outerHTML swap).
+			// The htmx:beforeSwap fires before the DOM update — record which rows are expanded.
+			var _expandedRows = {};
+			htmx.on('htmx:beforeSwap', function(evt) {
+				var target = evt.detail.target;
+				if (target && target.classList.contains('settings-plugin-row-wrapper') && target.classList.contains('settings-expanded')) {
+					_expandedRows[target.id] = true;
+				}
+			});
+			htmx.on('htmx:afterSwap', function(evt) {
+				var target = evt.detail.target;
+				if (target && target.classList.contains('settings-plugin-row-wrapper') && _expandedRows[target.id]) {
+					target.classList.add('settings-expanded');
+					delete _expandedRows[target.id];
+				}
+			});
+		</script>
 	}
 }
 
-// PluginAccordionRow renders a single plugin row in the settings accordion.
-// Plan 02 replaces this stub with the complete accordion row UI including
-// enable/disable toggle, settings form, and status section.
+// PluginAccordionRow renders a single plugin row with a collapsible settings panel.
+// The outer wrapper carries the id used by HTMX outerHTML swap targets.
 templ PluginAccordionRow(plugin settingsvm.PluginSettingsViewModel) {
 	<div
 		id={ fmt.Sprintf("plugin-row-%d", plugin.PluginID) }
-		class="glass-card settings-plugin-row"
+		class="settings-plugin-row-wrapper"
 	>
-		<div class="glass-card-body">
-			<span class="settings-plugin-name">{ plugin.PluginName }</span>
-			<span class="settings-plugin-description">{ plugin.Description }</span>
-			if plugin.Enabled {
-				<span class="glass-badge glass-badge-read">Enabled</span>
+		<!-- Collapsed header — always visible -->
+		<div class="settings-plugin-header settings-plugin-row">
+			<!-- Status dot -->
+			if plugin.Status != nil {
+				<span class={ fmt.Sprintf("settings-status-dot settings-status-%s", plugin.Status.HealthColor) }></span>
 			} else {
-				<span class="glass-badge">Disabled</span>
+				<span class="settings-status-dot settings-status-gray"></span>
+			}
+			<!-- Plugin icon + name -->
+			if plugin.Icon != "" {
+				<span class="settings-plugin-icon">{ plugin.Icon }</span>
+			}
+			<span class="settings-plugin-name">{ plugin.PluginName }</span>
+			<!-- Enable / disable toggle -->
+			<label class="settings-toggle" onclick="event.stopPropagation()">
+				<input
+					type="checkbox"
+					class="settings-toggle-input"
+					hx-post={ fmt.Sprintf("/api/settings/%d/toggle", plugin.PluginID) }
+					hx-target={ fmt.Sprintf("#plugin-row-%d", plugin.PluginID) }
+					hx-swap="outerHTML"
+					if plugin.Enabled {
+						checked
+					}
+				/>
+				<span class="settings-toggle-slider"></span>
+			</label>
+			<!-- Chevron -->
+			<svg class="settings-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="6 9 12 15 18 9"></polyline>
+			</svg>
+		</div>
+		<!-- Expanded content — shown when .settings-expanded is on the wrapper -->
+		<div class="settings-plugin-expanded">
+			<div class="settings-expanded-grid">
+				@PluginSettingsForm(plugin)
+				@PluginStatusSection(plugin)
+			</div>
+		</div>
+	</div>
+}
+
+// PluginSettingsForm renders the schedule and schema-driven settings form for a plugin.
+templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
+	<div class="settings-form-section">
+		<h3 class="settings-section-heading">Configuration</h3>
+		<form id={ fmt.Sprintf("settings-form-%d", plugin.PluginID) }>
+			<!-- Schedule section -->
+			<div class="settings-subsection">
+				<h4 class="settings-subsection-heading">Schedule</h4>
+				<div class="settings-field-group">
+					<label class="settings-field-label" for={ fmt.Sprintf("cron-%d", plugin.PluginID) }>
+						Cron Expression
+						<span class="settings-tooltip-trigger" title="Standard 5-field cron expression (minute hour day month weekday). Example: 0 7 * * * for daily at 7am.">?</span>
+					</label>
+					<input
+						type="text"
+						id={ fmt.Sprintf("cron-%d", plugin.PluginID) }
+						name="cron_expression"
+						value={ plugin.CronExpression }
+						class="settings-input"
+						placeholder="0 7 * * *"
+					/>
+					<div id={ fmt.Sprintf("error-cron_expression-%d", plugin.PluginID) } class="settings-field-error"></div>
+				</div>
+				<div class="settings-field-group">
+					<label class="settings-field-label" for={ fmt.Sprintf("tz-%d", plugin.PluginID) }>
+						Timezone
+					</label>
+					<input
+						type="text"
+						id={ fmt.Sprintf("tz-%d", plugin.PluginID) }
+						name="timezone"
+						value={ plugin.Timezone }
+						class="settings-input"
+						placeholder="UTC"
+					/>
+				</div>
+			</div>
+			<!-- Plugin-specific fields (from JSON Schema) -->
+			if plugin.HasSchema && len(plugin.Fields) > 0 {
+				<div class="settings-subsection">
+					<h4 class="settings-subsection-heading">Plugin Settings</h4>
+					for _, field := range plugin.Fields {
+						@renderField(plugin.PluginID, field)
+					}
+				</div>
+			}
+			<!-- Save button -->
+			<button
+				type="button"
+				class="glass-btn glass-btn-primary"
+				hx-post={ fmt.Sprintf("/api/settings/%d/save", plugin.PluginID) }
+				hx-include={ fmt.Sprintf("#settings-form-%d", plugin.PluginID) }
+				hx-target={ fmt.Sprintf("#plugin-row-%d", plugin.PluginID) }
+				hx-swap="outerHTML"
+				if plugin.SaveSuccess {
+					data-saved="true"
+				}
+			>
+				if plugin.SaveSuccess {
+					Saved ✓
+				} else {
+					Save
+				}
+			</button>
+		</form>
+	</div>
+}
+
+// renderField dispatches to the correct input component based on FieldType.
+templ renderField(pluginID uint, field settingsvm.FieldViewModel) {
+	<div class="settings-field-group">
+		<label class="settings-field-label">
+			{ field.Label }
+			if field.Required {
+				<span class="settings-required-marker" title="Required">*</span>
+			}
+			if field.Description != "" {
+				<span class="settings-tooltip-trigger" title={ field.Description }>?</span>
+			}
+		</label>
+		switch field.FieldType {
+			case settingsvm.FieldTypeText:
+				@renderTextField(pluginID, field)
+			case settingsvm.FieldTypeInteger:
+				@renderIntegerField(pluginID, field)
+			case settingsvm.FieldTypeBoolean:
+				@renderBooleanField(pluginID, field)
+			case settingsvm.FieldTypeEnum:
+				if len(field.EnumValues) <= 4 {
+					@renderRadioField(pluginID, field)
+				} else {
+					@renderSelectField(pluginID, field)
+				}
+			case settingsvm.FieldTypeCheckboxGroup:
+				@renderCheckboxGroupField(pluginID, field)
+			default:
+				@renderTextField(pluginID, field)
+		}
+		<div id={ fmt.Sprintf("error-%s-%d", field.Key, pluginID) } class="settings-field-error">
+			if field.Error != "" {
+				{ field.Error }
 			}
 		</div>
+	</div>
+}
+
+templ renderTextField(pluginID uint, field settingsvm.FieldViewModel) {
+	<input
+		type="text"
+		name={ field.Key }
+		value={ field.CurrentValue }
+		class="settings-input"
+		hx-post={ fmt.Sprintf("/api/settings/%d/validate-field", pluginID) }
+		hx-trigger="blur changed"
+		hx-target={ fmt.Sprintf("#error-%s-%d", field.Key, pluginID) }
+		hx-swap="innerHTML"
+		hx-include="[name='field_name']"
+	/>
+	<input type="hidden" name="field_name" value={ field.Key }/>
+}
+
+templ renderIntegerField(pluginID uint, field settingsvm.FieldViewModel) {
+	<input
+		type="number"
+		name={ field.Key }
+		value={ field.CurrentValue }
+		class="settings-input"
+		hx-post={ fmt.Sprintf("/api/settings/%d/validate-field", pluginID) }
+		hx-trigger="blur changed"
+		hx-target={ fmt.Sprintf("#error-%s-%d", field.Key, pluginID) }
+		hx-swap="innerHTML"
+		hx-include="[name='field_name']"
+	/>
+	<input type="hidden" name="field_name" value={ field.Key }/>
+}
+
+templ renderBooleanField(pluginID uint, field settingsvm.FieldViewModel) {
+	<!-- Hidden false value ensures unchecked state sends "false" (Pitfall 3) -->
+	<input type="hidden" name={ field.Key } value="false"/>
+	<label class="settings-toggle settings-toggle-inline">
+		<input
+			type="checkbox"
+			name={ field.Key }
+			value="true"
+			if field.CurrentValue == "true" {
+				checked
+			}
+		/>
+		<span class="settings-toggle-slider"></span>
+	</label>
+}
+
+templ renderRadioField(pluginID uint, field settingsvm.FieldViewModel) {
+	<div class="settings-radio-group">
+		for _, opt := range field.EnumValues {
+			<label class="settings-radio-label">
+				<input
+					type="radio"
+					name={ field.Key }
+					value={ opt }
+					class="settings-radio"
+					if opt == field.CurrentValue {
+						checked
+					}
+				/>
+				{ opt }
+			</label>
+		}
+	</div>
+}
+
+templ renderSelectField(pluginID uint, field settingsvm.FieldViewModel) {
+	<select
+		name={ field.Key }
+		class="settings-select"
+		hx-post={ fmt.Sprintf("/api/settings/%d/validate-field", pluginID) }
+		hx-trigger="change"
+		hx-target={ fmt.Sprintf("#error-%s-%d", field.Key, pluginID) }
+		hx-swap="innerHTML"
+		hx-include="[name='field_name']"
+	>
+		for _, opt := range field.EnumValues {
+			<option
+				value={ opt }
+				if opt == field.CurrentValue {
+					selected
+				}
+			>{ opt }</option>
+		}
+	</select>
+	<input type="hidden" name="field_name" value={ field.Key }/>
+}
+
+templ renderCheckboxGroupField(pluginID uint, field settingsvm.FieldViewModel) {
+	<div class="settings-checkbox-group">
+		for _, opt := range field.EnumValues {
+			<label class="settings-checkbox-label">
+				<input
+					type="checkbox"
+					name={ field.Key }
+					value={ opt }
+					class="settings-checkbox"
+					if isChecked(opt, field.CurrentValue) {
+						checked
+					}
+				/>
+				{ opt }
+			</label>
+		}
+	</div>
+}
+
+// PluginStatusSection renders the plugin run status panel.
+templ PluginStatusSection(plugin settingsvm.PluginSettingsViewModel) {
+	<div class="settings-status-section">
+		<h3 class="settings-section-heading">Status</h3>
+		if plugin.Status == nil {
+			<p class="content-empty">No runs yet.</p>
+		} else {
+			<div class="settings-status-items">
+				<div class="settings-status-item">
+					<span class="settings-status-label">Last run</span>
+					<span class="settings-status-value">
+						if plugin.Status.LastRunAt != nil {
+							{ plugin.Status.LastRunAt.Format("Jan 2 at 3:04 PM") }
+						} else {
+							Never
+						}
+					</span>
+				</div>
+				<div class="settings-status-item">
+					<span class="settings-status-label">Next run</span>
+					<span class="settings-status-value">
+						if plugin.Status.NextRunAt != nil {
+							{ plugin.Status.NextRunAt.Format("Jan 2 at 3:04 PM") }
+						} else {
+							No schedule set
+						}
+					</span>
+				</div>
+			</div>
+			if len(plugin.Status.RecentErrors) > 0 {
+				<div class="settings-errors-section">
+					<h4 class="settings-subsection-heading">Recent Errors</h4>
+					for _, errEntry := range plugin.Status.RecentErrors {
+						<div class="settings-error-item">
+							<span class="settings-error-time">{ errEntry.OccurredAt.Format("Jan 2 3:04 PM") }</span>
+							<span class="settings-error-message">{ errEntry.Message }</span>
+						</div>
+					}
+				</div>
+			}
+		}
+		<!-- Run Now button — always shown if plugin is enabled -->
+		if plugin.Enabled {
+			<div class="settings-run-now-section">
+				<button
+					class="glass-btn glass-btn-ghost glass-btn-sm"
+					hx-post={ fmt.Sprintf("/api/settings/%d/run-now", plugin.PluginID) }
+					hx-swap="none"
+				>Run Now</button>
+			</div>
+		}
 	</div>
 }
