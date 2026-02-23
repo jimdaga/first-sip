@@ -32,6 +32,8 @@ const (
 	FieldTypeInteger       = settingsvm.FieldTypeInteger
 	FieldTypeBoolean       = settingsvm.FieldTypeBoolean
 	FieldTypeCheckboxGroup = settingsvm.FieldTypeCheckboxGroup
+	FieldTypeTagInput      = settingsvm.FieldTypeTagInput
+	FieldTypeTimeSelect    = settingsvm.FieldTypeTimeSelect
 )
 
 // cronParser is a standard 5-field cron expression parser.
@@ -115,6 +117,7 @@ func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string) (
 		vm := PluginSettingsViewModel{
 			PluginID:          row.PluginID,
 			PluginName:        row.PluginName,
+			DisplayName:       humanizePluginName(row.PluginName),
 			Description:       row.Description,
 			Icon:              row.Icon,
 			Enabled:           row.Enabled,
@@ -200,6 +203,7 @@ func BuildSinglePluginSettingsViewModel(
 	vm := &PluginSettingsViewModel{
 		PluginID:          row.PluginID,
 		PluginName:        row.PluginName,
+		DisplayName:       humanizePluginName(row.PluginName),
 		Description:       row.Description,
 		Icon:              row.Icon,
 		Enabled:           row.Enabled,
@@ -411,9 +415,25 @@ func coerceFormValues(rawForm url.Values, schema *jsonschema.Schema) (map[string
 			}
 			result[key] = val
 		case "array":
-			// Multi-select checkboxes: form sends multiple values for same key (Pitfall 4).
-			if rawVals != nil {
-				result[key] = rawVals // []string satisfies JSON Schema array validation
+			// Tag input: hidden field sends a single JSON array string e.g. '["tech","science"]'.
+			// Legacy multi-checkbox: multiple values sent for same key.
+			if len(rawVals) == 1 {
+				val := strings.TrimSpace(rawVals[0])
+				if strings.HasPrefix(val, "[") {
+					// Parse JSON array from tag input hidden field.
+					var arr []string
+					if jsonErr := json.Unmarshal([]byte(val), &arr); jsonErr == nil {
+						result[key] = arr
+					} else if rawVals != nil {
+						result[key] = rawVals
+					} else {
+						result[key] = []string{}
+					}
+				} else {
+					result[key] = rawVals
+				}
+			} else if rawVals != nil {
+				result[key] = rawVals // multiple checkbox values (legacy)
 			} else {
 				result[key] = []string{}
 			}
@@ -485,6 +505,18 @@ func validateSingleField(schema *jsonschema.Schema, fieldKey string, rawValue st
 	return ""
 }
 
+// humanizePluginName converts a kebab-case plugin name to a title-case display name.
+// E.g. "daily-news-digest" → "Daily News Digest".
+func humanizePluginName(name string) string {
+	words := strings.Split(name, "-")
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
+}
+
 // labelFromSchema returns the display label for a field.
 // Uses schema.Title if non-empty, otherwise humanizes the key.
 func labelFromSchema(key string, s *jsonschema.Schema) string {
@@ -509,6 +541,10 @@ func descriptionFromSchema(s *jsonschema.Schema) string {
 	return ""
 }
 
+// timePatternRe matches HH:MM 24-hour time pattern schemas (e.g. "^([0-1][0-9]|2[0-3]):[0-5][0-9]$").
+// These are rendered as a <select> with half-hour time slots instead of a free text input.
+const timePatternSubstr = ":[0-5][0-9]$"
+
 // fieldTypeFromSchema determines the FieldType for a schema property.
 func fieldTypeFromSchema(s *jsonschema.Schema) FieldType {
 	typeStr := ""
@@ -526,12 +562,17 @@ func fieldTypeFromSchema(s *jsonschema.Schema) FieldType {
 		}
 		return FieldTypeInteger
 	case "array":
-		// Array with items.enum → checkbox group.
-		return FieldTypeCheckboxGroup
+		// All array fields use a tag input — whether or not they have predefined enum items.
+		// Predefined enums appear as hints; validation enforces constraints at save time.
+		return FieldTypeTagInput
 	default:
 		// string or unknown
 		if len(s.Enum) > 0 {
 			return FieldTypeEnum
+		}
+		// String with a time pattern → time select.
+		if s.Pattern != nil && strings.Contains(*s.Pattern, timePatternSubstr) {
+			return FieldTypeTimeSelect
 		}
 		return FieldTypeText
 	}

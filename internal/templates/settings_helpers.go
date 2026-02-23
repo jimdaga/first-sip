@@ -1,6 +1,21 @@
 package templates
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+// timeSlots returns a slice of HH:MM strings at 30-minute intervals (00:00 to 23:30).
+// Used by renderTimeSelectField to populate the time picker dropdown.
+func timeSlots() []string {
+	slots := make([]string, 0, 48)
+	for h := 0; h < 24; h++ {
+		for _, m := range []int{0, 30} {
+			slots = append(slots, fmt.Sprintf("%02d:%02d", h, m))
+		}
+	}
+	return slots
+}
 
 // isChecked reports whether option is selected in currentValue.
 // currentValue may be a JSON array string (e.g. `["tech","science"]`) or a

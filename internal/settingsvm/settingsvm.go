@@ -15,6 +15,8 @@ const (
 	FieldTypeInteger       FieldType = "integer"        // type: integer, no enum
 	FieldTypeBoolean       FieldType = "boolean"        // type: boolean
 	FieldTypeCheckboxGroup FieldType = "checkbox_group" // type: array with enum items
+	FieldTypeTagInput      FieldType = "tag_input"      // type: array with open-ended string tags
+	FieldTypeTimeSelect    FieldType = "time_select"    // string with HH:MM time pattern — renders as select
 )
 
 // FieldViewModel is what Templ receives — no jsonschema types.
@@ -47,7 +49,8 @@ type PluginStatusViewModel struct {
 // PluginSettingsViewModel is the top-level view model for each plugin accordion row.
 type PluginSettingsViewModel struct {
 	PluginID          uint
-	PluginName        string
+	PluginName        string   // raw DB name (e.g. "daily-news-digest")
+	DisplayName       string   // humanized display name (e.g. "Daily News Digest")
 	Description       string
 	Icon              string
 	Enabled           bool

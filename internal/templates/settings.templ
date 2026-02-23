@@ -5,25 +5,43 @@ import (
 	"github.com/jimdaga/first-sip/internal/settingsvm"
 )
 
+// AppNavbar renders the shared navigation bar used on all authenticated pages.
+// activePage should be "dashboard", "history", or "settings".
+templ AppNavbar(activePage string) {
+	<nav class="glass-navbar">
+		<div class="navbar-inner">
+			<div class="navbar-brand">
+				<a href="/dashboard" class="navbar-brand-link">
+					<img src="/static/img/coffeeicon.png" alt="" class="navbar-logo"/>
+					<span class="navbar-title">First Sip</span>
+				</a>
+			</div>
+			<div class="navbar-links">
+				if activePage == "dashboard" {
+					<a href="/dashboard" class="navbar-link navbar-link-active">Dashboard</a>
+				} else {
+					<a href="/dashboard" class="navbar-link">Dashboard</a>
+				}
+				if activePage == "history" {
+					<a href="/history" class="navbar-link navbar-link-active">History</a>
+				} else {
+					<a href="/history" class="navbar-link">History</a>
+				}
+				if activePage == "settings" {
+					<a href="/settings" class="navbar-link navbar-link-active">Settings</a>
+				} else {
+					<a href="/settings" class="navbar-link">Settings</a>
+				}
+				<a href="/logout" class="navbar-link">Logout</a>
+			</div>
+		</div>
+	</nav>
+}
+
 // SettingsPage renders the full settings page with plugin accordion list.
 templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 	@Layout("Settings - First Sip") {
-		<nav class="glass-navbar">
-			<div class="navbar-inner">
-				<div class="navbar-brand">
-					<a href="/dashboard" class="navbar-brand-link">
-						<img src="/static/img/coffeeicon.png" alt="" class="navbar-logo"/>
-						<span class="navbar-title">First Sip</span>
-					</a>
-				</div>
-				<div class="navbar-links">
-					<a href="/dashboard" class="navbar-link">Dashboard</a>
-					<a href="/history" class="navbar-link">History</a>
-					<a href="/settings" class="navbar-link navbar-link-active">Settings</a>
-					<a href="/logout" class="navbar-link">Logout</a>
-				</div>
-			</div>
-		</nav>
+		@AppNavbar("settings")
 		<main class="dashboard-content">
 			<div class="settings-page-header">
 				<h1 class="settings-page-title">Plugin Settings</h1>
@@ -51,37 +69,7 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 				row.classList.toggle('settings-expanded');
 			});
 
-			// "Saved ✓" revert: after HTMX swaps in a row with data-saved="true" on the save button,
-			// revert the button text back to "Save" after 2 seconds.
-			htmx.on('htmx:afterSwap', function(evt) {
-				var target = evt.detail.target;
-				if (!target) return;
-				var savedBtn = target.querySelector('[data-saved="true"]');
-				if (!savedBtn) return;
-				// Re-expand the row that was just re-rendered
-				target.classList.add('settings-expanded');
-				setTimeout(function() {
-					if (savedBtn && savedBtn.parentNode) {
-						savedBtn.textContent = 'Save';
-						savedBtn.removeAttribute('data-saved');
-					}
-				}, 2000);
-			});
-
-			// Auto-expand on enable: when the toggle response sends HX-Trigger: settings-auto-expand,
-			// expand the row that was just swapped in.
-			htmx.on('htmx:afterSwap', function(evt) {
-				var xhr = evt.detail.xhr;
-				if (!xhr) return;
-				var trigger = xhr.getResponseHeader('HX-Trigger');
-				if (trigger && trigger.indexOf('settings-auto-expand') !== -1) {
-					var row = evt.detail.target;
-					if (row) row.classList.add('settings-expanded');
-				}
-			});
-
-			// Preserve expanded state after HTMX row re-render (save / validate returns outerHTML swap).
-			// The htmx:beforeSwap fires before the DOM update — record which rows are expanded.
+			// Consolidated htmx:beforeSwap — record which rows are expanded before re-render.
 			var _expandedRows = {};
 			htmx.on('htmx:beforeSwap', function(evt) {
 				var target = evt.detail.target;
@@ -89,13 +77,159 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 					_expandedRows[target.id] = true;
 				}
 			});
+
+			// Consolidated htmx:afterSwap — restore expanded state, handle save feedback, auto-expand.
 			htmx.on('htmx:afterSwap', function(evt) {
 				var target = evt.detail.target;
-				if (target && target.classList.contains('settings-plugin-row-wrapper') && _expandedRows[target.id]) {
+				if (!target) return;
+
+				// (a) Restore expanded state after save / validation re-render.
+				if (target.classList && target.classList.contains('settings-plugin-row-wrapper') && _expandedRows[target.id]) {
 					target.classList.add('settings-expanded');
 					delete _expandedRows[target.id];
 				}
+
+				// (b) If save returned data-saved="true", expand and revert button text after 2s.
+				var savedBtn = target.querySelector ? target.querySelector('[data-saved="true"]') : null;
+				if (savedBtn) {
+					// Ensure row is expanded so user sees "Saved ✓"
+					var row = savedBtn.closest('.settings-plugin-row-wrapper');
+					if (row) row.classList.add('settings-expanded');
+					setTimeout(function() {
+						if (savedBtn && savedBtn.parentNode) {
+							savedBtn.textContent = 'Save';
+							savedBtn.removeAttribute('data-saved');
+						}
+					}, 2000);
+				}
+
+				// (c) Auto-expand when enable toggle fires HX-Trigger: settings-auto-expand.
+				var xhr = evt.detail.xhr;
+				if (xhr) {
+					var trigger = xhr.getResponseHeader('HX-Trigger');
+					if (trigger && trigger.indexOf('settings-auto-expand') !== -1) {
+						if (target && target.classList) target.classList.add('settings-expanded');
+					}
+				}
+
+				// (d) Re-initialise tag inputs that appeared after swap.
+				initTagInputs(target);
 			});
+
+			// ── Settings Tooltip ──────────────────────────────────────────────────
+			// CSS-based tooltips via title attribute work in some browsers but are
+			// inconsistent. We render a JS tooltip for .settings-tooltip-trigger elements.
+			(function() {
+				var tip = document.createElement('div');
+				tip.className = 'settings-tooltip';
+				document.body.appendChild(tip);
+				document.addEventListener('mouseover', function(e) {
+					var trigger = e.target.closest('.settings-tooltip-trigger[title]');
+					if (!trigger) return;
+					var text = trigger.getAttribute('title');
+					if (!text) return;
+					tip.textContent = text;
+					var rect = trigger.getBoundingClientRect();
+					tip.style.left = (rect.left + rect.width / 2) + 'px';
+					tip.style.top = (rect.top - 8 + window.scrollY) + 'px';
+					tip.style.transform = 'translate(-50%, -100%)';
+					tip.classList.add('visible');
+				});
+				document.addEventListener('mouseout', function(e) {
+					if (e.target.closest('.settings-tooltip-trigger')) {
+						tip.classList.remove('visible');
+					}
+				});
+			})();
+
+			// ── Tag Input ─────────────────────────────────────────────────────────
+			// Initialises .settings-tag-input-wrapper elements within a container.
+			function initTagInputs(container) {
+				var wrappers = (container && container.querySelectorAll) ? container.querySelectorAll('.settings-tag-input-wrapper') : [];
+				for (var i = 0; i < wrappers.length; i++) {
+					(function(wrapper) {
+						if (wrapper._tagInitialised) return;
+						wrapper._tagInitialised = true;
+
+						var input = wrapper.querySelector('.settings-tag-text-input');
+						var hidden = wrapper.querySelector('.settings-tag-hidden');
+						var tagList = wrapper.querySelector('.settings-tag-list');
+
+						if (!input || !hidden || !tagList) return;
+
+						// Parse initial tags from hidden input value (JSON array or comma-separated).
+						function parseTags(val) {
+							if (!val) return [];
+							val = val.trim();
+							if (val.startsWith('[')) {
+								try {
+									var arr = JSON.parse(val);
+									return arr.filter(function(t) { return t && t.trim(); });
+								} catch(e) {}
+							}
+							return val.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+						}
+
+						var tags = parseTags(hidden.value);
+
+						function renderTags() {
+							tagList.innerHTML = '';
+							tags.forEach(function(tag, idx) {
+								var badge = document.createElement('span');
+								badge.className = 'settings-tag-badge';
+								badge.textContent = tag;
+								var btn = document.createElement('button');
+								btn.type = 'button';
+								btn.className = 'settings-tag-remove';
+								btn.setAttribute('aria-label', 'Remove ' + tag);
+								btn.textContent = '×';
+								btn.addEventListener('click', function() {
+									tags.splice(idx, 1);
+									updateHidden();
+									renderTags();
+								});
+								badge.appendChild(btn);
+								tagList.appendChild(badge);
+							});
+							updateHidden();
+						}
+
+						function updateHidden() {
+							hidden.value = JSON.stringify(tags);
+						}
+
+						function addTag(val) {
+							val = val.trim();
+							if (val && tags.indexOf(val) === -1) {
+								tags.push(val);
+								renderTags();
+							}
+							input.value = '';
+						}
+
+						input.addEventListener('keydown', function(e) {
+							if (e.key === 'Enter' || e.key === ',') {
+								e.preventDefault();
+								addTag(input.value);
+							} else if (e.key === 'Backspace' && input.value === '' && tags.length > 0) {
+								tags.pop();
+								renderTags();
+							}
+						});
+
+						input.addEventListener('blur', function() {
+							if (input.value.trim()) {
+								addTag(input.value);
+							}
+						});
+
+						renderTags();
+					})(wrappers[i]);
+				}
+			}
+
+			// Initialise tag inputs present on initial page load.
+			initTagInputs(document);
 		</script>
 	}
 }
@@ -109,17 +243,19 @@ templ PluginAccordionRow(plugin settingsvm.PluginSettingsViewModel) {
 	>
 		<!-- Collapsed header — always visible -->
 		<div class="settings-plugin-header settings-plugin-row">
-			<!-- Status dot -->
-			if plugin.Status != nil {
+			<!-- Status dot: gray when disabled, otherwise reflect health color -->
+			if !plugin.Enabled {
+				<span class="settings-status-dot settings-status-gray"></span>
+			} else if plugin.Status != nil {
 				<span class={ fmt.Sprintf("settings-status-dot settings-status-%s", plugin.Status.HealthColor) }></span>
 			} else {
 				<span class="settings-status-dot settings-status-gray"></span>
 			}
-			<!-- Plugin icon + name -->
+			<!-- Plugin icon + display name -->
 			if plugin.Icon != "" {
 				<span class="settings-plugin-icon">{ plugin.Icon }</span>
 			}
-			<span class="settings-plugin-name">{ plugin.PluginName }</span>
+			<span class="settings-plugin-name">{ plugin.DisplayName }</span>
 			<!-- Enable / disable toggle -->
 			<label class="settings-toggle" onclick="event.stopPropagation()">
 				<input
@@ -176,14 +312,7 @@ templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
 					<label class="settings-field-label" for={ fmt.Sprintf("tz-%d", plugin.PluginID) }>
 						Timezone
 					</label>
-					<input
-						type="text"
-						id={ fmt.Sprintf("tz-%d", plugin.PluginID) }
-						name="timezone"
-						value={ plugin.Timezone }
-						class="settings-input"
-						placeholder="UTC"
-					/>
+					@renderTimezoneSelect(fmt.Sprintf("tz-%d", plugin.PluginID), plugin.Timezone)
 				</div>
 			</div>
 			<!-- Plugin-specific fields (from JSON Schema) -->
@@ -217,6 +346,61 @@ templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
 	</div>
 }
 
+// renderTimezoneSelect renders a <select> for the timezone field pre-populated
+// with a curated list of common IANA timezones.
+templ renderTimezoneSelect(id, currentValue string) {
+	<select id={ id } name="timezone" class="settings-select">
+		<option value="" if currentValue == "" { selected }>— Select timezone —</option>
+		<!-- UTC -->
+		<option value="UTC" if currentValue == "UTC" { selected }>UTC</option>
+		<!-- Americas -->
+		<option value="America/New_York" if currentValue == "America/New_York" { selected }>Eastern Time (New York)</option>
+		<option value="America/Chicago" if currentValue == "America/Chicago" { selected }>Central Time (Chicago)</option>
+		<option value="America/Denver" if currentValue == "America/Denver" { selected }>Mountain Time (Denver)</option>
+		<option value="America/Phoenix" if currentValue == "America/Phoenix" { selected }>Mountain Time no DST (Phoenix)</option>
+		<option value="America/Los_Angeles" if currentValue == "America/Los_Angeles" { selected }>Pacific Time (Los Angeles)</option>
+		<option value="America/Anchorage" if currentValue == "America/Anchorage" { selected }>Alaska Time (Anchorage)</option>
+		<option value="Pacific/Honolulu" if currentValue == "Pacific/Honolulu" { selected }>Hawaii Time (Honolulu)</option>
+		<option value="America/Toronto" if currentValue == "America/Toronto" { selected }>Eastern Time (Toronto)</option>
+		<option value="America/Vancouver" if currentValue == "America/Vancouver" { selected }>Pacific Time (Vancouver)</option>
+		<option value="America/Sao_Paulo" if currentValue == "America/Sao_Paulo" { selected }>Brazil Time (São Paulo)</option>
+		<option value="America/Argentina/Buenos_Aires" if currentValue == "America/Argentina/Buenos_Aires" { selected }>Argentina (Buenos Aires)</option>
+		<option value="America/Mexico_City" if currentValue == "America/Mexico_City" { selected }>Central Time (Mexico City)</option>
+		<!-- Europe -->
+		<option value="Europe/London" if currentValue == "Europe/London" { selected }>London (GMT/BST)</option>
+		<option value="Europe/Paris" if currentValue == "Europe/Paris" { selected }>Central European (Paris)</option>
+		<option value="Europe/Berlin" if currentValue == "Europe/Berlin" { selected }>Central European (Berlin)</option>
+		<option value="Europe/Rome" if currentValue == "Europe/Rome" { selected }>Central European (Rome)</option>
+		<option value="Europe/Madrid" if currentValue == "Europe/Madrid" { selected }>Central European (Madrid)</option>
+		<option value="Europe/Amsterdam" if currentValue == "Europe/Amsterdam" { selected }>Central European (Amsterdam)</option>
+		<option value="Europe/Stockholm" if currentValue == "Europe/Stockholm" { selected }>Central European (Stockholm)</option>
+		<option value="Europe/Helsinki" if currentValue == "Europe/Helsinki" { selected }>Eastern European (Helsinki)</option>
+		<option value="Europe/Athens" if currentValue == "Europe/Athens" { selected }>Eastern European (Athens)</option>
+		<option value="Europe/Moscow" if currentValue == "Europe/Moscow" { selected }>Moscow Time</option>
+		<option value="Europe/Istanbul" if currentValue == "Europe/Istanbul" { selected }>Turkey Time (Istanbul)</option>
+		<!-- Asia / Pacific -->
+		<option value="Asia/Dubai" if currentValue == "Asia/Dubai" { selected }>Gulf Standard Time (Dubai)</option>
+		<option value="Asia/Karachi" if currentValue == "Asia/Karachi" { selected }>Pakistan Time (Karachi)</option>
+		<option value="Asia/Kolkata" if currentValue == "Asia/Kolkata" { selected }>India Time (Kolkata)</option>
+		<option value="Asia/Dhaka" if currentValue == "Asia/Dhaka" { selected }>Bangladesh Time (Dhaka)</option>
+		<option value="Asia/Bangkok" if currentValue == "Asia/Bangkok" { selected }>Indochina Time (Bangkok)</option>
+		<option value="Asia/Singapore" if currentValue == "Asia/Singapore" { selected }>Singapore Time</option>
+		<option value="Asia/Shanghai" if currentValue == "Asia/Shanghai" { selected }>China Time (Shanghai)</option>
+		<option value="Asia/Tokyo" if currentValue == "Asia/Tokyo" { selected }>Japan Time (Tokyo)</option>
+		<option value="Asia/Seoul" if currentValue == "Asia/Seoul" { selected }>Korea Time (Seoul)</option>
+		<option value="Asia/Hong_Kong" if currentValue == "Asia/Hong_Kong" { selected }>Hong Kong Time</option>
+		<option value="Australia/Sydney" if currentValue == "Australia/Sydney" { selected }>Eastern Australia (Sydney)</option>
+		<option value="Australia/Melbourne" if currentValue == "Australia/Melbourne" { selected }>Eastern Australia (Melbourne)</option>
+		<option value="Australia/Perth" if currentValue == "Australia/Perth" { selected }>Western Australia (Perth)</option>
+		<option value="Pacific/Auckland" if currentValue == "Pacific/Auckland" { selected }>New Zealand (Auckland)</option>
+		<!-- Africa -->
+		<option value="Africa/Cairo" if currentValue == "Africa/Cairo" { selected }>Egypt Time (Cairo)</option>
+		<option value="Africa/Johannesburg" if currentValue == "Africa/Johannesburg" { selected }>South Africa Time (Johannesburg)</option>
+		<option value="Africa/Lagos" if currentValue == "Africa/Lagos" { selected }>West Africa Time (Lagos)</option>
+		<option value="Africa/Nairobi" if currentValue == "Africa/Nairobi" { selected }>East Africa Time (Nairobi)</option>
+	</select>
+}
+
 // renderField dispatches to the correct input component based on FieldType.
 templ renderField(pluginID uint, field settingsvm.FieldViewModel) {
 	<div class="settings-field-group">
@@ -232,6 +416,8 @@ templ renderField(pluginID uint, field settingsvm.FieldViewModel) {
 		switch field.FieldType {
 			case settingsvm.FieldTypeText:
 				@renderTextField(pluginID, field)
+			case settingsvm.FieldTypeTimeSelect:
+				@renderTimeSelectField(pluginID, field)
 			case settingsvm.FieldTypeInteger:
 				@renderIntegerField(pluginID, field)
 			case settingsvm.FieldTypeBoolean:
@@ -244,6 +430,8 @@ templ renderField(pluginID uint, field settingsvm.FieldViewModel) {
 				}
 			case settingsvm.FieldTypeCheckboxGroup:
 				@renderCheckboxGroupField(pluginID, field)
+			case settingsvm.FieldTypeTagInput:
+				@renderTagInputField(pluginID, field)
 			default:
 				@renderTextField(pluginID, field)
 		}
@@ -267,6 +455,25 @@ templ renderTextField(pluginID uint, field settingsvm.FieldViewModel) {
 		hx-swap="innerHTML"
 		hx-include="[name='field_name']"
 	/>
+	<input type="hidden" name="field_name" value={ field.Key }/>
+}
+
+// renderTimeSelectField renders a <select> with half-hour time slots (00:00 – 23:30).
+// Used for fields with an HH:MM pattern (e.g. preferred_time).
+templ renderTimeSelectField(pluginID uint, field settingsvm.FieldViewModel) {
+	<select
+		name={ field.Key }
+		class="settings-select"
+		hx-post={ fmt.Sprintf("/api/settings/%d/validate-field", pluginID) }
+		hx-trigger="change"
+		hx-target={ fmt.Sprintf("#error-%s-%d", field.Key, pluginID) }
+		hx-swap="innerHTML"
+		hx-include="[name='field_name']"
+	>
+		for _, slot := range timeSlots() {
+			<option value={ slot } if slot == field.CurrentValue { selected }>{ slot }</option>
+		}
+	</select>
 	<input type="hidden" name="field_name" value={ field.Key }/>
 }
 
@@ -361,6 +568,22 @@ templ renderCheckboxGroupField(pluginID uint, field settingsvm.FieldViewModel) {
 	</div>
 }
 
+// renderTagInputField renders an open-ended tag input for array fields without enum constraints.
+// Tags are stored as a JSON array in a hidden input. JavaScript (initTagInputs) wires it up.
+templ renderTagInputField(pluginID uint, field settingsvm.FieldViewModel) {
+	<div class="settings-tag-input-wrapper">
+		<div class="settings-tag-list"></div>
+		<input
+			type="text"
+			class="settings-tag-text-input settings-input"
+			placeholder="Type a tag and press Enter"
+			autocomplete="off"
+		/>
+		<input type="hidden" name={ field.Key } class="settings-tag-hidden" value={ field.CurrentValue }/>
+	</div>
+	<p class="settings-tag-hint">Press Enter or comma to add a tag. Backspace removes the last tag.</p>
+}
+
 // PluginStatusSection renders the plugin run status panel.
 templ PluginStatusSection(plugin settingsvm.PluginSettingsViewModel) {
 	<div class="settings-status-section">
@@ -406,10 +629,15 @@ templ PluginStatusSection(plugin settingsvm.PluginSettingsViewModel) {
 		if plugin.Enabled {
 			<div class="settings-run-now-section">
 				<button
-					class="glass-btn glass-btn-ghost glass-btn-sm"
+					class="glass-btn glass-btn-primary glass-btn-sm"
 					hx-post={ fmt.Sprintf("/api/settings/%d/run-now", plugin.PluginID) }
 					hx-swap="none"
-				>Run Now</button>
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polygon points="5 3 19 12 5 21 5 3"></polygon>
+					</svg>
+					Run Now
+				</button>
 			</div>
 		}
 	</div>
