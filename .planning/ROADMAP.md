@@ -173,7 +173,7 @@ Plans:
 | 9. CrewAI Sidecar Integration | v1.1 | 4/4 | Complete | 2026-02-18 |
 | 10. Per-User Scheduling | v1.1 | 2/2 | Complete | 2026-02-22 |
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
-| 12. Dynamic Settings UI | v1.1 | 2/2 | Complete | 2026-02-23 |
+| 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
 
 ---
