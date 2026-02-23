@@ -224,6 +224,7 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 					return
 				}
 				vm.ForceExpanded = true
+				vm.CronError = cronErr
 				render(c, templates.PluginAccordionRow(*vm))
 				return
 			}
@@ -270,6 +271,7 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 					return
 				}
 				vm.ForceExpanded = true
+				vm.CronError = cronErr
 				render(c, templates.PluginAccordionRow(*vm))
 				return
 			}

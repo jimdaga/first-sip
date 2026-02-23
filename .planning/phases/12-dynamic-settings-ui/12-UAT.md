@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 12-dynamic-settings-ui
 source: [12-01-SUMMARY.md, 12-02-SUMMARY.md]
 started: 2026-02-23T15:00:00Z
@@ -75,14 +75,28 @@ skipped: 0
   reason: "User reported: dashboard page should also say 'Daily News Digest' vs 'daily-news-digest'"
   severity: cosmetic
   test: 1
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "TileViewModel has no DisplayName field — PluginName comes raw from DB. humanizePluginName exists in settings but is unexported and never called in dashboard path."
+  artifacts:
+    - path: "internal/tiles/viewmodel.go"
+      issue: "No DisplayName field on TileViewModel"
+    - path: "internal/dashboard/viewmodel.go"
+      issue: "getDashboardTiles and GetSingleTile set PluginName from raw DB value"
+  missing:
+    - "Add DisplayName to TileViewModel, populate with humanizePluginName, render in dashboard.templ"
+  debug_session: ".planning/debug/dashboard-tile-raw-plugin-name.md"
 - truth: "Save with invalid settings shows per-field inline validation errors"
   status: failed
   reason: "User reported: Not showing any error"
   severity: major
   test: 8
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "cron_expression is not a JSON Schema property so schemaToFields never reads its error. PluginSettingsViewModel has no CronError field. The template cron error div is always empty."
+  artifacts:
+    - path: "internal/settingsvm/settingsvm.go"
+      issue: "Missing CronError field on PluginSettingsViewModel"
+    - path: "internal/settings/handlers.go"
+      issue: "No code to set vm.CronError from cronErr on validation failure path"
+    - path: "internal/templates/settings.templ"
+      issue: "Cron error div always renders empty"
+  missing:
+    - "Add CronError to PluginSettingsViewModel, set in handler, render conditionally in template"
+  debug_session: ".planning/debug/settings-validation-silent-fail.md"

@@ -62,4 +62,5 @@ type PluginSettingsViewModel struct {
 	Timezone          string // editable in form
 	SaveSuccess       bool   // set to true on successful save — drives "Saved ✓" in template
 	ForceExpanded     bool   // when true, render the accordion row already expanded (after save or validation error)
+	CronError         string // inline error for cron expression field (not a schema property, handled separately)
 }

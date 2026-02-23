@@ -138,7 +138,7 @@ templ TileCard(tile tiles.TileViewModel) {
 		<!-- Tile Header -->
 		<div class="tile-header">
 			<span class="tile-icon">{ tile.PluginIcon }</span>
-			<span class="tile-name">{ tile.PluginName }</span>
+			<span class="tile-name">{ tile.DisplayName }</span>
 			<span class="tile-status-icon">
 				if tile.LatestRunStatus == "pending" || tile.LatestRunStatus == "processing" {
 					<div class="glass-spinner glass-spinner-sm"></div>

@@ -323,7 +323,11 @@ templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
 						class="settings-input"
 						placeholder="0 7 * * *"
 					/>
-					<div id={ fmt.Sprintf("error-cron_expression-%d", plugin.PluginID) } class="settings-field-error"></div>
+					<div id={ fmt.Sprintf("error-cron_expression-%d", plugin.PluginID) } class="settings-field-error">
+					if plugin.CronError != "" {
+						{ plugin.CronError }
+					}
+				</div>
 				</div>
 				<div class="settings-field-group">
 					<label class="settings-field-label" for={ fmt.Sprintf("tz-%d", plugin.PluginID) }>

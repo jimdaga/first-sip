@@ -3,6 +3,7 @@ package dashboard
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	cron "github.com/robfig/cron/v3"
@@ -137,6 +138,7 @@ func getDashboardTiles(db *gorm.DB, userID uint) ([]TileViewModel, error) {
 		tile := TileViewModel{
 			PluginID:     cfg.PluginID,
 			PluginName:   cfg.PluginName,
+			DisplayName:  humanizePluginName(cfg.PluginName),
 			PluginIcon:   cfg.Icon,
 			TileSize:     cfg.TileSize,
 			DisplayOrder: cfg.DisplayOrder,
@@ -252,6 +254,7 @@ func GetSingleTile(db *gorm.DB, userID, pluginID uint) (*TileViewModel, error) {
 	tile := &TileViewModel{
 		PluginID:     cfg.PluginID,
 		PluginName:   cfg.PluginName,
+		DisplayName:  humanizePluginName(cfg.PluginName),
 		PluginIcon:   cfg.Icon,
 		TileSize:     cfg.TileSize,
 		DisplayOrder: cfg.DisplayOrder,
@@ -414,4 +417,16 @@ func plural(n int) string {
 		return ""
 	}
 	return "s"
+}
+
+// humanizePluginName converts a kebab-case plugin name to title case.
+// E.g. "daily-news-digest" → "Daily News Digest".
+func humanizePluginName(name string) string {
+	words := strings.Split(name, "-")
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }

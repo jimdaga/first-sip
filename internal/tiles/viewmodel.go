@@ -9,7 +9,8 @@ import "time"
 // TileViewModel holds all data needed to render a single dashboard tile.
 type TileViewModel struct {
 	PluginID     uint
-	PluginName   string
+	PluginName   string // raw DB name (e.g. "daily-news-digest")
+	DisplayName  string // humanized display name (e.g. "Daily News Digest")
 	PluginIcon   string // emoji from plugin YAML
 	TileSize     string // "1x1", "2x1", "2x2"
 	DisplayOrder *int
