@@ -103,7 +103,17 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 					}, 2000);
 				}
 
-				// (c) Auto-expand when enable toggle fires HX-Trigger: settings-auto-expand.
+				// (c) Revert "Run Now" button after triggered feedback.
+				var runNowBtn = target.id && target.id.startsWith('run-now-') ? target : null;
+				if (runNowBtn) {
+					setTimeout(function() {
+						if (runNowBtn && runNowBtn.parentNode) {
+							runNowBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Run Now';
+						}
+					}, 3000);
+				}
+
+				// (d) Auto-expand when enable toggle fires HX-Trigger: settings-auto-expand.
 				var xhr = evt.detail.xhr;
 				if (xhr) {
 					var trigger = xhr.getResponseHeader('HX-Trigger');
@@ -228,8 +238,11 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 				}
 			}
 
-			// Initialise tag inputs present on initial page load.
+			// Initialise tag inputs on page load and after any HTMX swap.
 			initTagInputs(document);
+			htmx.onLoad(function(content) {
+				initTagInputs(content);
+			});
 		</script>
 	}
 }
@@ -239,7 +252,11 @@ templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
 templ PluginAccordionRow(plugin settingsvm.PluginSettingsViewModel) {
 	<div
 		id={ fmt.Sprintf("plugin-row-%d", plugin.PluginID) }
-		class="settings-plugin-row-wrapper"
+		if plugin.ForceExpanded {
+			class="settings-plugin-row-wrapper settings-expanded"
+		} else {
+			class="settings-plugin-row-wrapper"
+		}
 	>
 		<!-- Collapsed header — always visible -->
 		<div class="settings-plugin-header settings-plugin-row">
@@ -629,9 +646,11 @@ templ PluginStatusSection(plugin settingsvm.PluginSettingsViewModel) {
 		if plugin.Enabled {
 			<div class="settings-run-now-section">
 				<button
+					id={ fmt.Sprintf("run-now-%d", plugin.PluginID) }
 					class="glass-btn glass-btn-primary glass-btn-sm"
 					hx-post={ fmt.Sprintf("/api/settings/%d/run-now", plugin.PluginID) }
-					hx-swap="none"
+					hx-target={ fmt.Sprintf("#run-now-%d", plugin.PluginID) }
+					hx-swap="innerHTML"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 						<polygon points="5 3 19 12 5 21 5 3"></polygon>

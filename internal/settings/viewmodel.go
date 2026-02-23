@@ -255,8 +255,14 @@ func getPluginStatus(db *gorm.DB, userID, pluginID uint, cronExpr, timezone stri
 
 	nextRun := computeNextRun(cronExpr, timezone)
 
+	// Use CompletedAt if set, otherwise fall back to CreatedAt (run exists but hasn't completed yet).
+	lastRunAt := latestRun.CompletedAt
+	if lastRunAt == nil {
+		lastRunAt = &latestRun.CreatedAt
+	}
+
 	return &PluginStatusViewModel{
-		LastRunAt:    latestRun.CompletedAt,
+		LastRunAt:    lastRunAt,
 		NextRunAt:    nextRun,
 		RecentErrors: errors,
 		HealthColor:  health,

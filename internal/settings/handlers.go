@@ -217,12 +217,13 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 			}
 
 			if len(fieldErrors) > 0 {
-				// Validation failed: re-render with submitted values and errors.
+				// Validation failed: re-render with submitted values and errors, keep expanded.
 				vm, err := BuildSinglePluginSettingsViewModel(db, user.ID, pluginID, pluginDir, submittedValues, fieldErrors, false)
 				if err != nil {
 					c.Status(http.StatusInternalServerError)
 					return
 				}
+				vm.ForceExpanded = true
 				render(c, templates.PluginAccordionRow(*vm))
 				return
 			}
@@ -268,6 +269,7 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 					c.Status(http.StatusInternalServerError)
 					return
 				}
+				vm.ForceExpanded = true
 				render(c, templates.PluginAccordionRow(*vm))
 				return
 			}
@@ -295,12 +297,13 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 			}
 		}
 
-		// Success: re-render with SaveSuccess=true for "Saved ✓" feedback.
+		// Success: re-render with SaveSuccess=true for "Saved ✓" feedback, keep expanded.
 		vm, err := BuildSinglePluginSettingsViewModel(db, user.ID, pluginID, pluginDir, nil, nil, true)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+		vm.ForceExpanded = true
 
 		render(c, templates.PluginAccordionRow(*vm))
 	}
@@ -401,10 +404,12 @@ func RunNowHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Enqueue the plugin execution task.
 		if err := worker.EnqueueExecutePlugin(pluginID, user.ID, plugin.Name, settingsMap); err != nil {
-			c.String(http.StatusInternalServerError, "Failed to enqueue run")
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Failed`)
 			return
 		}
 
-		c.String(http.StatusOK, "Run triggered")
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Triggered`)
 	}
 }

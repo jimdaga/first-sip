@@ -1046,6 +1046,9 @@ body {
 .tile-card.tile-expanded .tile-footer {
   display: none;
 }
+.tile-card.tile-expanded .tile-status-icon {
+  display: none;
+}
 
 /* Tooltip trigger */
 .tile-info-badge {
