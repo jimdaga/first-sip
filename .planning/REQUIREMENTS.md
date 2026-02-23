@@ -9,22 +9,22 @@ Requirements for plugin architecture milestone. Each maps to roadmap phases.
 
 ### Plugin Framework
 
-- [ ] **PLUG-01**: Plugin metadata defined in YAML files (name, description, owner, version, capabilities, default config)
-- [ ] **PLUG-02**: Plugin registry discovers and loads plugins from `/plugins` directory at startup
-- [ ] **PLUG-03**: Plugin, UserPluginConfig, and PluginRun database models with GORM migrations
-- [ ] **PLUG-04**: Schema versioning field in plugin metadata — templates handle missing fields with defaults
-- [ ] **PLUG-05**: JSON Schema settings definition per plugin (schedule, frequency, plugin-specific inputs)
-- [ ] **PLUG-06**: At least one working example plugin (daily news digest) end-to-end
+- [x] **PLUG-01**: Plugin metadata defined in YAML files (name, description, owner, version, capabilities, default config)
+- [x] **PLUG-02**: Plugin registry discovers and loads plugins from `/plugins` directory at startup
+- [x] **PLUG-03**: Plugin, UserPluginConfig, and PluginRun database models with GORM migrations
+- [x] **PLUG-04**: Schema versioning field in plugin metadata — templates handle missing fields with defaults
+- [x] **PLUG-05**: JSON Schema settings definition per plugin (schedule, frequency, plugin-specific inputs)
+- [x] **PLUG-06**: At least one working example plugin (daily news digest) end-to-end
 
 ### CrewAI Integration
 
-- [ ] **CREW-01**: FastAPI Python sidecar service with health check endpoint
-- [ ] **CREW-02**: Redis Streams for Go → CrewAI communication (publish work, consume results)
-- [ ] **CREW-03**: CrewAI multi-agent workflow execution (researcher → writer → reviewer pattern)
-- [ ] **CREW-04**: Plugin executor reads from Redis Stream, runs CrewAI workflow, publishes result
+- [x] **CREW-01**: FastAPI Python sidecar service with health check endpoint
+- [x] **CREW-02**: Redis Streams for Go → CrewAI communication (publish work, consume results)
+- [x] **CREW-03**: CrewAI multi-agent workflow execution (researcher → writer → reviewer pattern)
+- [x] **CREW-04**: Plugin executor reads from Redis Stream, runs CrewAI workflow, publishes result
 - [ ] **CREW-05**: Go worker consumes results from response stream and creates Briefing records
-- [ ] **CREW-06**: Timeout handling for long-running AI workflows
-- [ ] **CREW-07**: CrewAI pods scale independently from Go workers
+- [x] **CREW-06**: Timeout handling for long-running AI workflows
+- [x] **CREW-07**: CrewAI pods scale independently from Go workers
 
 ### Per-User Scheduling
 
@@ -46,12 +46,12 @@ Requirements for plugin architecture milestone. Each maps to roadmap phases.
 
 ### Dynamic Settings UI
 
-- [ ] **SET-01**: Settings page listing all available plugins with enable/disable toggle
-- [ ] **SET-02**: Dynamic form generation from plugin's JSON Schema settings definition
-- [ ] **SET-03**: kaptinlin/jsonschema validation with inline error display
-- [ ] **SET-04**: Form type coercion (HTML string inputs → JSON Schema types: integer, boolean)
-- [ ] **SET-05**: Form state preservation on validation errors (re-render with user's input)
-- [ ] **SET-06**: Plugin status info on settings page (last run, next run, error count)
+- [x] **SET-01**: Settings page listing all available plugins with enable/disable toggle
+- [x] **SET-02**: Dynamic form generation from plugin's JSON Schema settings definition
+- [x] **SET-03**: kaptinlin/jsonschema validation with inline error display
+- [x] **SET-04**: Form type coercion (HTML string inputs → JSON Schema types: integer, boolean)
+- [x] **SET-05**: Form state preservation on validation errors (re-render with user's input)
+- [x] **SET-06**: Plugin status info on settings page (last run, next run, error count)
 
 ### Account Tier Scaffolding
 
@@ -81,37 +81,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLUG-01 | Phase 8 | Pending |
-| PLUG-02 | Phase 8 | Pending |
-| PLUG-03 | Phase 8 | Pending |
-| PLUG-04 | Phase 8 | Pending |
-| PLUG-05 | Phase 8 | Pending |
-| PLUG-06 | Phase 8 | Pending |
-| CREW-01 | Phase 9 | Pending |
-| CREW-02 | Phase 9 | Pending |
-| CREW-03 | Phase 9 | Pending |
-| CREW-04 | Phase 9 | Pending |
-| CREW-05 | Phase 9 | Pending |
-| CREW-06 | Phase 9 | Pending |
-| CREW-07 | Phase 9 | Pending |
-| SCHED-01 | Phase 10 | Pending |
-| SCHED-02 | Phase 10 | Pending |
-| SCHED-03 | Phase 10 | Pending |
-| SCHED-04 | Phase 10 | Pending |
-| SCHED-05 | Phase 10 | Pending |
-| SCHED-06 | Phase 10 | Pending |
-| TILE-01 | Phase 11 | Pending |
-| TILE-02 | Phase 11 | Pending |
-| TILE-03 | Phase 11 | Pending |
-| TILE-04 | Phase 11 | Pending |
-| TILE-05 | Phase 11 | Pending |
-| TILE-06 | Phase 11 | Pending |
-| SET-01 | Phase 12 | Pending |
-| SET-02 | Phase 12 | Pending |
-| SET-03 | Phase 12 | Pending |
-| SET-04 | Phase 12 | Pending |
-| SET-05 | Phase 12 | Pending |
-| SET-06 | Phase 12 | Pending |
+| PLUG-01 | Phase 8 | Satisfied |
+| PLUG-02 | Phase 8 | Satisfied |
+| PLUG-03 | Phase 8 | Satisfied |
+| PLUG-04 | Phase 8 | Satisfied |
+| PLUG-05 | Phase 8 | Satisfied |
+| PLUG-06 | Phase 8 | Satisfied |
+| CREW-01 | Phase 9 | Satisfied |
+| CREW-02 | Phase 9 | Satisfied |
+| CREW-03 | Phase 9 | Satisfied |
+| CREW-04 | Phase 9 | Satisfied |
+| CREW-05 | Phase 9 → **Phase 14** | Pending (integration break) |
+| CREW-06 | Phase 9 | Satisfied |
+| CREW-07 | Phase 9 | Satisfied |
+| SCHED-01 | Phase 10 | Pending (needs verification) |
+| SCHED-02 | Phase 10 | Pending (needs verification) |
+| SCHED-03 | Phase 10 | Pending (needs verification) |
+| SCHED-04 | Phase 10 → **Phase 14** | Pending (timezone fallback gap) |
+| SCHED-05 | Phase 10 | Pending (needs verification) |
+| SCHED-06 | Phase 10 | Pending (needs verification) |
+| TILE-01 | Phase 11 | Pending (needs verification) |
+| TILE-02 | Phase 11 | Pending (needs verification, depends on CREW-05 fix) |
+| TILE-03 | Phase 11 | Pending (needs verification) |
+| TILE-04 | Phase 11 | Pending (needs verification, depends on CREW-05 fix) |
+| TILE-05 | Phase 11 | Pending (needs verification) |
+| TILE-06 | Phase 11 | Pending (needs verification) |
+| SET-01 | Phase 12 | Satisfied |
+| SET-02 | Phase 12 | Satisfied |
+| SET-03 | Phase 12 | Satisfied |
+| SET-04 | Phase 12 | Satisfied |
+| SET-05 | Phase 12 | Satisfied |
+| SET-06 | Phase 12 | Satisfied |
 | TIER-01 | Phase 13 | Pending |
 | TIER-02 | Phase 13 | Pending |
 | TIER-03 | Phase 13 | Pending |
@@ -122,15 +122,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1.1 requirements: 36 total
 - Mapped to phases: 36 (100% coverage)
 - Unmapped: 0
+- Satisfied: 18 (Phases 8, 9, 12 verified)
+- Pending verification: 10 (Phases 10, 11 code complete)
+- Pending fix: 2 (CREW-05, SCHED-04 → Phase 14)
+- Pending implementation: 5 (Phase 13)
+- Gap closure phase: Phase 14 (CREW-05, SCHED-04)
 
 **Phase breakdown:**
-- Phase 8: 6 requirements (PLUG-01 through PLUG-06)
-- Phase 9: 7 requirements (CREW-01 through CREW-07)
-- Phase 10: 6 requirements (SCHED-01 through SCHED-06)
-- Phase 11: 6 requirements (TILE-01 through TILE-06)
-- Phase 12: 6 requirements (SET-01 through SET-06)
-- Phase 13: 5 requirements (TIER-01 through TIER-05)
+- Phase 8: 6 requirements (PLUG-01 through PLUG-06) — all satisfied
+- Phase 9: 7 requirements (CREW-01 through CREW-07) — 6 satisfied, CREW-05 → Phase 14
+- Phase 10: 6 requirements (SCHED-01 through SCHED-06) — code complete, needs verification; SCHED-04 → Phase 14
+- Phase 11: 6 requirements (TILE-01 through TILE-06) — code complete, needs verification
+- Phase 12: 6 requirements (SET-01 through SET-06) — all satisfied
+- Phase 13: 5 requirements (TIER-01 through TIER-05) — not started
+- Phase 14: 2 requirements (CREW-05, SCHED-04) — gap closure
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-14 after roadmap creation*
+*Last updated: 2026-02-23 after milestone audit — added Phase 14 gap closure, updated statuses*

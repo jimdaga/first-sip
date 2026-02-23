@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-02-13)
-- 🚧 **v1.1 Plugin Architecture** — Phases 8-13 (in progress)
+- 🚧 **v1.1 Plugin Architecture** — Phases 8-14 (in progress)
 
 ## Phases
 
@@ -81,10 +81,11 @@ Plans:
 
 ---
 
-#### Phase 10: Per-User Scheduling
+#### Phase 10: Per-User Scheduling ✅
 **Goal**: Database-backed per-user per-plugin scheduling replaces global cron with timezone support
 **Depends on**: Phase 9
 **Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05, SCHED-06
+**Completed**: 2026-02-22
 **Success Criteria** (what must be TRUE):
   1. Each user can configure unique schedule per plugin (cron expression + timezone stored in UserPluginConfig)
   2. Per-minute scheduler task evaluates database for due user-plugin pairs (NOT per-user Asynq cron entries)
@@ -92,17 +93,19 @@ Plans:
   4. Global cron scheduler removed — all briefing generation driven by per-user per-plugin schedules
   5. Redis caches last-run times to reduce database load during per-minute evaluation
 **Plans**: 2 plans
+**Verification**: Pending — code complete, needs formal verification
 
 Plans:
-- [ ] 10-01-PLAN.md — Migration, model update, per-minute scheduler engine with timezone-aware cron evaluation and Redis cache
-- [ ] 10-02-PLAN.md — Wire scheduler into main.go, remove global scheduler, add critical queue priority
+- [x] 10-01-PLAN.md — Migration, model update, per-minute scheduler engine with timezone-aware cron evaluation and Redis cache
+- [x] 10-02-PLAN.md — Wire scheduler into main.go, remove global scheduler, add critical queue priority
 
 ---
 
-#### Phase 11: Tile-Based Dashboard
+#### Phase 11: Tile-Based Dashboard ✅
 **Goal**: CSS Grid tile layout displays all enabled plugins with latest briefing and status
 **Depends on**: Phase 10
 **Requirements**: TILE-01, TILE-02, TILE-03, TILE-04, TILE-05, TILE-06
+**Completed**: 2026-02-22
 **Success Criteria** (what must be TRUE):
   1. Dashboard displays tiles in CSS Grid layout (auto-fit/minmax responsive, no JavaScript masonry)
   2. Each enabled plugin renders as tile showing plugin name, latest briefing summary, and status badge
@@ -111,11 +114,12 @@ Plans:
   5. Empty states display gracefully (no plugins enabled shows prompt, plugin enabled but no briefings shows waiting state)
   6. HTMX updates tile status in-place when briefing generation completes
 **Plans**: 3 plans
+**Verification**: Pending — code complete, needs formal verification (after Phase 14 fixes CREW-05)
 
 Plans:
-- [ ] 11-01-PLAN.md — Schema migration, model updates (icon, tile_size, display_order), plugin YAML metadata
-- [ ] 11-02-PLAN.md — Dashboard handler package with view model, DISTINCT ON query, tile order API, route wiring
-- [ ] 11-03-PLAN.md — CSS Grid tile layout, Templ components, SortableJS drag-and-drop, HTMX polling, visual verification
+- [x] 11-01-PLAN.md — Schema migration, model updates (icon, tile_size, display_order), plugin YAML metadata
+- [x] 11-02-PLAN.md — Dashboard handler package with view model, DISTINCT ON query, tile order API, route wiring
+- [x] 11-03-PLAN.md — CSS Grid tile layout, Templ components, SortableJS drag-and-drop, HTMX polling, visual verification
 
 ---
 
@@ -158,6 +162,24 @@ Plans:
 
 ---
 
+#### Phase 14: Integration Pipeline Fix
+**Goal**: Fix CrewAI output format contract and scheduler timezone fallback to complete the E2E plugin execution pipeline
+**Depends on**: Phase 12
+**Requirements**: CREW-05, SCHED-04
+**Gap Closure**: Closes gaps from v1.1 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. Sidecar wraps CrewAI output as valid JSON (`{"summary": "...", "content": "..."}`) before publishing to Redis Stream
+  2. Go result handler stores valid JSON in PluginRun.Output JSONB column without PostgreSQL errors
+  3. Dashboard tiles display briefing content from PluginRun.Output (extractSummary/extractContent parse correctly)
+  4. Scheduler falls back to User.Timezone (browser-detected) when UserPluginConfig.Timezone is empty
+  5. Dead code cleaned up: ValidateUserSettings removed, TileSkeleton removed, stale scheduler comment removed
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -175,7 +197,8 @@ Plans:
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
+| 14. Integration Pipeline Fix | v1.1 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 12-02 (settings UI complete — Phase 12 done)*
+*Last updated: 2026-02-23 after milestone audit — added Phase 14 gap closure*
