@@ -9,15 +9,15 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 12 — Dynamic Settings UI (IN PROGRESS)
-Plan: 1/2 complete
-Status: In Progress
-Last activity: 2026-02-23 — Plan 12-01 executed (settings backend: viewmodel, handlers, route wiring)
+Phase: 12 — Dynamic Settings UI (COMPLETE)
+Plan: 2/2 complete
+Status: Complete
+Last activity: 2026-02-23 — Plan 12-02 executed (settings UI templates, UAT fixes, shared AppNavbar)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 7.2 min
 - Total execution time: 2.7 hours
 
@@ -36,7 +36,7 @@ Last activity: 2026-02-23 — Plan 12-01 executed (settings backend: viewmodel, 
 | 09 | 4 | 15 min | 3.8 min |
 | 10 | 2 | 5 min | 2.5 min |
 | 11 | 3 | 34 min | 11.3 min |
-| 12 | 1/2 | 7 min | 7.0 min |
+| 12 | 2/2 | 42 min | 21.0 min |
 
 ## Accumulated Context
 
@@ -93,6 +93,13 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 12-01]: compiler.SetPreserveExtra(true) enabled for future x-extension field support (resolves Phase 12 research flag)
 - [Phase 12-01]: Run Now uses saved DB settings not unsaved form state — prevents silent execution with unsaved config
 - [Phase 12-01]: coerceFormValues handles absent boolean as false (Pitfall 3), array multi-select via rawForm[key] (Pitfall 4)
+- [Phase 12-02]: AppNavbar shared component with activePage param — eliminates duplicated navbar HTML across dashboard and settings pages
+- [Phase 12-02]: FieldTypeTagInput replaces FieldTypeCheckboxGroup for all array fields — better UX per user review; schema validation still enforces constraints at save time
+- [Phase 12-02]: FieldTypeTimeSelect detected via HH:MM pattern substring in schema.Pattern — avoids hardcoding field names
+- [Phase 12-02]: Consolidated three htmx.on('htmx:afterSwap') listeners into one — HTMX v2 replaces previous listeners for same event, only last one ran
+- [Phase 12-02]: DisplayName via humanizePluginName (kebab-case → Title Case) — no DB change needed, purely presentational
+- [Phase 12-02]: JS tooltip for .settings-tooltip-trigger matches tile-tooltip pattern — CSS ::after pseudo-elements clipped by overflow:hidden containers
+- [Phase 12-02]: JSON array coercion in coerceFormValues — tag input hidden field sends JSON array string, parsed before passing to validator
 
 ### Pending Todos
 
@@ -108,10 +115,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-23 (Phase 12-01 complete — settings backend with viewmodel, handlers, routes)
-Stopped at: Phase 12 Plan 01 complete. Next: Plan 02 — Settings UI templates (accordion, toggle, form rendering)
-Resume with: /gsd:execute-phase 12 (executes plan 02)
+Last session: 2026-02-23 (Phase 12-02 complete — settings UI templates, 8 UAT fixes, shared AppNavbar)
+Stopped at: Phase 12 complete (both plans done). Settings page fully functional.
+Resume with: /gsd:execute-phase 13 (next phase in roadmap)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 12-01 (settings backend package complete)*
+*Last updated: 2026-02-23 after Phase 12-02 (settings UI templates, UAT fixes, AppNavbar shared component)*

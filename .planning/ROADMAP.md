@@ -50,7 +50,7 @@
 
 **Research Flags:**
 - **Phase 9 (CrewAI):** Research complete (2026-02-14)
-- **Phase 12 (Settings):** Needs research on JSON Schema extension field preservation
+- **Phase 12 (Settings):** Research complete (2026-02-23) — SetPreserveExtra(true) resolves extension field preservation
 
 ---
 
@@ -119,10 +119,11 @@ Plans:
 
 ---
 
-#### Phase 12: Dynamic Settings UI
+#### Phase 12: Dynamic Settings UI ✅
 **Goal**: Settings page with plugin management, auto-generated forms from JSON Schema, and validation
 **Depends on**: Phase 11
 **Requirements**: SET-01, SET-02, SET-03, SET-04, SET-05, SET-06
+**Completed**: 2026-02-23
 **Success Criteria** (what must be TRUE):
   1. Settings page lists all available plugins with enable/disable toggle per plugin
   2. Forms generate dynamically from each plugin's JSON Schema settings definition (no manual form coding)
@@ -135,7 +136,7 @@ Plans:
 
 Plans:
 - [x] 12-01-PLAN.md — Settings backend: viewmodel, schema-to-form conversion, type coercion, handlers, route wiring
-- [ ] 12-02-PLAN.md — Settings frontend: Templ accordion UI, dynamic forms, CSS, HTMX interactions, visual verification
+- [x] 12-02-PLAN.md — Settings frontend: Templ accordion UI, dynamic forms, CSS, HTMX interactions, visual verification
 
 ---
 
@@ -172,9 +173,9 @@ Plans:
 | 9. CrewAI Sidecar Integration | v1.1 | 4/4 | Complete | 2026-02-18 |
 | 10. Per-User Scheduling | v1.1 | 2/2 | Complete | 2026-02-22 |
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
-| 12. Dynamic Settings UI | v1.1 | 1/2 | In Progress | - |
+| 12. Dynamic Settings UI | v1.1 | 2/2 | Complete | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 12-01 (settings backend complete)*
+*Last updated: 2026-02-23 after Phase 12-02 (settings UI complete — Phase 12 done)*
