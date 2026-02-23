@@ -19,6 +19,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/database"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/plugins"
+	"github.com/jimdaga/first-sip/internal/settings"
 	"github.com/jimdaga/first-sip/internal/streams"
 	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/webhook"
@@ -225,6 +226,13 @@ func main() {
 		protected.GET("/history", briefings.GetHistoryHandler(db))
 		protected.GET("/api/history", briefings.GetHistoryPageHandler(db))
 		protected.POST("/api/history/briefings/:id/read", briefings.MarkHistoryBriefingReadHandler(db))
+
+		// Settings routes
+		protected.GET("/settings", settings.SettingsPageHandler(db, cfg.PluginDir))
+		protected.POST("/api/settings/:pluginID/toggle", settings.TogglePluginHandler(db, cfg.PluginDir))
+		protected.POST("/api/settings/:pluginID/save", settings.SaveSettingsHandler(db, cfg.PluginDir))
+		protected.POST("/api/settings/:pluginID/validate-field", settings.ValidateFieldHandler(db, cfg.PluginDir))
+		protected.POST("/api/settings/:pluginID/run-now", settings.RunNowHandler(db))
 	}
 
 	// Create HTTP server for graceful shutdown

@@ -1,0 +1,58 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jimdaga/first-sip/internal/settingsvm"
+)
+
+// SettingsPage renders the full settings page with plugin accordion list.
+// Plan 02 replaces this stub with the complete accordion UI.
+templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
+	@Layout("Settings - First Sip") {
+		<nav class="glass-navbar">
+			<div class="navbar-inner">
+				<div class="navbar-brand">
+					<a href="/dashboard" class="navbar-brand-link">
+						<img src="/static/img/coffeeicon.png" alt="" class="navbar-logo"/>
+						<span class="navbar-title">First Sip</span>
+					</a>
+				</div>
+				<div class="navbar-links">
+					<a href="/dashboard" class="navbar-link">Dashboard</a>
+					<a href="/history" class="navbar-link">History</a>
+					<a href="/settings" class="navbar-link navbar-link-active">Settings</a>
+					<a href="/logout" class="navbar-link">Logout</a>
+				</div>
+			</div>
+		</nav>
+		<main class="dashboard-content">
+			<h1 class="settings-page-title">Settings</h1>
+			<p class="settings-page-subtitle">Manage your plugins and schedule</p>
+			<div id="settings-plugin-list">
+				for _, plugin := range plugins {
+					@PluginAccordionRow(plugin)
+				}
+			</div>
+		</main>
+	}
+}
+
+// PluginAccordionRow renders a single plugin row in the settings accordion.
+// Plan 02 replaces this stub with the complete accordion row UI including
+// enable/disable toggle, settings form, and status section.
+templ PluginAccordionRow(plugin settingsvm.PluginSettingsViewModel) {
+	<div
+		id={ fmt.Sprintf("plugin-row-%d", plugin.PluginID) }
+		class="glass-card settings-plugin-row"
+	>
+		<div class="glass-card-body">
+			<span class="settings-plugin-name">{ plugin.PluginName }</span>
+			<span class="settings-plugin-description">{ plugin.Description }</span>
+			if plugin.Enabled {
+				<span class="glass-badge glass-badge-read">Enabled</span>
+			} else {
+				<span class="glass-badge">Disabled</span>
+			}
+		</div>
+	</div>
+}
