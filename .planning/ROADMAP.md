@@ -131,11 +131,11 @@ Plans:
   5. Form preserves user's input on validation errors (re-render with submitted values, not defaults)
   6. Plugin status info displays on settings page (last run, next run, recent error count)
 **Research Flag**: Needs research on JSON Schema extension field preservation (x-component, x-placeholder)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Settings backend: viewmodel, schema-to-form conversion, type coercion, handlers, route wiring
+- [ ] 12-02-PLAN.md — Settings frontend: Templ accordion UI, dynamic forms, CSS, HTMX interactions, visual verification
 
 ---
 
