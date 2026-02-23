@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 11 — Tile-Based Dashboard (COMPLETE)
-Plan: 3/3 complete
-Status: Complete
-Last activity: 2026-02-22 — Plan 11-03 executed + UAT verified (tile dashboard frontend with expand, tooltip, timezone detection)
+Phase: 12 — Dynamic Settings UI (IN PROGRESS)
+Plan: 1/2 complete
+Status: In Progress
+Last activity: 2026-02-23 — Plan 12-01 executed (settings backend: viewmodel, handlers, route wiring)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 7.2 min
-- Total execution time: 2.6 hours
+- Total execution time: 2.7 hours
 
 **By Phase:**
 
@@ -36,6 +36,7 @@ Last activity: 2026-02-22 — Plan 11-03 executed + UAT verified (tile dashboard
 | 09 | 4 | 15 min | 3.8 min |
 | 10 | 2 | 5 min | 2.5 min |
 | 11 | 3 | 34 min | 11.3 min |
+| 12 | 1/2 | 7 min | 7.0 min |
 
 ## Accumulated Context
 
@@ -87,6 +88,11 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 11-03]: JS fixed-position tooltip over CSS ::after — glass-card overflow:hidden clips pseudo-elements
 - [Phase 11-03]: Info badge in tile footer (bottom-left) not header — avoids close button overlap
 - [Phase 11-03]: Browser timezone auto-detection via Intl API on dashboard load (fires once per session if user timezone is UTC)
+- [Phase 12-01]: settingsvm package for ViewModel types breaks handler→templates→handler import cycle (same pattern as internal/tiles)
+- [Phase 12-01]: schemaToFields converts *jsonschema.Schema to []FieldViewModel before passing to Templ — templates never import kaptinlin/jsonschema
+- [Phase 12-01]: compiler.SetPreserveExtra(true) enabled for future x-extension field support (resolves Phase 12 research flag)
+- [Phase 12-01]: Run Now uses saved DB settings not unsaved form state — prevents silent execution with unsaved config
+- [Phase 12-01]: coerceFormValues handles absent boolean as false (Pitfall 3), array multi-select via rawForm[key] (Pitfall 4)
 
 ### Pending Todos
 
@@ -98,14 +104,14 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 ### Blockers/Concerns
 
 - CrewAI 2026 production patterns need validation (Phase 9 flagged for deeper research)
-- kaptinlin/jsonschema extension field preservation (x-component) needs testing (Phase 12 flagged)
+- kaptinlin/jsonschema extension field preservation (x-component) — RESOLVED in Phase 12-01: SetPreserveExtra(true) confirmed working
 
 ## Session Continuity
 
-Last session: 2026-02-22 (Phase 11 complete — all 3 plans executed, UAT verified)
-Stopped at: Phase 11 complete. Next: Phase 12 — Dynamic Settings UI
-Resume with: /gsd:plan-phase 12 (or /gsd:discuss-phase 12 for context gathering first)
+Last session: 2026-02-23 (Phase 12-01 complete — settings backend with viewmodel, handlers, routes)
+Stopped at: Phase 12 Plan 01 complete. Next: Plan 02 — Settings UI templates (accordion, toggle, form rendering)
+Resume with: /gsd:execute-phase 12 (executes plan 02)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-22 after Phase 11 complete (all plans + UAT)*
+*Last updated: 2026-02-23 after Phase 12-01 (settings backend package complete)*

@@ -134,7 +134,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Settings backend: viewmodel, schema-to-form conversion, type coercion, handlers, route wiring
+- [x] 12-01-PLAN.md — Settings backend: viewmodel, schema-to-form conversion, type coercion, handlers, route wiring
 - [ ] 12-02-PLAN.md — Settings frontend: Templ accordion UI, dynamic forms, CSS, HTMX interactions, visual verification
 
 ---
@@ -170,11 +170,11 @@ Plans:
 | 7. Briefing History | v1.0 | 1/1 | Complete | 2026-02-13 |
 | 8. Plugin Framework Foundation | v1.1 | 3/3 | Complete | 2026-02-14 |
 | 9. CrewAI Sidecar Integration | v1.1 | 4/4 | Complete | 2026-02-18 |
-| 10. Per-User Scheduling | v1.1 | 0/2 | Not started | - |
-| 11. Tile-Based Dashboard | v1.1 | 0/3 | Not started | - |
-| 12. Dynamic Settings UI | v1.1 | 0/2 | Not started | - |
+| 10. Per-User Scheduling | v1.1 | 2/2 | Complete | 2026-02-22 |
+| 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
+| 12. Dynamic Settings UI | v1.1 | 1/2 | In Progress | - |
 | 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-21 after Phase 11 planning complete*
+*Last updated: 2026-02-23 after Phase 12-01 (settings backend complete)*
