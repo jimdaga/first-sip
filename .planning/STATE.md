@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 12 — Dynamic Settings UI (COMPLETE)
-Plan: 2/2 complete
-Status: Complete
-Last activity: 2026-02-23 — Plan 12-02 executed (settings UI templates, UAT fixes, shared AppNavbar)
+Phase: 13 — Account Tier Scaffolding (IN PROGRESS)
+Plan: 1/2 complete
+Status: In Progress
+Last activity: 2026-02-23 — Plan 13-01 executed (AccountTier model, migration 000008, TierService, free tier on registration)
 
 ## Performance Metrics
 
 **Overall Velocity:**
-- Total plans completed: 24
-- Average duration: 7.2 min
-- Total execution time: 2.7 hours
+- Total plans completed: 25
+- Average duration: 7.1 min
+- Total execution time: ~2.7 hours
 
 **By Phase:**
 
@@ -37,6 +37,7 @@ Last activity: 2026-02-23 — Plan 12-02 executed (settings UI templates, UAT fi
 | 10 | 2 | 5 min | 2.5 min |
 | 11 | 3 | 34 min | 11.3 min |
 | 12 | 2/2 | 42 min | 21.0 min |
+| 13 | 1/2 | 2 min | 2.0 min |
 
 ## Accumulated Context
 
@@ -100,6 +101,11 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 12-02]: DisplayName via humanizePluginName (kebab-case → Title Case) — no DB change needed, purely presentational
 - [Phase 12-02]: JS tooltip for .settings-tooltip-trigger matches tile-tooltip pattern — CSS ::after pseudo-elements clipped by overflow:hidden containers
 - [Phase 12-02]: JSON array coercion in coerceFormValues — tag input hidden field sends JSON array string, parsed before passing to validator
+- [Phase 13-01]: AccountTierID as *uint (nullable pointer) — NULL means pre-migration user, falls back to free tier in TierService automatically
+- [Phase 13-01]: MaxEnabledPlugins = -1 sentinel for unlimited (pro tier) — avoids extra boolean column
+- [Phase 13-01]: SeedAccountTiers called in ALL environments — tiers are production data, not dev fixtures
+- [Phase 13-01]: TierService as standalone internal/tiers package — importable by any handler without circular imports
+- [Phase 13-01]: CanUseFrequency uses two consecutive Next() calls to compute actual schedule interval — handles irregular cron expressions correctly
 
 ### Pending Todos
 
@@ -115,10 +121,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-23 (Phase 12-02 complete — settings UI templates, 8 UAT fixes, shared AppNavbar)
-Stopped at: Phase 12 complete (both plans done). Settings page fully functional.
-Resume with: /gsd:execute-phase 13 (next phase in roadmap)
+Last session: 2026-02-23 (Phase 13-01 complete — AccountTier model, migration 000008, TierService, free tier assignment on registration)
+Stopped at: Phase 13 Plan 01 complete. Plan 02 (tier enforcement in handlers + UI) is next.
+Resume with: /gsd:execute-phase 13 (plan 02)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 12-02 (settings UI templates, UAT fixes, AppNavbar shared component)*
+*Last updated: 2026-02-23 after Phase 13-01 (AccountTier model, migration 000008, TierService, free tier on OAuth registration)*

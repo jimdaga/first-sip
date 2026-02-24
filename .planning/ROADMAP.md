@@ -157,7 +157,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — AccountTier model, migration, seed, TierService with constraint checking, free tier on registration
+- [x] 13-01-PLAN.md — AccountTier model, migration, seed, TierService with constraint checking, free tier on registration
 - [ ] 13-02-PLAN.md — Tier enforcement in handlers, counter + disabled toggle + Pro badge in settings UI, /pro coming soon page
 
 ---
@@ -196,9 +196,9 @@ Plans:
 | 10. Per-User Scheduling | v1.1 | 2/2 | Complete | 2026-02-22 |
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
-| 13. Account Tier Scaffolding | v1.1 | 0/2 | Not started | - |
+| 13. Account Tier Scaffolding | v1.1 | 1/2 | In Progress | - |
 | 14. Integration Pipeline Fix | v1.1 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after milestone audit — added Phase 14 gap closure*
+*Last updated: 2026-02-23 after Phase 13-01 (AccountTier model, TierService, migration 000008)*
