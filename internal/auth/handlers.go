@@ -43,10 +43,20 @@ func HandleCallback(db *gorm.DB) gin.HandlerFunc {
 			var user models.User
 			result := db.Where("email = ?", gothUser.Email).First(&user)
 			if result.Error == gorm.ErrRecordNotFound {
+				// Look up free tier to assign to new registrants
+				var freeTier models.AccountTier
+				var freeTierID *uint
+				if err := db.Where("name = ?", "free").First(&freeTier).Error; err != nil {
+					log.Printf("Warning: free tier not found, registering user without tier assignment: %v", err)
+				} else {
+					freeTierID = &freeTier.ID
+				}
+
 				user = models.User{
-					Email:       gothUser.Email,
-					Name:        gothUser.Name,
-					LastLoginAt: &now,
+					Email:         gothUser.Email,
+					Name:          gothUser.Name,
+					LastLoginAt:   &now,
+					AccountTierID: freeTierID,
 				}
 				db.Create(&user)
 			} else if result.Error == nil {
