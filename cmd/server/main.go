@@ -86,6 +86,11 @@ func main() {
 			log.Fatalf("Failed to run migrations: %v", err)
 		}
 
+		// Seed account tiers (all environments — idempotent)
+		if err := database.SeedAccountTiers(db); err != nil {
+			log.Fatalf("Failed to seed account tiers: %v", err)
+		}
+
 		// Seed development data
 		if cfg.Env != "production" {
 			if err := database.SeedDevData(db); err != nil {

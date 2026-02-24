@@ -9,6 +9,34 @@ import (
 	"gorm.io/gorm"
 )
 
+// SeedAccountTiers creates the free and pro account tiers if they do not already exist.
+// Idempotent: uses FirstOrCreate with name lookup so re-runs are safe.
+// Must be called in ALL environments after RunMigrations and before SeedDevData.
+func SeedAccountTiers(db *gorm.DB) error {
+	tiers := []models.AccountTier{
+		{
+			Name:              "free",
+			MaxEnabledPlugins: 3,
+			MinFrequencyHours: 24,
+		},
+		{
+			Name:              "pro",
+			MaxEnabledPlugins: -1, // unlimited
+			MinFrequencyHours: 2,
+		},
+	}
+
+	for _, t := range tiers {
+		result := db.Where("name = ?", t.Name).FirstOrCreate(&t)
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+
+	log.Println("Account tiers seeded: free, pro")
+	return nil
+}
+
 // SeedDevData populates the database with development test data.
 // Idempotent: skips if data already exists.
 func SeedDevData(db *gorm.DB) error {

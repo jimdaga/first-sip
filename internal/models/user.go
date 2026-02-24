@@ -16,6 +16,8 @@ type User struct {
 	Role                 string     `gorm:"not null;default:'user'"` // enum: 'user' or 'admin'
 	LastLoginAt          *time.Time
 	LastBriefingAt       *time.Time
+	AccountTierID        *uint        `gorm:"index"` // nullable — NULL means pre-migration or unassigned (treated as free)
+	AccountTier          AccountTier  `gorm:"foreignKey:AccountTierID"`
 
 	// Associations
 	AuthIdentities []AuthIdentity `gorm:"constraint:OnDelete:CASCADE;"`
