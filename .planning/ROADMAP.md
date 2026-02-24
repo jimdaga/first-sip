@@ -154,11 +154,11 @@ Plans:
   3. Tier service checks constraints (max enabled plugins, max frequency) server-side
   4. Plugin enable handler rejects enable request when user reaches tier limit
   5. UI displays upgrade messaging when user approaches or reaches tier limit
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — AccountTier model, migration, seed, TierService with constraint checking, free tier on registration
+- [ ] 13-02-PLAN.md — Tier enforcement in handlers, counter + disabled toggle + Pro badge in settings UI, /pro coming soon page
 
 ---
 
