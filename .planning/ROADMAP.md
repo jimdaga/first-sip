@@ -177,7 +177,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — Output format contract fix (sidecar JSON wrapping, Go-side parsing, retry button, dead code removal)
+- [x] 14-01-PLAN.md — Output format contract fix (sidecar JSON wrapping, Go-side parsing, retry button, dead code removal)
 - [ ] 14-02-PLAN.md — Timezone migration (remove per-plugin timezone, wire User.Timezone, account settings page)
 
 ---
@@ -199,8 +199,8 @@ Plans:
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | Complete    | 2026-02-26 | 2026-02-25 |
-| 14. Integration Pipeline Fix | v1.1 | 0/2 | Not started | - |
+| 14. Integration Pipeline Fix | v1.1 | 1/2 | In Progress | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-25 after Phase 13-02 (tier enforcement handlers, plugin counter UI, disabled toggles, /pro page)*
+*Last updated: 2026-02-26 after Phase 14-01 (sidecar output format fix, Go sections rendering, retry button, dead code cleanup)*

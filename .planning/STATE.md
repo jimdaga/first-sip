@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 13 — Account Tier Scaffolding (COMPLETE)
-Plan: 2/2 complete
-Status: Complete
-Last activity: 2026-02-25 — Plan 13-02 executed (tier enforcement in handlers + UI, plugin counter, disabled toggles, /pro page)
+Phase: 14 — Integration Pipeline Fix (IN PROGRESS)
+Plan: 1/2 complete
+Status: In Progress
+Last activity: 2026-02-26 — Plan 14-01 executed (sidecar JSON wrapping, Go sections parsing, json.Valid guard, retry button, dead code removal)
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Last activity: 2026-02-25 — Plan 13-02 executed (tier enforcement in handlers 
 | 11 | 3 | 34 min | 11.3 min |
 | 12 | 2/2 | 42 min | 21.0 min |
 | 13 | 2/2 | ~62 min | 31.0 min |
+| 14 | 1/2 | 2 min | 2.0 min |
 
 ## Accumulated Context
 
@@ -110,6 +111,11 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 13-02]: IsFreeUser bool field on PluginSettingsViewModel carries tier context to accordion row for cron hint without threading full TierInfo through every level
 - [Phase 13-02]: proNotifyHandler as inline closure in main.go — no DB table needed for scaffolding, slog.Info sufficient for MVP notification tracking
 - [Phase 13-02]: Counter accent color at limit uses --accent token (warm orange) not red — limits are value-focused upgrade prompts, not error states
+- [Phase 14-01]: Sidecar _wrap_output uses re.split on ^##\s+ headings to build sections array — simple, lossless, no extra dependency
+- [Phase 14-01]: Empty/None raw_output uses placeholder JSON fallback instead of failing — genuine failures (exceptions, timeouts) use status=failed
+- [Phase 14-01]: html/template.HTMLEscapeString used in viewmodel.go for section title escaping (not templ import — avoids new dependency in non-template code)
+- [Phase 14-01]: Retry button reuses existing POST /api/settings/:pluginID/run-now — no new handler needed
+- [Phase 14-01]: Old malformed runs return empty content (no crash) via JSON parse failure returning empty string
 
 ### Pending Todos
 
@@ -125,10 +131,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-25 (Phase 13-02 complete — tier enforcement in handlers, plugin counter UI, disabled toggles, /pro page with email capture)
-Stopped at: Phase 13 complete (2/2 plans). Phase 14 (integration pipeline gap closure) is next.
+Last session: 2026-02-26 (Phase 14-01 complete — sidecar JSON wrapping fix, Go sections parsing, retry button, dead code removal)
+Stopped at: Phase 14, Plan 1/2 complete. Plan 14-02 (timezone migration) is next.
 Resume with: /gsd:execute-phase 14
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-25 after Phase 13-02 (tier enforcement handlers, plugin counter UI, disabled toggles, /pro page)*
+*Last updated: 2026-02-26 after Phase 14-01 (sidecar output format fix, Go sections rendering, retry button, dead code cleanup)*
