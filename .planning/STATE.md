@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 14 — Integration Pipeline Fix (COMPLETE)
-Plan: 2/2 complete
-Status: Complete
-Last activity: 2026-02-26 — Plan 14-02 executed (timezone migration, scheduler fix, account settings page, per-plugin timezone removal)
+Phase: 15 — Verification & Documentation Closure (IN PROGRESS)
+Plan: 1/2 complete
+Status: In Progress
+Last activity: 2026-02-26 — Plan 15-01 executed (Phase 10 VERIFICATION.md for SCHED-01/02/03/05/06, Phase 11 VERIFICATION.md for TILE-01/02/03/04/05/06)
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Last activity: 2026-02-26 — Plan 14-02 executed (timezone migration, scheduler
 | 12 | 2/2 | 42 min | 21.0 min |
 | 13 | 2/2 | ~62 min | 31.0 min |
 | 14 | 2/2 | ~20 min | 10.0 min |
+| 15 | 1/2 | ~3 min | 3.0 min |
 
 ## Accumulated Context
 
@@ -119,6 +120,8 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 14-02]: Timezone removed from UserPluginConfig — scheduler reads cfg.User.Timezone (account-level) with UTC fallback, single source of truth
 - [Phase 14-02]: Account settings page at /settings/account with renderTimezoneSelect reuse — same component as plugin settings
 - [Phase 14-02]: Dashboard and settings SQL JOIN users table for timezone — users.timezone replaces upc.timezone
+- [Phase 15-01]: SCHED-04 excluded from Phase 10 VERIFICATION.md — belongs to Phase 14 (timezone migrated from UserPluginConfig to users table by migration 000009)
+- [Phase 15-01]: 7 truths for Phase 10 and 8 truths for Phase 11 (vs 5/6 minimums) — extra truths needed to cover migration context and TileViewModel package architecture
 
 ### Pending Todos
 
@@ -134,10 +137,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-26 (Phase 14-02 complete — timezone migration, scheduler User.Timezone fix, account settings page, per-plugin timezone removal)
-Stopped at: Phase 14 complete (2/2 plans). Integration pipeline fix is done.
-Resume with: Start next phase from ROADMAP.md
+Last session: 2026-02-26 (Phase 15-01 complete — Phase 10 VERIFICATION.md for SCHED-01/02/03/05/06, Phase 11 VERIFICATION.md for TILE-01/02/03/04/05/06)
+Stopped at: Phase 15 Plan 1/2 complete. Verification closure for scheduling and tile requirements done.
+Resume with: Phase 15 Plan 02 — update REQUIREMENTS.md (18 checkbox checks + traceability table + coverage count)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-26 after Phase 14-02 (timezone migration, scheduler fix, account settings page, per-plugin timezone removal)*
+*Last updated: 2026-02-26 after Phase 15-01 (Phase 10 VERIFICATION.md for SCHED-01/02/03/05/06, Phase 11 VERIFICATION.md for TILE-01/02/03/04/05/06)*

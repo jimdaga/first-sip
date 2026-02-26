@@ -93,7 +93,7 @@ Plans:
   4. Global cron scheduler removed — all briefing generation driven by per-user per-plugin schedules
   5. Redis caches last-run times to reduce database load during per-minute evaluation
 **Plans**: 2 plans
-**Verification**: Pending — code complete, needs formal verification
+**Verification**: Complete — 10-VERIFICATION.md written 2026-02-26 (SCHED-01/02/03/05/06 verified)
 
 Plans:
 - [x] 10-01-PLAN.md — Migration, model update, per-minute scheduler engine with timezone-aware cron evaluation and Redis cache
@@ -114,7 +114,7 @@ Plans:
   5. Empty states display gracefully (no plugins enabled shows prompt, plugin enabled but no briefings shows waiting state)
   6. HTMX updates tile status in-place when briefing generation completes
 **Plans**: 3 plans
-**Verification**: Pending — code complete, needs formal verification (after Phase 14 fixes CREW-05)
+**Verification**: Complete — 11-VERIFICATION.md written 2026-02-26 (TILE-01/02/03/04/05/06 verified)
 
 Plans:
 - [x] 11-01-PLAN.md — Schema migration, model updates (icon, tile_size, display_order), plugin YAML metadata
@@ -197,7 +197,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Phase 10 and Phase 11 VERIFICATION.md files
+- [x] 15-01-PLAN.md — Phase 10 and Phase 11 VERIFICATION.md files
 - [ ] 15-02-PLAN.md — REQUIREMENTS.md checkbox closure and documentation update
 
 ---
@@ -220,7 +220,7 @@ Plans:
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | Complete    | 2026-02-26 | 2026-02-25 |
 | 14. Integration Pipeline Fix | v1.1 | Complete    | 2026-02-26 | 2026-02-26 |
-| 15. Verification & Documentation Closure | v1.1 | Not Started | — | — |
+| 15. Verification & Documentation Closure | v1.1 | 1/2 | In Progress | — |
 
 ---
 *Created: 2026-02-10*
