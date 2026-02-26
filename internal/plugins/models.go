@@ -42,8 +42,7 @@ type UserPluginConfig struct {
 	Settings       datatypes.JSON `gorm:"type:jsonb"`
 	Enabled        bool           `gorm:"default:false"`
 	CronExpression string         `gorm:"column:cron_expression"` // nullable — empty means no schedule
-	Timezone       string         `gorm:"column:timezone;not null;default:'UTC'"` // IANA timezone name
-	DisplayOrder   *int           `gorm:"column:display_order"`                   // nullable — nil means unordered
+	DisplayOrder   *int           `gorm:"column:display_order"`   // nullable — nil means unordered
 	User           models.User    `gorm:"constraint:OnDelete:CASCADE;"`
 	Plugin         Plugin         `gorm:"constraint:OnDelete:CASCADE;"`
 }

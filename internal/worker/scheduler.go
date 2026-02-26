@@ -88,9 +88,8 @@ func handlePerMinuteScheduler(logger *slog.Logger, db *gorm.DB, rdb *redis.Clien
 		errored := 0
 
 		for _, cfg := range configs {
-			// Determine effective timezone: prefer the per-config value, fall back to User.Timezone if present.
-			// (User model does not yet have a Timezone field; this is prepared for Phase 12.)
-			effectiveTimezone := cfg.Timezone
+			// Determine effective timezone from the user's account-level setting.
+			effectiveTimezone := cfg.User.Timezone
 			if effectiveTimezone == "" {
 				effectiveTimezone = "UTC"
 			}
