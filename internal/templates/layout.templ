@@ -1,5 +1,11 @@
 package templates
 
+templ AppFooter() {
+	<footer class="app-footer">
+		<span>First Sip · v1.0</span>
+	</footer>
+}
+
 templ Layout(title string) {
 	<!DOCTYPE html>
 	<html lang="en">
@@ -23,6 +29,39 @@ templ Layout(title string) {
 				<div class="orb orb-4"></div>
 			</div>
 			{ children... }
+			<script>
+				// Sidebar collapse/expand toggle (desktop)
+				function toggleSidebar() {
+					var sidebar = document.getElementById('app-sidebar');
+					if (!sidebar) return;
+					sidebar.classList.toggle('collapsed');
+					var label = sidebar.querySelector('.sidebar-toggle-label');
+					if (label) {
+						label.textContent = sidebar.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+					}
+					try { localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed') ? '1' : '0'); } catch(e) {}
+				}
+				// Mobile sidebar toggle
+				function toggleMobileSidebar() {
+					var sidebar = document.getElementById('app-sidebar');
+					var backdrop = document.getElementById('sidebar-backdrop');
+					if (!sidebar) return;
+					sidebar.classList.toggle('open');
+					if (backdrop) backdrop.classList.toggle('visible', sidebar.classList.contains('open'));
+				}
+				// Restore sidebar state on load
+				(function() {
+					try {
+						var sidebar = document.getElementById('app-sidebar');
+						if (!sidebar) return;
+						if (localStorage.getItem('sidebar-collapsed') === '1') {
+							sidebar.classList.add('collapsed');
+							var label = sidebar.querySelector('.sidebar-toggle-label');
+							if (label) label.textContent = 'Expand';
+						}
+					} catch(e) {}
+				})();
+			</script>
 		</body>
 	</html>
 }

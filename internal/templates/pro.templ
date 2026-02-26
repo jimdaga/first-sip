@@ -1,0 +1,45 @@
+package templates
+
+// ProComingSoonPage renders the Pro coming soon page with email capture form.
+templ ProComingSoonPage(sidebarPlugins []SidebarPlugin) {
+	@Layout("Pro — First Sip") {
+		<div class="app-layout">
+			@AppSidebar("settings", sidebarPlugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>Pro</h1>
+					<p>Coming soon</p>
+				</div>
+				<div class="pro-coming-soon">
+					<div class="glass-card">
+						<div class="glass-card-body">
+							<p class="pro-subtitle">Unlock the full potential of First Sip with a Pro subscription.</p>
+							<ul class="pro-features">
+								<li>Unlimited plugins — no 3-plugin cap</li>
+								<li>Faster schedules — run briefings every 2 hours</li>
+								<li>Priority support</li>
+							</ul>
+							<p class="pro-notify-prompt">Get notified when Pro launches:</p>
+							<form class="pro-form" hx-post="/api/pro/notify" hx-target="#pro-form-result" hx-swap="innerHTML">
+								<input
+									type="email"
+									name="email"
+									required
+									placeholder="your@email.com"
+									class="pro-email-input"
+								/>
+								<button type="submit" class="glass-btn glass-btn-primary">Notify me</button>
+							</form>
+							<div id="pro-form-result"></div>
+							<p class="pro-back-link">
+								<a href="/settings">← Back to settings</a>
+							</p>
+						</div>
+					</div>
+				</div>
+			@AppFooter()
+			</main>
+		</div>
+	}
+}

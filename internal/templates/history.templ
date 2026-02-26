@@ -6,30 +6,20 @@ import (
 )
 
 // HistoryPage renders the full history page
-templ HistoryPage(name string, briefings []models.Briefing, page int, hasMore bool) {
+templ HistoryPage(name string, briefings []models.Briefing, page int, hasMore bool, sidebarPlugins []SidebarPlugin) {
 	@Layout("History - First Sip") {
-		<nav class="glass-navbar">
-			<div class="navbar-inner">
-				<div class="navbar-brand">
-					<a href="/dashboard" class="navbar-brand-link">
-						<img src="/static/img/logo.png" alt="" class="navbar-logo"/>
-						<span class="navbar-title">First Sip</span>
-					</a>
+		<div class="app-layout">
+			@AppSidebar("history", sidebarPlugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>Briefing History</h1>
+					<p>Last 30 days</p>
 				</div>
-				<div class="navbar-actions">
-					<a href="/history" class="navbar-link navbar-link-active">History</a>
-					<span class="navbar-user">{ name }</span>
-					<a href="/logout" class="glass-btn glass-btn-ghost glass-btn-sm">Logout</a>
-				</div>
-			</div>
-		</nav>
-		<main class="dashboard-content">
-			<div class="history-header">
-				<h1 class="greeting">Briefing History</h1>
-				<p class="history-subtitle">Last 30 days</p>
-			</div>
-			@HistoryList(briefings, page, hasMore)
-		</main>
+				@HistoryList(briefings, page, hasMore)
+				@AppFooter()
+			</main>
+		</div>
 	}
 }
 

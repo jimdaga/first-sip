@@ -1,0 +1,74 @@
+package templates
+
+import (
+	"github.com/jimdaga/first-sip/internal/tiles"
+)
+
+// PluginDetailPage renders the full-page view for a single plugin's briefing content.
+templ PluginDetailPage(tile tiles.TileViewModel, plugins []SidebarPlugin) {
+	@Layout(tile.DisplayName + " - First Sip") {
+		<div class="app-layout">
+			@AppSidebar("dashboard-" + tile.PluginName, plugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>{ tile.PluginIcon } { tile.DisplayName }</h1>
+					if tile.TimingTooltip != "" {
+						<p>{ tile.TimingTooltip }</p>
+					}
+				</div>
+				<div class="plugin-detail-content">
+					if tile.LatestRunStatus == "pending" || tile.LatestRunStatus == "processing" {
+						<div class="glass-card">
+							<div class="glass-card-body" style="text-align: center; padding: 3rem 1.5rem;">
+								<div class="glass-spinner"></div>
+								<p style="margin-top: 1rem; color: var(--text-secondary);">Your briefing is being generated...</p>
+							</div>
+						</div>
+					} else if tile.HasError {
+						<div class="glass-alert glass-alert-error" style="margin-bottom: 1rem;">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="10"></circle>
+								<line x1="12" y1="8" x2="12" y2="12"></line>
+								<line x1="12" y1="16" x2="12.01" y2="16"></line>
+							</svg>
+							Latest run failed — showing last successful briefing
+						</div>
+						if tile.LastSuccessfulContent != "" {
+							<div class="glass-card">
+								<div class="glass-card-body plugin-detail-body">
+									@templ.Raw(tile.LastSuccessfulContent)
+								</div>
+							</div>
+						} else {
+							<div class="glass-card">
+								<div class="glass-card-body">
+									<p class="content-empty">No previous successful briefing available</p>
+								</div>
+							</div>
+						}
+					} else if tile.BriefingContent != "" {
+						<div class="glass-card">
+							<div class="glass-card-body plugin-detail-body">
+								@templ.Raw(tile.BriefingContent)
+							</div>
+						</div>
+					} else if tile.NextRunAt != nil {
+						<div class="glass-card">
+							<div class="glass-card-body" style="text-align: center; padding: 3rem 1.5rem;">
+								<p class="content-empty">Your first briefing is scheduled for { tile.NextRunAt.Format("3:04 PM") }</p>
+							</div>
+						</div>
+					} else {
+						<div class="glass-card">
+							<div class="glass-card-body" style="text-align: center; padding: 3rem 1.5rem;">
+								<p class="content-empty">Your first briefing will run soon</p>
+							</div>
+						</div>
+					}
+				</div>
+				@AppFooter()
+			</main>
+		</div>
+	}
+}

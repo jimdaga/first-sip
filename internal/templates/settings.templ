@@ -5,58 +5,175 @@ import (
 	"github.com/jimdaga/first-sip/internal/settingsvm"
 )
 
-// AppNavbar renders the shared navigation bar used on all authenticated pages.
-// activePage should be "dashboard", "history", or "settings".
-templ AppNavbar(activePage string) {
-	<nav class="glass-navbar">
-		<div class="navbar-inner">
-			<div class="navbar-brand">
-				<a href="/dashboard" class="navbar-brand-link">
-					<img src="/static/img/coffeeicon.png" alt="" class="navbar-logo"/>
-					<span class="navbar-title">First Sip</span>
-				</a>
-			</div>
-			<div class="navbar-links">
-				if activePage == "dashboard" {
-					<a href="/dashboard" class="navbar-link navbar-link-active">Dashboard</a>
-				} else {
-					<a href="/dashboard" class="navbar-link">Dashboard</a>
-				}
-				if activePage == "history" {
-					<a href="/history" class="navbar-link navbar-link-active">History</a>
-				} else {
-					<a href="/history" class="navbar-link">History</a>
-				}
-				if activePage == "settings" {
-					<a href="/settings" class="navbar-link navbar-link-active">Settings</a>
-				} else {
-					<a href="/settings" class="navbar-link">Settings</a>
-				}
-				<a href="/logout" class="navbar-link">Logout</a>
-			</div>
-		</div>
-	</nav>
+// HeroTopBar renders the hamburger row inside the page-hero banner (mobile only).
+templ HeroTopBar() {
+	<div class="hero-topbar">
+		<button class="hero-hamburger" onclick="toggleMobileSidebar()" aria-label="Toggle menu">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="3" y1="12" x2="21" y2="12"></line>
+				<line x1="3" y1="6" x2="21" y2="6"></line>
+				<line x1="3" y1="18" x2="21" y2="18"></line>
+			</svg>
+		</button>
+	</div>
 }
 
-// SettingsPage renders the full settings page with plugin accordion list.
-templ SettingsPage(plugins []settingsvm.PluginSettingsViewModel) {
+// AppSidebar renders the vertical sidebar navigation rail.
+// activePage should be "dashboard", "history", "settings", or "dashboard-<pluginName>".
+// plugins is the list of enabled plugins to show as sub-links under Dashboard.
+templ AppSidebar(activePage string, plugins []SidebarPlugin) {
+	<aside class="app-sidebar" id="app-sidebar">
+		<a href="/dashboard" class="sidebar-brand">
+			<img src="/static/img/coffeeicon.png" alt="" class="sidebar-brand-logo"/>
+			<span class="sidebar-brand-title">First Sip</span>
+		</a>
+		<nav class="sidebar-nav">
+			<a href="/dashboard" class={ sidebarLinkClass(activePage, "dashboard") }>
+				<svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="3" y="3" width="7" height="7"></rect>
+					<rect x="14" y="3" width="7" height="7"></rect>
+					<rect x="3" y="14" width="7" height="7"></rect>
+					<rect x="14" y="14" width="7" height="7"></rect>
+				</svg>
+				<span class="sidebar-label">Dashboard</span>
+			</a>
+			if isDashboardActive(activePage) && len(plugins) > 0 {
+				<div class="sidebar-sub-links">
+					for _, p := range plugins {
+						<a href={ templ.SafeURL("/plugins/" + p.PluginName) }
+						   class={ dashboardSubLinkClass(activePage, p.PluginName) }>
+							<span class="sidebar-sub-icon">{ p.Icon }</span>
+							<span class="sidebar-label">{ p.DisplayName }</span>
+						</a>
+					}
+				</div>
+			}
+			<a href="/history" class={ sidebarLinkClass(activePage, "history") }>
+				<svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"></circle>
+					<polyline points="12 6 12 12 16 14"></polyline>
+				</svg>
+				<span class="sidebar-label">History</span>
+			</a>
+			<a href="/settings" class={ sidebarLinkClass(activePage, "settings") }>
+				<svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="3"></circle>
+					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+				</svg>
+				<span class="sidebar-label">Settings</span>
+			</a>
+			if isSettingsActive(activePage) {
+				<div class="sidebar-sub-links">
+					<a href="/settings/plugins" class={ settingsSubLinkClass(activePage, "plugins") }>
+						<span class="sidebar-label">Plugin Settings</span>
+					</a>
+				</div>
+			}
+		</nav>
+		<div class="sidebar-bottom">
+			<a href="/logout" class="sidebar-link sidebar-logout">
+				<svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+					<polyline points="16 17 21 12 16 7"></polyline>
+					<line x1="21" y1="12" x2="9" y2="12"></line>
+				</svg>
+				<span class="sidebar-label">Logout</span>
+			</a>
+			<button class="sidebar-toggle" onclick="toggleSidebar()">
+				<svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polyline points="11 17 6 12 11 7"></polyline>
+					<polyline points="18 17 13 12 18 7"></polyline>
+				</svg>
+				<span class="sidebar-toggle-label">Collapse</span>
+			</button>
+		</div>
+	</aside>
+	<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleMobileSidebar()"></div>
+}
+
+
+// TierPluginCounter renders the plugin usage counter for the settings page.
+// It is also rendered as an OOB fragment (hx-swap-oob="true") to keep the counter in sync after toggles.
+templ TierPluginCounter(tierInfo settingsvm.TierInfo) {
+	if tierInfo.MaxEnabledPlugins < 0 {
+		<div id="tier-plugin-counter" class="settings-tier-counter">
+			<span class="settings-tier-count">Unlimited plugins</span>
+		</div>
+	} else {
+		<div id="tier-plugin-counter" class="settings-tier-counter" hx-swap-oob="true">
+			if tierInfo.AtPluginLimit {
+				<span class="settings-tier-count-at-limit">{ fmt.Sprintf("%d/%d plugins enabled", tierInfo.EnabledCount, tierInfo.MaxEnabledPlugins) }</span>
+				<a href={ templ.SafeURL(tierInfo.UpgradeURL) } class="settings-upgrade-link">Pro users get unlimited — learn more</a>
+			} else {
+				<span class="settings-tier-count">{ fmt.Sprintf("%d/%d plugins enabled", tierInfo.EnabledCount, tierInfo.MaxEnabledPlugins) }</span>
+			}
+		</div>
+	}
+}
+
+// SettingsHubPage renders the top-level settings hub with tile grid linking to sub-pages.
+templ SettingsHubPage(plugins []SidebarPlugin) {
 	@Layout("Settings - First Sip") {
-		@AppNavbar("settings")
-		<main class="dashboard-content">
-			<div class="settings-page-header">
-				<h1 class="settings-page-title">Plugin Settings</h1>
-				<p class="settings-page-subtitle">Manage your plugins, schedules, and configuration</p>
+		<div class="app-layout">
+			@AppSidebar("settings", plugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>Settings</h1>
+					<p>Manage your account, plugins, and preferences</p>
+				</div>
+				<div class="settings-hub-grid">
+					<a href="/settings/plugins" class="glass-card settings-hub-tile">
+						<span class="settings-hub-tile-icon">
+							<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+							</svg>
+						</span>
+						<span class="settings-hub-tile-title">Plugin Settings</span>
+						<span class="settings-hub-tile-desc">Enable, configure, and schedule your plugins</span>
+					</a>
+					<div class="glass-card settings-hub-tile settings-hub-tile-disabled">
+						<span class="settings-hub-tile-icon">
+							<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+								<circle cx="12" cy="7" r="4"></circle>
+							</svg>
+						</span>
+						<span class="settings-hub-tile-title">User Preferences</span>
+						<span class="settings-hub-tile-desc">Coming soon</span>
+					</div>
+				</div>
+				@AppFooter()
+			</main>
+		</div>
+	}
+}
+
+// PluginSettingsPage renders the full plugin settings page with accordion list.
+templ PluginSettingsPage(page settingsvm.SettingsPageViewModel, plugins []SidebarPlugin) {
+	@Layout("Plugin Settings - First Sip") {
+		<div class="app-layout">
+			@AppSidebar("settings-plugins", plugins)
+			<main class="app-content">
+			<div class="page-hero">
+				@HeroTopBar()
+				<h1>Plugin Settings</h1>
+				<p>Manage your plugins, schedules, and configuration</p>
 			</div>
+			<!-- Plugin usage counter -->
+			@TierPluginCounter(page.TierInfo)
 			<div id="settings-plugin-list">
-				if len(plugins) == 0 {
+				if len(page.Plugins) == 0 {
 					<div class="empty-state">No plugins available. Check your plugin directory configuration.</div>
 				} else {
-					for _, plugin := range plugins {
+					for _, plugin := range page.Plugins {
 						@PluginAccordionRow(plugin)
 					}
 				}
 			</div>
+		@AppFooter()
 		</main>
+		</div>
 		<script>
 			// Accordion expand/collapse — clicking the row header toggles .settings-expanded
 			document.addEventListener('click', function(e) {
@@ -273,20 +390,35 @@ templ PluginAccordionRow(plugin settingsvm.PluginSettingsViewModel) {
 				<span class="settings-plugin-icon">{ plugin.Icon }</span>
 			}
 			<span class="settings-plugin-name">{ plugin.DisplayName }</span>
-			<!-- Enable / disable toggle -->
-			<label class="settings-toggle" onclick="event.stopPropagation()">
-				<input
-					type="checkbox"
-					class="settings-toggle-input"
-					hx-post={ fmt.Sprintf("/api/settings/%d/toggle", plugin.PluginID) }
-					hx-target={ fmt.Sprintf("#plugin-row-%d", plugin.PluginID) }
-					hx-swap="outerHTML"
-					if plugin.Enabled {
-						checked
-					}
-				/>
-				<span class="settings-toggle-slider"></span>
-			</label>
+			<!-- Enable / disable toggle — disabled when at tier limit and not currently enabled -->
+			if plugin.IsDisabledByTier {
+				<label
+					class="settings-toggle settings-toggle-disabled settings-tooltip-trigger"
+					onclick="event.stopPropagation()"
+					title="You've reached your 3-plugin limit. Disable another plugin or upgrade to Pro."
+				>
+					<input
+						type="checkbox"
+						class="settings-toggle-input"
+						disabled
+					/>
+					<span class="settings-toggle-slider"></span>
+				</label>
+			} else {
+				<label class="settings-toggle" onclick="event.stopPropagation()">
+					<input
+						type="checkbox"
+						class="settings-toggle-input"
+						hx-post={ fmt.Sprintf("/api/settings/%d/toggle", plugin.PluginID) }
+						hx-target={ fmt.Sprintf("#plugin-row-%d", plugin.PluginID) }
+						hx-swap="outerHTML"
+						if plugin.Enabled {
+							checked
+						}
+					/>
+					<span class="settings-toggle-slider"></span>
+				</label>
+			}
 			<!-- Chevron -->
 			<svg class="settings-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<polyline points="6 9 12 15 18 9"></polyline>
@@ -328,6 +460,16 @@ templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
 						{ plugin.CronError }
 					}
 				</div>
+				<!-- Pro hint for free users: schedules faster than daily require Pro -->
+				if plugin.IsFreeUser {
+					<span class="settings-field-hint settings-pro-hint">
+						Schedules faster than once daily require <a href="/pro" class="settings-pro-link">Pro</a>
+					</span>
+				}
+				<!-- Frequency error from tier enforcement -->
+				if plugin.FrequencyError != "" {
+					<span class="settings-field-error">{ plugin.FrequencyError }</span>
+				}
 				</div>
 				<div class="settings-field-group">
 					<label class="settings-field-label" for={ fmt.Sprintf("tz-%d", plugin.PluginID) }>

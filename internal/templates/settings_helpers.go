@@ -17,6 +17,56 @@ func timeSlots() []string {
 	return slots
 }
 
+// sidebarLinkClass returns the CSS class string for a sidebar nav link.
+// When pageName matches activePage, the active modifier class is included.
+// For "settings", any activePage starting with "settings" is considered active.
+// For "dashboard", any activePage starting with "dashboard" is considered active.
+func sidebarLinkClass(activePage, pageName string) string {
+	active := false
+	switch pageName {
+	case "settings":
+		active = isSettingsActive(activePage)
+	case "dashboard":
+		active = isDashboardActive(activePage)
+	default:
+		active = activePage == pageName
+	}
+	if active {
+		return "sidebar-link sidebar-link-active"
+	}
+	return "sidebar-link"
+}
+
+// isSettingsActive returns true when activePage is "settings" or any settings sub-page
+// (e.g. "settings-plugins").
+func isSettingsActive(activePage string) bool {
+	return activePage == "settings" || strings.HasPrefix(activePage, "settings-")
+}
+
+// settingsSubLinkClass returns the CSS class for a settings sub-link.
+// sub should be the suffix after "settings-", e.g. "plugins".
+func settingsSubLinkClass(activePage, sub string) string {
+	if activePage == "settings-"+sub {
+		return "sidebar-sub-link sidebar-sub-link-active"
+	}
+	return "sidebar-sub-link"
+}
+
+// isDashboardActive returns true when activePage is "dashboard" or any dashboard sub-page
+// (e.g. "dashboard-daily-news-digest").
+func isDashboardActive(activePage string) bool {
+	return activePage == "dashboard" || strings.HasPrefix(activePage, "dashboard-")
+}
+
+// dashboardSubLinkClass returns the CSS class for a dashboard plugin sub-link.
+// pluginName should be the plugin slug, e.g. "daily-news-digest".
+func dashboardSubLinkClass(activePage, pluginName string) string {
+	if activePage == "dashboard-"+pluginName {
+		return "sidebar-sub-link sidebar-sub-link-active"
+	}
+	return "sidebar-sub-link"
+}
+
 // isChecked reports whether option is selected in currentValue.
 // currentValue may be a JSON array string (e.g. `["tech","science"]`) or a
 // comma-separated string (e.g. "tech,science").  Both formats are checked so

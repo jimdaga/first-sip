@@ -8,7 +8,7 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Layout(title string) templ.Component {
+func AppFooter() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,28 +29,57 @@ func Layout(title string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"app-footer\"><span>First Sip · v1.0</span></footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/layout.templ`, Line: 9, Col: 17}
+		return nil
+	})
+}
+
+func Layout(title string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin=\"anonymous\"><link href=\"https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Outfit:wght@300;400;500;600&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/liquid-glass.css\" rel=\"stylesheet\"><script src=\"https://cdn.tailwindcss.com\"></script><script src=\"https://unpkg.com/htmx.org@2.0.0\"></script><script src=\"https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js\"></script></head><body><div class=\"mesh-bg\" aria-hidden=\"true\"><div class=\"orb orb-1\"></div><div class=\"orb orb-2\"></div><div class=\"orb orb-3\"></div><div class=\"orb orb-4\"></div></div>")
+		var templ_7745c5c3_Var3 string
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/layout.templ`, Line: 15, Col: 17}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ_7745c5c3_Var1.Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</title><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin=\"anonymous\"><link href=\"https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Outfit:wght@300;400;500;600&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/liquid-glass.css\" rel=\"stylesheet\"><script src=\"https://cdn.tailwindcss.com\"></script><script src=\"https://unpkg.com/htmx.org@2.0.0\"></script><script src=\"https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js\"></script></head><body><div class=\"mesh-bg\" aria-hidden=\"true\"><div class=\"orb orb-1\"></div><div class=\"orb orb-2\"></div><div class=\"orb orb-3\"></div><div class=\"orb orb-4\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</body></html>")
+		templ_7745c5c3_Err = templ_7745c5c3_Var2.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<script>\n\t\t\t\t// Sidebar collapse/expand toggle (desktop)\n\t\t\t\tfunction toggleSidebar() {\n\t\t\t\t\tvar sidebar = document.getElementById('app-sidebar');\n\t\t\t\t\tif (!sidebar) return;\n\t\t\t\t\tsidebar.classList.toggle('collapsed');\n\t\t\t\t\tvar label = sidebar.querySelector('.sidebar-toggle-label');\n\t\t\t\t\tif (label) {\n\t\t\t\t\t\tlabel.textContent = sidebar.classList.contains('collapsed') ? 'Expand' : 'Collapse';\n\t\t\t\t\t}\n\t\t\t\t\ttry { localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed') ? '1' : '0'); } catch(e) {}\n\t\t\t\t}\n\t\t\t\t// Mobile sidebar toggle\n\t\t\t\tfunction toggleMobileSidebar() {\n\t\t\t\t\tvar sidebar = document.getElementById('app-sidebar');\n\t\t\t\t\tvar backdrop = document.getElementById('sidebar-backdrop');\n\t\t\t\t\tif (!sidebar) return;\n\t\t\t\t\tsidebar.classList.toggle('open');\n\t\t\t\t\tif (backdrop) backdrop.classList.toggle('visible', sidebar.classList.contains('open'));\n\t\t\t\t}\n\t\t\t\t// Restore sidebar state on load\n\t\t\t\t(function() {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tvar sidebar = document.getElementById('app-sidebar');\n\t\t\t\t\t\tif (!sidebar) return;\n\t\t\t\t\t\tif (localStorage.getItem('sidebar-collapsed') === '1') {\n\t\t\t\t\t\t\tsidebar.classList.add('collapsed');\n\t\t\t\t\t\t\tvar label = sidebar.querySelector('.sidebar-toggle-label');\n\t\t\t\t\t\t\tif (label) label.textContent = 'Expand';\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch(e) {}\n\t\t\t\t})();\n\t\t\t</script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
