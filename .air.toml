@@ -1,0 +1,66 @@
+#:schema https://json.schemastore.org/any.json
+
+env_files = []
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  # 1. Tell Air how to build your app (using your Makefile)
+  cmd = "source ~/env.local && make worker"
+  # 2. Tell Air where the finished binary actually is
+  # (Check your Makefile to see where 'make worker' outputs the file, 
+  # usually it's something like ./worker or ./bin/worker)
+  bin = "./worker" 
+  # 3. Tell Air which directory to watch for the 'main' package
+  # Since you have a /cmd folder, point it there
+  full_bin = "source ~/env.local && ./worker"
+  # 4. Watch these extensions
+  include_ext = ["go", "tpl", "tmpl", "html", "toml"]
+  # 5. Ignore these (prevents infinite loops)
+  exclude_dir = ["tmp", "bin", "vendor", "node_modules", "charts", "infra"]  
+  args_bin = []
+  entrypoint = ["./tmp/main"]
+  exclude_file = []
+  exclude_regex = ["_templ.go$"]
+  exclude_unchanged = false
+  follow_symlink = false
+  ignore_dangerous_root_dir = false
+  include_dir = []
+  include_file = []
+  kill_delay = "0s"
+  delay = 1000
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  post_cmd = []
+  pre_cmd = []
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = false
+  stop_on_error = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[proxy]
+  app_port = 0
+  app_start_timeout = 0
+  enabled = false
+  proxy_port = 0
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

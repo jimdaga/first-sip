@@ -17,6 +17,12 @@ templ PluginDetailPage(tile tiles.TileViewModel, plugins []SidebarPlugin) {
 						<p>{ tile.TimingTooltip }</p>
 					}
 				</div>
+				if tile.PluginName == "daily-news-digest" {
+					<div class="plugin-hero-banner">
+						<img src="https://bing.biturl.top/?resolution=1920&format=image&index=0" alt="" class="plugin-hero-banner-img"/>
+						<div class="plugin-hero-banner-overlay"></div>
+					</div>
+				}
 				<div class="plugin-detail-content">
 					if tile.LatestRunStatus == "pending" || tile.LatestRunStatus == "processing" {
 						<div class="glass-card">
