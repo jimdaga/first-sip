@@ -1,6 +1,7 @@
 package streams
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -31,13 +32,25 @@ func HandlePluginResult(db *gorm.DB) func(PluginResult) error {
 		}
 
 		if result.Status == "completed" {
-			updates["status"] = plugins.PluginRunStatusCompleted
-			updates["output"] = datatypes.JSON(result.Output)
+			// Guard against invalid JSON before storing in JSONB column.
+			// After the sidecar fix, all output should be valid JSON.
+			// This safety net prevents PostgreSQL from rejecting malformed payloads.
+			if !json.Valid([]byte(result.Output)) {
+				slog.Warn("Plugin result output is not valid JSON — marking run as failed",
+					"plugin_run_id", result.PluginRunID,
+					"output_preview", result.Output[:min(len(result.Output), 100)],
+				)
+				updates["status"] = plugins.PluginRunStatusFailed
+				updates["error_message"] = "output was not valid JSON"
+			} else {
+				updates["status"] = plugins.PluginRunStatusCompleted
+				updates["output"] = datatypes.JSON(result.Output)
 
-			slog.Info("Plugin run completed",
-				"plugin_run_id", result.PluginRunID,
-				"status", "completed",
-			)
+				slog.Info("Plugin run completed",
+					"plugin_run_id", result.PluginRunID,
+					"status", "completed",
+				)
+			}
 		} else if result.Status == "failed" {
 			updates["status"] = plugins.PluginRunStatusFailed
 			updates["error_message"] = result.Error

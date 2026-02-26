@@ -2,7 +2,9 @@
 
 import asyncio
 import importlib.util
+import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -52,11 +54,15 @@ class CrewExecutor:
             async with asyncio.timeout(self.timeout_seconds):
                 result = await crew.kickoff_async(inputs=request.settings)
                 # Extract output (CrewAI result may have .raw attribute)
-                output = result.raw if hasattr(result, 'raw') else str(result)
+                raw_output = result.raw if hasattr(result, 'raw') else str(result)
+
+                # Wrap as structured JSON before publishing to Redis Stream
+                structured = self._wrap_output(raw_output)
+
                 return PluginResult(
                     plugin_run_id=request.plugin_run_id,
                     status="completed",
-                    output=output
+                    output=structured  # valid JSON string
                 )
         except asyncio.TimeoutError:
             logger.warning(
@@ -78,6 +84,59 @@ class CrewExecutor:
                 status="failed",
                 error=str(e)
             )
+
+    def _wrap_output(self, raw: str) -> str:
+        """Wrap raw CrewAI output as structured JSON string.
+
+        Args:
+            raw: Raw Markdown string from CrewAI workflow
+
+        Returns:
+            JSON string with {"summary": "...", "sections": [...]}
+        """
+        if not raw:
+            return json.dumps({
+                "summary": "Briefing generated",
+                "sections": [{"title": "Content", "content": ""}]
+            })
+        summary = self._extract_summary(raw)
+        sections = self._build_sections(raw)
+        return json.dumps({"summary": summary, "sections": sections})
+
+    def _extract_summary(self, raw: str) -> str:
+        """Extract first non-heading paragraph as summary (<=300 chars).
+
+        Args:
+            raw: Raw Markdown string
+
+        Returns:
+            Summary string truncated to 300 characters
+        """
+        paragraphs = [p.strip() for p in raw.split('\n\n') if p.strip()]
+        for p in paragraphs:
+            if not p.startswith('#'):
+                return p[:300]
+        return raw[:300]
+
+    def _build_sections(self, raw: str) -> list:
+        """Split Markdown output on ## headings into sections.
+
+        Args:
+            raw: Raw Markdown string
+
+        Returns:
+            List of {"title": str, "content": str} dicts
+        """
+        parts = re.split(r'^##\s+', raw, flags=re.MULTILINE)
+        if len(parts) <= 1:
+            return [{"title": "Briefing", "content": raw.strip()}]
+        sections = []
+        for part in parts[1:]:  # skip content before first heading
+            lines = part.split('\n', 1)
+            title = lines[0].strip()
+            content = lines[1].strip() if len(lines) > 1 else ""
+            sections.append({"title": title, "content": content})
+        return sections
 
     def _load_crew(self, plugin_name: str, settings: dict[str, Any]):
         """Load a plugin's crew definition dynamically.

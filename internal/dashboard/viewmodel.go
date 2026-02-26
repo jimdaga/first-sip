@@ -3,6 +3,7 @@ package dashboard
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"strings"
 	"time"
 
@@ -20,10 +21,17 @@ var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month 
 // internal/dashboard (query layer) and internal/templates (render layer).
 type TileViewModel = tiles.TileViewModel
 
+// OutputSection is a titled section within a plugin run's output.
+type OutputSection struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
 // PluginRunOutput is the JSONB structure stored in plugin_runs.output.
 type PluginRunOutput struct {
-	Summary string `json:"summary"`
-	Content string `json:"content"`
+	Summary  string          `json:"summary"`
+	Sections []OutputSection `json:"sections"`
+	Content  string          `json:"content"` // legacy — old completed runs only
 }
 
 // configRow is an intermediate type for scanning the configs query result.
@@ -332,7 +340,10 @@ func extractSummary(output []byte) string {
 	return out.Content
 }
 
-// extractContent parses the JSONB output and returns the full content field.
+// extractContent parses the JSONB output and returns HTML for tile display.
+// New format: renders sections array as HTML (<h3> headings + <p> content).
+// Legacy format: falls back to the Content string field for old completed runs.
+// Malformed/unparseable output returns "" so old runs show as empty (no crash).
 func extractContent(output []byte) string {
 	if len(output) == 0 {
 		return ""
@@ -341,6 +352,22 @@ func extractContent(output []byte) string {
 	if err := json.Unmarshal(output, &out); err != nil {
 		return ""
 	}
+	// New format: build HTML from sections array.
+	if len(out.Sections) > 0 {
+		var sb strings.Builder
+		for _, s := range out.Sections {
+			if s.Title != "" && s.Title != "Briefing" {
+				sb.WriteString("<h3>")
+				sb.WriteString(template.HTMLEscapeString(s.Title))
+				sb.WriteString("</h3>")
+			}
+			sb.WriteString("<p>")
+			sb.WriteString(s.Content)
+			sb.WriteString("</p>")
+		}
+		return sb.String()
+	}
+	// Legacy fallback: single content field (old completed runs).
 	return out.Content
 }
 
