@@ -67,6 +67,9 @@ templ AppSidebar(activePage string, plugins []SidebarPlugin) {
 					<a href="/settings/plugins" class={ settingsSubLinkClass(activePage, "plugins") }>
 						<span class="sidebar-label">Plugin Settings</span>
 					</a>
+					<a href="/settings/account" class={ settingsSubLinkClass(activePage, "account") }>
+						<span class="sidebar-label">Account</span>
+					</a>
 				</div>
 			}
 		</nav>
@@ -132,15 +135,55 @@ templ SettingsHubPage(plugins []SidebarPlugin) {
 						<span class="settings-hub-tile-title">Plugin Settings</span>
 						<span class="settings-hub-tile-desc">Enable, configure, and schedule your plugins</span>
 					</a>
-					<div class="glass-card settings-hub-tile settings-hub-tile-disabled">
+					<a href="/settings/account" class="glass-card settings-hub-tile">
 						<span class="settings-hub-tile-icon">
 							<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
 								<circle cx="12" cy="7" r="4"></circle>
 							</svg>
 						</span>
-						<span class="settings-hub-tile-title">User Preferences</span>
-						<span class="settings-hub-tile-desc">Coming soon</span>
+						<span class="settings-hub-tile-title">Account Settings</span>
+						<span class="settings-hub-tile-desc">Set your timezone and account preferences</span>
+					</a>
+				</div>
+				@AppFooter()
+			</main>
+		</div>
+	}
+}
+
+// AccountSettingsPage renders the account settings page with timezone picker.
+templ AccountSettingsPage(userName, currentTimezone string, plugins []SidebarPlugin) {
+	@Layout("Account Settings - First Sip") {
+		<div class="app-layout">
+			@AppSidebar("settings-account", plugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>Account Settings</h1>
+					<p>Manage your account preferences</p>
+				</div>
+				<div class="glass-card">
+					<div class="glass-card-body">
+						<h2 class="settings-section-heading">Timezone</h2>
+						<p class="settings-field-hint">Your timezone is used to schedule briefings at the right local time.</p>
+						<form id="account-timezone-form">
+							<div class="settings-field-group">
+								<label class="settings-field-label" for="account-timezone">Timezone</label>
+								@renderTimezoneSelect("account-timezone", currentTimezone)
+							</div>
+							<div id="account-tz-feedback"></div>
+							<button
+								type="button"
+								class="glass-btn glass-btn-primary"
+								hx-post="/api/user/settings/timezone"
+								hx-include="#account-timezone-form"
+								hx-target="#account-tz-feedback"
+								hx-swap="innerHTML"
+							>
+								Save Timezone
+							</button>
+						</form>
 					</div>
 				</div>
 				@AppFooter()
@@ -470,12 +513,6 @@ templ PluginSettingsForm(plugin settingsvm.PluginSettingsViewModel) {
 				if plugin.FrequencyError != "" {
 					<span class="settings-field-error">{ plugin.FrequencyError }</span>
 				}
-				</div>
-				<div class="settings-field-group">
-					<label class="settings-field-label" for={ fmt.Sprintf("tz-%d", plugin.PluginID) }>
-						Timezone
-					</label>
-					@renderTimezoneSelect(fmt.Sprintf("tz-%d", plugin.PluginID), plugin.Timezone)
 				</div>
 			</div>
 			<!-- Plugin-specific fields (from JSON Schema) -->

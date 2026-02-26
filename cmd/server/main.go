@@ -245,10 +245,12 @@ func main() {
 		// Settings routes
 		protected.GET("/settings", settings.SettingsHubPageHandler(db))
 		protected.GET("/settings/plugins", settings.PluginSettingsPageHandler(db, cfg.PluginDir, tierService))
+		protected.GET("/settings/account", settings.AccountSettingsPageHandler(db))
 		protected.POST("/api/settings/:pluginID/toggle", settings.TogglePluginHandler(db, cfg.PluginDir, tierService))
 		protected.POST("/api/settings/:pluginID/save", settings.SaveSettingsHandler(db, cfg.PluginDir, tierService))
 		protected.POST("/api/settings/:pluginID/validate-field", settings.ValidateFieldHandler(db, cfg.PluginDir))
 		protected.POST("/api/settings/:pluginID/run-now", settings.RunNowHandler(db))
+		protected.POST("/api/user/settings/timezone", settings.SaveTimezoneHandler(db))
 
 		// Pro coming soon routes
 		protected.GET("/pro", func(c *gin.Context) {

@@ -78,9 +78,10 @@ func getDashboardTiles(db *gorm.DB, userID uint) ([]TileViewModel, error) {
 			p.tile_size,
 			upc.display_order,
 			upc.cron_expression,
-			upc.timezone
+			COALESCE(u.timezone, 'UTC') AS timezone
 		FROM user_plugin_configs upc
 		JOIN plugins p ON p.id = upc.plugin_id
+		JOIN users u ON u.id = upc.user_id
 		WHERE upc.user_id = ?
 		  AND upc.enabled = true
 		  AND upc.deleted_at IS NULL
@@ -207,9 +208,10 @@ func GetSingleTile(db *gorm.DB, userID, pluginID uint) (*TileViewModel, error) {
 			p.tile_size,
 			upc.display_order,
 			upc.cron_expression,
-			upc.timezone
+			COALESCE(u.timezone, 'UTC') AS timezone
 		FROM user_plugin_configs upc
 		JOIN plugins p ON p.id = upc.plugin_id
+		JOIN users u ON u.id = upc.user_id
 		WHERE upc.user_id = ?
 		  AND upc.plugin_id = ?
 		  AND upc.enabled = true

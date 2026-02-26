@@ -51,7 +51,7 @@ type pluginRow struct {
 	Enabled            bool
 	Settings           []byte
 	CronExpression     string
-	Timezone           string
+	Timezone           string // sourced from users.timezone via JOIN
 }
 
 // BuildTierInfo builds a TierInfo for the given user by querying the TierService.
@@ -101,15 +101,16 @@ func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string, t
 			COALESCE(upc.enabled, false)           AS enabled,
 			upc.settings,
 			COALESCE(upc.cron_expression, '')      AS cron_expression,
-			COALESCE(upc.timezone, 'UTC')          AS timezone
+			COALESCE(u.timezone, 'UTC')            AS timezone
 		FROM plugins p
 		LEFT JOIN user_plugin_configs upc
 			ON p.id = upc.plugin_id
 			AND upc.user_id = ?
 			AND upc.deleted_at IS NULL
+		LEFT JOIN users u ON u.id = ?
 		WHERE p.deleted_at IS NULL
 		ORDER BY p.name ASC
-	`, userID).Scan(&rows).Error
+	`, userID, userID).Scan(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("settings: query plugins: %w", err)
 	}
@@ -160,7 +161,6 @@ func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string, t
 			HasRequiredFields: hasRequired,
 			Status:            status,
 			CronExpression:    row.CronExpression,
-			Timezone:          row.Timezone,
 			IsFreeUser:        tierInfo.TierName == "free",
 		}
 		// Disable the toggle for non-enabled plugins when user is at the plugin limit.
@@ -194,15 +194,16 @@ func BuildSinglePluginSettingsViewModel(
 			COALESCE(upc.enabled, false)           AS enabled,
 			upc.settings,
 			COALESCE(upc.cron_expression, '')      AS cron_expression,
-			COALESCE(upc.timezone, 'UTC')          AS timezone
+			COALESCE(u.timezone, 'UTC')            AS timezone
 		FROM plugins p
 		LEFT JOIN user_plugin_configs upc
 			ON p.id = upc.plugin_id
 			AND upc.user_id = ?
 			AND upc.deleted_at IS NULL
+		LEFT JOIN users u ON u.id = ?
 		WHERE p.deleted_at IS NULL
 		  AND p.id = ?
-	`, userID, pluginID).Scan(&rows).Error
+	`, userID, userID, pluginID).Scan(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("settings: query single plugin: %w", err)
 	}
@@ -251,7 +252,6 @@ func BuildSinglePluginSettingsViewModel(
 		HasRequiredFields: hasRequired,
 		Status:            status,
 		CronExpression:    row.CronExpression,
-		Timezone:          row.Timezone,
 		SaveSuccess:       saveSuccess,
 	}
 	return vm, nil

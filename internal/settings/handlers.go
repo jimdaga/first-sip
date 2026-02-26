@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
@@ -163,7 +164,6 @@ func TogglePluginHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierS
 				UserID:   user.ID,
 				PluginID: pluginID,
 				Enabled:  true,
-				Timezone: "UTC",
 			}
 			if err := db.Create(&config).Error; err != nil {
 				c.Status(http.StatusInternalServerError)
@@ -235,7 +235,6 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierS
 
 		// Extract schedule fields (separate from plugin-specific settings).
 		cronExpression := rawForm.Get("cron_expression")
-		timezone := rawForm.Get("timezone")
 
 		// Check frequency tier limit before standard cron validation.
 		if cronExpression != "" {
@@ -339,15 +338,11 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierS
 					UserID:   user.ID,
 					PluginID: pluginID,
 					Enabled:  false,
-					Timezone: "UTC",
 				}
 			}
 			config.Settings = settingsJSON
 			if cronExpression != "" {
 				config.CronExpression = cronExpression
-			}
-			if timezone != "" {
-				config.Timezone = timezone
 			}
 
 			if config.ID == 0 {
@@ -377,14 +372,10 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierS
 					UserID:   user.ID,
 					PluginID: pluginID,
 					Enabled:  false,
-					Timezone: "UTC",
 				}
 			}
 			if cronExpression != "" {
 				config.CronExpression = cronExpression
-			}
-			if timezone != "" {
-				config.Timezone = timezone
 			}
 			if config.ID == 0 {
 				db.Create(&config)
@@ -507,6 +498,58 @@ func RunNowHandler(db *gorm.DB) gin.HandlerFunc {
 
 		c.Header("Content-Type", "text/html")
 		c.String(http.StatusOK, `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Triggered`)
+	}
+}
+
+// AccountSettingsPageHandler returns a Gin handler for GET /settings/account.
+// Renders the account settings page with the user's timezone picker.
+func AccountSettingsPageHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := getAuthUser(c, db)
+		if err != nil {
+			c.Redirect(http.StatusFound, "/login")
+			return
+		}
+
+		sidebarPlugins := dashboard.GetSidebarPlugins(db, user.ID)
+		render(c, templates.AccountSettingsPage(user.Name, user.Timezone, sidebarPlugins))
+	}
+}
+
+// SaveTimezoneHandler returns a Gin handler for POST /api/user/settings/timezone.
+// Validates and saves the user's account-level timezone preference.
+func SaveTimezoneHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := getAuthUser(c, db)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		timezone := c.PostForm("timezone")
+		if timezone == "" {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, `<span class="settings-field-error">Timezone is required.</span>`)
+			return
+		}
+
+		// Validate the IANA timezone.
+		if _, err := time.LoadLocation(timezone); err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, `<span class="settings-field-error">Invalid timezone.</span>`)
+			return
+		}
+
+		// Save to DB.
+		if err := db.Model(user).Update("timezone", timezone).Error; err != nil {
+			slog.Error("settings: failed to save user timezone", "user_id", user.ID, "error", err)
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, `<span class="settings-field-error">Failed to save timezone.</span>`)
+			return
+		}
+
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, `<span class="settings-save-success">Timezone saved</span>`)
 	}
 }
 
