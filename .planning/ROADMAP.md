@@ -174,10 +174,11 @@ Plans:
   3. Dashboard tiles display briefing content from PluginRun.Output (extractSummary/extractContent parse correctly)
   4. Scheduler falls back to User.Timezone (browser-detected) when UserPluginConfig.Timezone is empty
   5. Dead code cleaned up: ValidateUserSettings removed, TileSkeleton removed, stale scheduler comment removed
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: TBD
+- [ ] 14-01-PLAN.md — Output format contract fix (sidecar JSON wrapping, Go-side parsing, retry button, dead code removal)
+- [ ] 14-02-PLAN.md — Timezone migration (remove per-plugin timezone, wire User.Timezone, account settings page)
 
 ---
 
@@ -198,7 +199,7 @@ Plans:
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | Complete    | 2026-02-26 | 2026-02-25 |
-| 14. Integration Pipeline Fix | v1.1 | 0/1 | Not started | - |
+| 14. Integration Pipeline Fix | v1.1 | 0/2 | Not started | - |
 
 ---
 *Created: 2026-02-10*
