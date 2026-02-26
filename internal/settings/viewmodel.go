@@ -15,6 +15,7 @@ import (
 	cron "github.com/robfig/cron/v3"
 	"github.com/jimdaga/first-sip/internal/plugins"
 	"github.com/jimdaga/first-sip/internal/settingsvm"
+	"github.com/jimdaga/first-sip/internal/tiers"
 	"gorm.io/gorm"
 )
 
@@ -53,9 +54,42 @@ type pluginRow struct {
 	Timezone           string
 }
 
+// BuildTierInfo builds a TierInfo for the given user by querying the TierService.
+// Returns default TierInfo (free tier, 0 enabled) on any error to avoid blocking the page.
+func BuildTierInfo(db *gorm.DB, tierService *tiers.TierService, userID uint) (settingsvm.TierInfo, error) {
+	tier, err := tierService.GetUserTier(userID)
+	if err != nil {
+		return settingsvm.TierInfo{
+			TierName:          "free",
+			MaxEnabledPlugins: 3,
+			EnabledCount:      0,
+			AtPluginLimit:     false,
+			MinFrequencyHours: 24,
+			UpgradeURL:        "/pro",
+		}, fmt.Errorf("settings: get user tier: %w", err)
+	}
+
+	count, err := tierService.GetEnabledCount(userID)
+	if err != nil {
+		count = 0 // non-fatal
+	}
+
+	atLimit := tier.MaxEnabledPlugins >= 0 && count >= tier.MaxEnabledPlugins
+
+	return settingsvm.TierInfo{
+		TierName:          tier.Name,
+		MaxEnabledPlugins: tier.MaxEnabledPlugins,
+		EnabledCount:      count,
+		AtPluginLimit:     atLimit,
+		MinFrequencyHours: tier.MinFrequencyHours,
+		UpgradeURL:        "/pro",
+	}, nil
+}
+
 // BuildPluginSettingsViewModels queries all plugins with user config and assembles
 // PluginSettingsViewModel slice for the settings page.
-func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string) ([]PluginSettingsViewModel, error) {
+// tierInfo is used to set IsDisabledByTier and IsFreeUser on each viewmodel.
+func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string, tierInfo settingsvm.TierInfo) ([]PluginSettingsViewModel, error) {
 	var rows []pluginRow
 	err := db.Raw(`
 		SELECT
@@ -127,6 +161,11 @@ func BuildPluginSettingsViewModels(db *gorm.DB, userID uint, pluginDir string) (
 			Status:            status,
 			CronExpression:    row.CronExpression,
 			Timezone:          row.Timezone,
+			IsFreeUser:        tierInfo.TierName == "free",
+		}
+		// Disable the toggle for non-enabled plugins when user is at the plugin limit.
+		if tierInfo.AtPluginLimit && !row.Enabled {
+			vm.IsDisabledByTier = true
 		}
 		vms = append(vms, vm)
 	}

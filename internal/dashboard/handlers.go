@@ -63,22 +63,24 @@ func DashboardHandler(db *gorm.DB) gin.HandlerFunc {
 			}
 			greeting := timeAwareGreeting(nameStr, "UTC")
 			date := formatDashboardDate("UTC")
-			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false))
+			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false, nil))
 			return
 		}
 
 		tiles, err := getDashboardTiles(db, user.ID)
 		if err != nil {
 			// On query error, render with no tiles rather than a 500 page.
+			sidebarPlugins := GetSidebarPlugins(db, user.ID)
 			greeting := timeAwareGreeting(user.Name, user.Timezone)
 			date := formatDashboardDate(user.Timezone)
-			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false))
+			render(c, templates.DashboardPage(greeting, date, []TileViewModel{}, false, sidebarPlugins))
 			return
 		}
 
+		sidebarPlugins := GetSidebarPlugins(db, user.ID)
 		greeting := timeAwareGreeting(user.Name, user.Timezone)
 		date := formatDashboardDate(user.Timezone)
-		render(c, templates.DashboardPage(greeting, date, tiles, len(tiles) > 0))
+		render(c, templates.DashboardPage(greeting, date, tiles, len(tiles) > 0, sidebarPlugins))
 	}
 }
 
@@ -139,6 +141,38 @@ func UpdateTimezoneHandler(db *gorm.DB) gin.HandlerFunc {
 
 		db.Model(user).Update("timezone", tz)
 		c.Status(http.StatusOK)
+	}
+}
+
+// PluginDetailHandler returns a Gin handler for GET /plugins/:pluginName.
+// It renders the full-page plugin detail view with the latest briefing content.
+func PluginDetailHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := getAuthUser(c, db)
+		if err != nil {
+			c.Redirect(http.StatusFound, "/login")
+			return
+		}
+
+		pluginName := c.Param("pluginName")
+
+		// Look up the plugin by name to get its ID.
+		var pluginRow struct {
+			ID uint
+		}
+		if err := db.Raw(`SELECT id FROM plugins WHERE name = ? AND deleted_at IS NULL`, pluginName).Scan(&pluginRow).Error; err != nil || pluginRow.ID == 0 {
+			c.Redirect(http.StatusFound, "/dashboard")
+			return
+		}
+
+		tile, err := GetSingleTile(db, user.ID, pluginRow.ID)
+		if err != nil || tile == nil {
+			c.Redirect(http.StatusFound, "/dashboard")
+			return
+		}
+
+		sidebarPlugins := GetSidebarPlugins(db, user.ID)
+		render(c, templates.PluginDetailPage(*tile, sidebarPlugins))
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jimdaga/first-sip/internal/dashboard"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/worker"
@@ -165,9 +166,12 @@ func GetHistoryHandler(db *gorm.DB) gin.HandlerFunc {
 			nameStr = name.(string)
 		}
 
+		// Fetch sidebar plugins for the navigation.
+		sidebarPlugins := dashboard.GetSidebarPlugins(db, user.ID)
+
 		// Render full history page
 		c.Header("Content-Type", "text/html")
-		templates.HistoryPage(nameStr, briefings, 0, hasMore).Render(c.Request.Context(), c.Writer)
+		templates.HistoryPage(nameStr, briefings, 0, hasMore, sidebarPlugins).Render(c.Request.Context(), c.Writer)
 	}
 }
 

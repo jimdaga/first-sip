@@ -22,6 +22,7 @@ import (
 	"github.com/jimdaga/first-sip/internal/settings"
 	"github.com/jimdaga/first-sip/internal/streams"
 	"github.com/jimdaga/first-sip/internal/templates"
+	"github.com/jimdaga/first-sip/internal/tiers"
 	"github.com/jimdaga/first-sip/internal/webhook"
 	"github.com/jimdaga/first-sip/internal/worker"
 	"gorm.io/gorm"
@@ -97,6 +98,12 @@ func main() {
 				log.Printf("Warning: seed data failed: %v", err)
 			}
 		}
+	}
+
+	// Initialize TierService
+	var tierService *tiers.TierService
+	if db != nil {
+		tierService = tiers.New(db)
 	}
 
 	// Initialize plugin registry
@@ -232,12 +239,31 @@ func main() {
 		protected.GET("/api/history", briefings.GetHistoryPageHandler(db))
 		protected.POST("/api/history/briefings/:id/read", briefings.MarkHistoryBriefingReadHandler(db))
 
+		// Plugin detail route (dedicated full-page view per plugin)
+		protected.GET("/plugins/:pluginName", dashboard.PluginDetailHandler(db))
+
 		// Settings routes
-		protected.GET("/settings", settings.SettingsPageHandler(db, cfg.PluginDir))
-		protected.POST("/api/settings/:pluginID/toggle", settings.TogglePluginHandler(db, cfg.PluginDir))
-		protected.POST("/api/settings/:pluginID/save", settings.SaveSettingsHandler(db, cfg.PluginDir))
+		protected.GET("/settings", settings.SettingsHubPageHandler(db))
+		protected.GET("/settings/plugins", settings.PluginSettingsPageHandler(db, cfg.PluginDir, tierService))
+		protected.POST("/api/settings/:pluginID/toggle", settings.TogglePluginHandler(db, cfg.PluginDir, tierService))
+		protected.POST("/api/settings/:pluginID/save", settings.SaveSettingsHandler(db, cfg.PluginDir, tierService))
 		protected.POST("/api/settings/:pluginID/validate-field", settings.ValidateFieldHandler(db, cfg.PluginDir))
 		protected.POST("/api/settings/:pluginID/run-now", settings.RunNowHandler(db))
+
+		// Pro coming soon routes
+		protected.GET("/pro", func(c *gin.Context) {
+			var sidebarPlugins []templates.SidebarPlugin
+			if emailVal, exists := c.Get("user_email"); exists {
+				if emailStr, ok := emailVal.(string); ok && emailStr != "" {
+					var user models.User
+					if db.Where("email = ?", emailStr).First(&user).Error == nil {
+						sidebarPlugins = dashboard.GetSidebarPlugins(db, user.ID)
+					}
+				}
+			}
+			render(c, templates.ProComingSoonPage(sidebarPlugins))
+		})
+		protected.POST("/api/pro/notify", settings.ProNotifyHandler())
 	}
 
 	// Create HTTP server for graceful shutdown

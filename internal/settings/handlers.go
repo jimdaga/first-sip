@@ -3,14 +3,18 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
+	"github.com/jimdaga/first-sip/internal/dashboard"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/plugins"
+	"github.com/jimdaga/first-sip/internal/settingsvm"
 	"github.com/jimdaga/first-sip/internal/templates"
+	"github.com/jimdaga/first-sip/internal/tiers"
 	"github.com/jimdaga/first-sip/internal/worker"
 	"gorm.io/gorm"
 )
@@ -51,9 +55,21 @@ func parsePluginID(c *gin.Context) (uint, error) {
 	return uint(pluginIDParsed), nil
 }
 
-// SettingsPageHandler returns a Gin handler for GET /settings.
-// Renders the settings page with all plugins and their current state.
-func SettingsPageHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
+// SettingsHubPageHandler returns a Gin handler for GET /settings.
+// Renders the settings hub page with tile grid linking to sub-pages.
+func SettingsHubPageHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var sidebarPlugins []templates.SidebarPlugin
+		if user, err := getAuthUser(c, db); err == nil {
+			sidebarPlugins = dashboard.GetSidebarPlugins(db, user.ID)
+		}
+		render(c, templates.SettingsHubPage(sidebarPlugins))
+	}
+}
+
+// PluginSettingsPageHandler returns a Gin handler for GET /settings/plugins.
+// Renders the plugin settings page with all plugins and their current state.
+func PluginSettingsPageHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := getAuthUser(c, db)
 		if err != nil {
@@ -61,20 +77,35 @@ func SettingsPageHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 			return
 		}
 
-		viewModels, err := BuildPluginSettingsViewModels(db, user.ID, pluginDir)
+		tierInfo, err := BuildTierInfo(db, tierService, user.ID)
+		if err != nil {
+			slog.Warn("settings: failed to build tier info", "user_id", user.ID, "error", err)
+			// Use default free tier info — don't block page render
+		}
+
+		sidebarPlugins := dashboard.GetSidebarPlugins(db, user.ID)
+
+		viewModels, err := BuildPluginSettingsViewModels(db, user.ID, pluginDir, tierInfo)
 		if err != nil {
 			// Render with empty list rather than 500.
-			render(c, templates.SettingsPage([]PluginSettingsViewModel{}))
+			render(c, templates.PluginSettingsPage(settingsvm.SettingsPageViewModel{
+				Plugins:  []PluginSettingsViewModel{},
+				TierInfo: tierInfo,
+			}, sidebarPlugins))
 			return
 		}
 
-		render(c, templates.SettingsPage(viewModels))
+		render(c, templates.PluginSettingsPage(settingsvm.SettingsPageViewModel{
+			Plugins:  viewModels,
+			TierInfo: tierInfo,
+		}, sidebarPlugins))
 	}
 }
 
 // TogglePluginHandler returns a Gin handler for POST /api/settings/:pluginID/toggle.
 // Flips the enabled state of a plugin and returns the updated accordion row HTML fragment.
-func TogglePluginHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
+// For free users, blocks enabling a 4th plugin and returns the row with IsDisabledByTier=true.
+func TogglePluginHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := getAuthUser(c, db)
 		if err != nil {
@@ -93,7 +124,40 @@ func TogglePluginHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 		result := db.Where("user_id = ? AND plugin_id = ? AND deleted_at IS NULL", user.ID, pluginID).
 			First(&config)
 
-		if result.Error != nil {
+		// Determine the target enabled state after toggle.
+		isNewRecord := result.Error != nil
+		targetEnabled := true // first toggle = enable
+		if !isNewRecord {
+			targetEnabled = !config.Enabled
+		}
+
+		// If enabling, check tier limit.
+		if targetEnabled {
+			canEnable, _, err := tierService.CanEnablePlugin(user.ID)
+			if err != nil {
+				slog.Warn("settings: tier check failed", "user_id", user.ID, "error", err)
+				// Fail open — allow the action if we can't check the tier
+			} else if !canEnable {
+				// Tier limit reached — re-render the row with disabled state.
+				vm, buildErr := BuildSinglePluginSettingsViewModel(db, user.ID, pluginID, pluginDir, nil, nil, false)
+				if buildErr != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+				vm.IsDisabledByTier = true
+
+				// Build current TierInfo for OOB counter update.
+				tierInfo, _ := BuildTierInfo(db, tierService, user.ID)
+
+				c.Header("Content-Type", "text/html")
+				// Render the accordion row + OOB tier counter together.
+				templates.PluginAccordionRow(*vm).Render(c.Request.Context(), c.Writer)
+				templates.TierPluginCounter(tierInfo).Render(c.Request.Context(), c.Writer)
+				return
+			}
+		}
+
+		if isNewRecord {
 			// Not found — create a new one with enabled=true (first toggle = enable).
 			config = plugins.UserPluginConfig{
 				UserID:   user.ID,
@@ -126,20 +190,29 @@ func TogglePluginHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 			}
 		}
 
+		// Re-build TierInfo after the toggle for OOB counter update.
+		tierInfo, _ := BuildTierInfo(db, tierService, user.ID)
+
 		// Re-build and render the updated accordion row fragment.
 		vm, err := BuildSinglePluginSettingsViewModel(db, user.ID, pluginID, pluginDir, nil, nil, false)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+		// Set IsFreeUser from tierInfo (BuildSinglePluginSettingsViewModel doesn't have it).
+		vm.IsFreeUser = tierInfo.TierName == "free"
 
-		render(c, templates.PluginAccordionRow(*vm))
+		c.Header("Content-Type", "text/html")
+		// Render the accordion row + OOB tier counter together.
+		templates.PluginAccordionRow(*vm).Render(c.Request.Context(), c.Writer)
+		templates.TierPluginCounter(tierInfo).Render(c.Request.Context(), c.Writer)
 	}
 }
 
 // SaveSettingsHandler returns a Gin handler for POST /api/settings/:pluginID/save.
 // Validates and saves plugin settings and schedule for the authenticated user.
-func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
+// Rejects cron expressions faster than the user's tier minimum frequency.
+func SaveSettingsHandler(db *gorm.DB, pluginDir string, tierService *tiers.TierService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := getAuthUser(c, db)
 		if err != nil {
@@ -163,6 +236,27 @@ func SaveSettingsHandler(db *gorm.DB, pluginDir string) gin.HandlerFunc {
 		// Extract schedule fields (separate from plugin-specific settings).
 		cronExpression := rawForm.Get("cron_expression")
 		timezone := rawForm.Get("timezone")
+
+		// Check frequency tier limit before standard cron validation.
+		if cronExpression != "" {
+			canUse, tier, freqErr := tierService.CanUseFrequency(user.ID, cronExpression)
+			if freqErr == nil && !canUse && tier != nil {
+				// Frequency too fast for this tier — re-render with error.
+				vm, buildErr := BuildSinglePluginSettingsViewModel(db, user.ID, pluginID, pluginDir, nil, nil, false)
+				if buildErr != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+				vm.ForceExpanded = true
+				vm.FrequencyError = fmt.Sprintf(
+					"Schedules faster than once daily require Pro. Your tier allows minimum %dh intervals.",
+					tier.MinFrequencyHours,
+				)
+				vm.IsFreeUser = tier.Name == "free"
+				render(c, templates.PluginAccordionRow(*vm))
+				return
+			}
+		}
 
 		// Validate cron expression if provided.
 		var cronErr string
@@ -413,5 +507,17 @@ func RunNowHandler(db *gorm.DB) gin.HandlerFunc {
 
 		c.Header("Content-Type", "text/html")
 		c.String(http.StatusOK, `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Triggered`)
+	}
+}
+
+// ProNotifyHandler returns a Gin handler for POST /api/pro/notify.
+// Logs the submitted email address and returns a thank-you HTML fragment.
+// No DB persistence needed for scaffolding phase.
+func ProNotifyHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		email := c.PostForm("email")
+		slog.Info("pro notify: email interest captured", "email", email)
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, `<p class="pro-thank-you">Thanks! We'll notify you when Pro launches.</p>`)
 	}
 }

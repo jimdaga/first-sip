@@ -46,6 +46,22 @@ type PluginStatusViewModel struct {
 	HealthColor  string // "green", "yellow", "red"
 }
 
+// TierInfo contains account tier data for driving counter and disabled state in the settings UI.
+type TierInfo struct {
+	TierName          string // "free" or "pro"
+	MaxEnabledPlugins int    // -1 = unlimited
+	EnabledCount      int    // currently enabled count
+	AtPluginLimit     bool   // EnabledCount >= MaxEnabledPlugins (and not unlimited)
+	MinFrequencyHours int    // minimum hours between runs for this tier
+	UpgradeURL        string // "/pro"
+}
+
+// SettingsPageViewModel wraps plugins and tier info for the settings page template.
+type SettingsPageViewModel struct {
+	Plugins  []PluginSettingsViewModel
+	TierInfo TierInfo
+}
+
 // PluginSettingsViewModel is the top-level view model for each plugin accordion row.
 type PluginSettingsViewModel struct {
 	PluginID          uint
@@ -63,4 +79,7 @@ type PluginSettingsViewModel struct {
 	SaveSuccess       bool   // set to true on successful save — drives "Saved ✓" in template
 	ForceExpanded     bool   // when true, render the accordion row already expanded (after save or validation error)
 	CronError         string // inline error for cron expression field (not a schema property, handled separately)
+	IsDisabledByTier  bool   // true for non-enabled plugins when user is at plugin limit
+	FrequencyError    string // set when save is rejected for frequency violation
+	IsFreeUser        bool   // true when user's tier is "free" — drives Pro hints in template
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cron "github.com/robfig/cron/v3"
+	"github.com/jimdaga/first-sip/internal/templates"
 	"github.com/jimdaga/first-sip/internal/tiles"
 	"gorm.io/gorm"
 )
@@ -417,6 +418,36 @@ func plural(n int) string {
 		return ""
 	}
 	return "s"
+}
+
+// GetSidebarPlugins returns the list of enabled plugins for the sidebar sub-links.
+// Uses a lightweight query that only fetches the plugin name and icon.
+func GetSidebarPlugins(db *gorm.DB, userID uint) []templates.SidebarPlugin {
+	type sidebarRow struct {
+		Name string
+		Icon string
+	}
+	var rows []sidebarRow
+	db.Raw(`
+		SELECT p.name, p.icon
+		FROM user_plugin_configs upc
+		JOIN plugins p ON p.id = upc.plugin_id
+		WHERE upc.user_id = ?
+		  AND upc.enabled = true
+		  AND upc.deleted_at IS NULL
+		  AND p.deleted_at IS NULL
+		ORDER BY upc.display_order ASC NULLS LAST, p.name ASC
+	`, userID).Scan(&rows)
+
+	result := make([]templates.SidebarPlugin, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, templates.SidebarPlugin{
+			PluginName:  r.Name,
+			DisplayName: humanizePluginName(r.Name),
+			Icon:        r.Icon,
+		})
+	}
+	return result
 }
 
 // humanizePluginName converts a kebab-case plugin name to title case.
