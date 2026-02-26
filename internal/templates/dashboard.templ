@@ -191,8 +191,16 @@ templ TileCard(tile tiles.TileViewModel) {
 						<line x1="12" y1="8" x2="12" y2="12"></line>
 						<line x1="12" y1="16" x2="12.01" y2="16"></line>
 					</svg>
-					Latest run failed — showing last successful briefing
+					Briefing generation failed — try again later
 				</div>
+				<button
+					class="glass-btn glass-btn-ghost glass-btn-sm tile-retry-btn"
+					hx-post={ fmt.Sprintf("/api/settings/%d/run-now", tile.PluginID) }
+					hx-swap="none"
+					style="margin-bottom: 1rem;"
+				>
+					Retry
+				</button>
 				if tile.LastSuccessfulContent != "" {
 					@templ.Raw(tile.LastSuccessfulContent)
 				} else {
@@ -207,23 +215,6 @@ templ TileCard(tile tiles.TileViewModel) {
 			}
 		</div>
 
-	</div>
-}
-
-// TileSkeleton renders a placeholder tile that auto-loads content via HTMX on mount.
-templ TileSkeleton(pluginID uint, tileSize string) {
-	<div
-		class="glass-card tile-card tile-skeleton"
-		data-tile-size={ tileSize }
-		hx-get={ fmt.Sprintf("/api/tiles/%d", pluginID) }
-		hx-trigger="load"
-		hx-swap="outerHTML"
-	>
-		<div class="skeleton-icon"></div>
-		<div class="skeleton-line skeleton-line-title"></div>
-		<div class="skeleton-line"></div>
-		<div class="skeleton-line"></div>
-		<div class="skeleton-line skeleton-line-short"></div>
 	</div>
 }
 
