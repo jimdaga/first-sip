@@ -22,27 +22,27 @@ Requirements for plugin architecture milestone. Each maps to roadmap phases.
 - [x] **CREW-02**: Redis Streams for Go → CrewAI communication (publish work, consume results)
 - [x] **CREW-03**: CrewAI multi-agent workflow execution (researcher → writer → reviewer pattern)
 - [x] **CREW-04**: Plugin executor reads from Redis Stream, runs CrewAI workflow, publishes result
-- [ ] **CREW-05**: Go worker consumes results from response stream and creates Briefing records
+- [x] **CREW-05**: Go worker consumes results from response stream and creates Briefing records
 - [x] **CREW-06**: Timeout handling for long-running AI workflows
 - [x] **CREW-07**: CrewAI pods scale independently from Go workers
 
 ### Per-User Scheduling
 
-- [ ] **SCHED-01**: Per-user, per-plugin schedule configuration (cron expression + timezone)
-- [ ] **SCHED-02**: Database-backed schedule evaluation (NOT per-user Asynq cron entries)
-- [ ] **SCHED-03**: Per-minute scheduler task evaluates which user+plugin pairs are due
-- [ ] **SCHED-04**: Timezone-aware schedule matching (user's local time, not server UTC)
-- [ ] **SCHED-05**: Remove global cron scheduler — replaced by per-user per-plugin schedules
-- [ ] **SCHED-06**: Redis caching for last-run times (reduce DB load on per-minute evaluation)
+- [x] **SCHED-01**: Per-user, per-plugin schedule configuration (cron expression + timezone)
+- [x] **SCHED-02**: Database-backed schedule evaluation (NOT per-user Asynq cron entries)
+- [x] **SCHED-03**: Per-minute scheduler task evaluates which user+plugin pairs are due
+- [x] **SCHED-04**: Timezone-aware schedule matching (user's local time, not server UTC)
+- [x] **SCHED-05**: Remove global cron scheduler — replaced by per-user per-plugin schedules
+- [x] **SCHED-06**: Redis caching for last-run times (reduce DB load on per-minute evaluation)
 
 ### Tile-Based Dashboard
 
-- [ ] **TILE-01**: CSS Grid tile layout replacing current dashboard (auto-fit/minmax responsive)
-- [ ] **TILE-02**: Each enabled plugin renders as a tile showing: plugin name, latest briefing summary, status
-- [ ] **TILE-03**: Tile status displays last run time and next scheduled run
-- [ ] **TILE-04**: Pre-fetch latest briefing per plugin in single query (window function, avoid N+1)
-- [ ] **TILE-05**: Empty states: no plugins enabled, plugin enabled but no briefings yet
-- [ ] **TILE-06**: HTMX in-place updates for tile status changes
+- [x] **TILE-01**: CSS Grid tile layout replacing current dashboard (auto-fit/minmax responsive)
+- [x] **TILE-02**: Each enabled plugin renders as a tile showing: plugin name, latest briefing summary, status
+- [x] **TILE-03**: Tile status displays last run time and next scheduled run
+- [x] **TILE-04**: Pre-fetch latest briefing per plugin in single query (window function, avoid N+1)
+- [x] **TILE-05**: Empty states: no plugins enabled, plugin enabled but no briefings yet
+- [x] **TILE-06**: HTMX in-place updates for tile status changes
 
 ### Dynamic Settings UI
 
@@ -55,11 +55,11 @@ Requirements for plugin architecture milestone. Each maps to roadmap phases.
 
 ### Account Tier Scaffolding
 
-- [ ] **TIER-01**: AccountTier model with free/pro tiers seeded in database
-- [ ] **TIER-02**: User.AccountTierID relationship (default: free)
-- [ ] **TIER-03**: Tier service with constraint checking (max enabled plugins, max frequency)
-- [ ] **TIER-04**: Enforcement in plugin enable handler — reject if tier limit reached
-- [ ] **TIER-05**: UI messaging for tier limits (upgrade prompt when limit approached/reached)
+- [x] **TIER-01**: AccountTier model with free/pro tiers seeded in database
+- [x] **TIER-02**: User.AccountTierID relationship (default: free)
+- [x] **TIER-03**: Tier service with constraint checking (max enabled plugins, max frequency)
+- [x] **TIER-04**: Enforcement in plugin enable handler — reject if tier limit reached
+- [x] **TIER-05**: UI messaging for tier limits (upgrade prompt when limit approached/reached)
 
 ## Out of Scope
 
@@ -91,51 +91,50 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CREW-02 | Phase 9 | Satisfied |
 | CREW-03 | Phase 9 | Satisfied |
 | CREW-04 | Phase 9 | Satisfied |
-| CREW-05 | Phase 9 → **Phase 14** → **Phase 15** | Pending (verified, checkbox update) |
+| CREW-05 | Phase 9 + Phase 14 | Satisfied |
 | CREW-06 | Phase 9 | Satisfied |
 | CREW-07 | Phase 9 | Satisfied |
-| SCHED-01 | Phase 10 → **Phase 15** | Pending (verification gap) |
-| SCHED-02 | Phase 10 → **Phase 15** | Pending (verification gap) |
-| SCHED-03 | Phase 10 → **Phase 15** | Pending (verification gap) |
-| SCHED-04 | Phase 10 → **Phase 14** → **Phase 15** | Pending (verified, checkbox update) |
-| SCHED-05 | Phase 10 → **Phase 15** | Pending (verification gap) |
-| SCHED-06 | Phase 10 → **Phase 15** | Pending (verification gap) |
-| TILE-01 | Phase 11 → **Phase 15** | Pending (verification gap) |
-| TILE-02 | Phase 11 → **Phase 15** | Pending (verification gap) |
-| TILE-03 | Phase 11 → **Phase 15** | Pending (verification gap) |
-| TILE-04 | Phase 11 → **Phase 15** | Pending (verification gap) |
-| TILE-05 | Phase 11 → **Phase 15** | Pending (verification gap) |
-| TILE-06 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| SCHED-01 | Phase 10 + Phase 15 | Satisfied |
+| SCHED-02 | Phase 10 + Phase 15 | Satisfied |
+| SCHED-03 | Phase 10 + Phase 15 | Satisfied |
+| SCHED-04 | Phase 10 + Phase 14 | Satisfied |
+| SCHED-05 | Phase 10 + Phase 15 | Satisfied |
+| SCHED-06 | Phase 10 + Phase 15 | Satisfied |
+| TILE-01 | Phase 11 + Phase 15 | Satisfied |
+| TILE-02 | Phase 11 + Phase 15 | Satisfied |
+| TILE-03 | Phase 11 + Phase 15 | Satisfied |
+| TILE-04 | Phase 11 + Phase 15 | Satisfied |
+| TILE-05 | Phase 11 + Phase 15 | Satisfied |
+| TILE-06 | Phase 11 + Phase 15 | Satisfied |
 | SET-01 | Phase 12 | Satisfied |
 | SET-02 | Phase 12 | Satisfied |
 | SET-03 | Phase 12 | Satisfied |
 | SET-04 | Phase 12 | Satisfied |
 | SET-05 | Phase 12 | Satisfied |
 | SET-06 | Phase 12 | Satisfied |
-| TIER-01 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
-| TIER-02 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
-| TIER-03 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
-| TIER-04 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
-| TIER-05 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
+| TIER-01 | Phase 13 | Satisfied |
+| TIER-02 | Phase 13 | Satisfied |
+| TIER-03 | Phase 13 | Satisfied |
+| TIER-04 | Phase 13 | Satisfied |
+| TIER-05 | Phase 13 | Satisfied |
 
 **Coverage:**
 - v1.1 requirements: 36 total
 - Mapped to phases: 36 (100% coverage)
 - Unmapped: 0
-- Satisfied: 18 (Phases 8, 9, 12 verified + checked)
-- Pending verification/checkbox: 18 (CREW-05, SCHED-01-06, TILE-01-06, TIER-01-05 → Phase 15)
-- Gap closure phases: Phase 14 (code fixes), Phase 15 (verification + checkboxes)
+- Satisfied: 36 (all phases verified — v1.1 complete)
+- Pending: 0
 
 **Phase breakdown:**
 - Phase 8: 6 requirements (PLUG-01 through PLUG-06) — all satisfied
-- Phase 9: 7 requirements (CREW-01 through CREW-07) — 6 satisfied, CREW-05 checkbox → Phase 15
-- Phase 10: 6 requirements (SCHED-01 through SCHED-06) — code complete, verification → Phase 15
-- Phase 11: 6 requirements (TILE-01 through TILE-06) — code complete, verification → Phase 15
+- Phase 9: 7 requirements (CREW-01 through CREW-07) — all satisfied
+- Phase 10: 6 requirements (SCHED-01 through SCHED-06) — all satisfied (VERIFICATION.md Phase 15)
+- Phase 11: 6 requirements (TILE-01 through TILE-06) — all satisfied (VERIFICATION.md Phase 15)
 - Phase 12: 6 requirements (SET-01 through SET-06) — all satisfied
-- Phase 13: 5 requirements (TIER-01 through TIER-05) — code complete, checkboxes → Phase 15
-- Phase 14: 2 requirements (CREW-05, SCHED-04) — code fix complete
-- Phase 15: 18 requirements — verification gap closure + checkbox updates
+- Phase 13: 5 requirements (TIER-01 through TIER-05) — all satisfied
+- Phase 14: code fixes for CREW-05 (output format) and SCHED-04 (timezone migration)
+- Phase 15: verification gap closure + checkbox updates (SCHED-01-06, TILE-01-06, CREW-05, TIER-01-05)
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-26 — added Phase 15 verification gap closure from second milestone audit*
+*Last updated: 2026-02-26 — Phase 15 verification gap closure complete; all 36 requirements satisfied (v1.1 complete)*
