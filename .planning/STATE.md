@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 13 — Account Tier Scaffolding (IN PROGRESS)
-Plan: 1/2 complete
-Status: In Progress
-Last activity: 2026-02-23 — Plan 13-01 executed (AccountTier model, migration 000008, TierService, free tier on registration)
+Phase: 13 — Account Tier Scaffolding (COMPLETE)
+Plan: 2/2 complete
+Status: Complete
+Last activity: 2026-02-25 — Plan 13-02 executed (tier enforcement in handlers + UI, plugin counter, disabled toggles, /pro page)
 
 ## Performance Metrics
 
@@ -37,7 +37,7 @@ Last activity: 2026-02-23 — Plan 13-01 executed (AccountTier model, migration 
 | 10 | 2 | 5 min | 2.5 min |
 | 11 | 3 | 34 min | 11.3 min |
 | 12 | 2/2 | 42 min | 21.0 min |
-| 13 | 1/2 | 2 min | 2.0 min |
+| 13 | 2/2 | ~62 min | 31.0 min |
 
 ## Accumulated Context
 
@@ -106,6 +106,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 13-01]: SeedAccountTiers called in ALL environments — tiers are production data, not dev fixtures
 - [Phase 13-01]: TierService as standalone internal/tiers package — importable by any handler without circular imports
 - [Phase 13-01]: CanUseFrequency uses two consecutive Next() calls to compute actual schedule interval — handles irregular cron expressions correctly
+- [Phase 13-02]: SettingsPage signature changed from []PluginSettingsViewModel to SettingsPageViewModel — wraps plugins + TierInfo in single struct for clean template access
+- [Phase 13-02]: IsFreeUser bool field on PluginSettingsViewModel carries tier context to accordion row for cron hint without threading full TierInfo through every level
+- [Phase 13-02]: proNotifyHandler as inline closure in main.go — no DB table needed for scaffolding, slog.Info sufficient for MVP notification tracking
+- [Phase 13-02]: Counter accent color at limit uses --accent token (warm orange) not red — limits are value-focused upgrade prompts, not error states
 
 ### Pending Todos
 
@@ -121,10 +125,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-23 (Phase 13-01 complete — AccountTier model, migration 000008, TierService, free tier assignment on registration)
-Stopped at: Phase 13 Plan 01 complete. Plan 02 (tier enforcement in handlers + UI) is next.
-Resume with: /gsd:execute-phase 13 (plan 02)
+Last session: 2026-02-25 (Phase 13-02 complete — tier enforcement in handlers, plugin counter UI, disabled toggles, /pro page with email capture)
+Stopped at: Phase 13 complete (2/2 plans). Phase 14 (integration pipeline gap closure) is next.
+Resume with: /gsd:execute-phase 14
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 13-01 (AccountTier model, migration 000008, TierService, free tier on OAuth registration)*
+*Last updated: 2026-02-25 after Phase 13-02 (tier enforcement handlers, plugin counter UI, disabled toggles, /pro page)*

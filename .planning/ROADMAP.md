@@ -144,10 +144,11 @@ Plans:
 
 ---
 
-#### Phase 13: Account Tier Scaffolding
+#### Phase 13: Account Tier Scaffolding ✅
 **Goal**: Tier-based constraint enforcement for plugin count and frequency limits (scaffolding only, no payment)
 **Depends on**: Phase 12
 **Requirements**: TIER-01, TIER-02, TIER-03, TIER-04, TIER-05
+**Completed**: 2026-02-25
 **Success Criteria** (what must be TRUE):
   1. AccountTier model exists with free and pro tiers seeded in database
   2. User model has AccountTierID relationship (defaults to free tier on registration)
@@ -158,7 +159,7 @@ Plans:
 
 Plans:
 - [x] 13-01-PLAN.md — AccountTier model, migration, seed, TierService with constraint checking, free tier on registration
-- [ ] 13-02-PLAN.md — Tier enforcement in handlers, counter + disabled toggle + Pro badge in settings UI, /pro coming soon page
+- [x] 13-02-PLAN.md — Tier enforcement in handlers, counter + disabled toggle + Pro badge in settings UI, /pro coming soon page
 
 ---
 
@@ -196,9 +197,9 @@ Plans:
 | 10. Per-User Scheduling | v1.1 | 2/2 | Complete | 2026-02-22 |
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
-| 13. Account Tier Scaffolding | v1.1 | 1/2 | In Progress | - |
+| 13. Account Tier Scaffolding | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Pipeline Fix | v1.1 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-23 after Phase 13-01 (AccountTier model, TierService, migration 000008)*
+*Last updated: 2026-02-25 after Phase 13-02 (tier enforcement handlers, plugin counter UI, disabled toggles, /pro page)*
