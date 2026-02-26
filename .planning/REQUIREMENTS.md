@@ -91,52 +91,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CREW-02 | Phase 9 | Satisfied |
 | CREW-03 | Phase 9 | Satisfied |
 | CREW-04 | Phase 9 | Satisfied |
-| CREW-05 | Phase 9 → **Phase 14** | Pending (integration break) |
+| CREW-05 | Phase 9 → **Phase 14** → **Phase 15** | Pending (verified, checkbox update) |
 | CREW-06 | Phase 9 | Satisfied |
 | CREW-07 | Phase 9 | Satisfied |
-| SCHED-01 | Phase 10 | Pending (needs verification) |
-| SCHED-02 | Phase 10 | Pending (needs verification) |
-| SCHED-03 | Phase 10 | Pending (needs verification) |
-| SCHED-04 | Phase 10 → **Phase 14** | Pending (timezone fallback gap) |
-| SCHED-05 | Phase 10 | Pending (needs verification) |
-| SCHED-06 | Phase 10 | Pending (needs verification) |
-| TILE-01 | Phase 11 | Pending (needs verification) |
-| TILE-02 | Phase 11 | Pending (needs verification, depends on CREW-05 fix) |
-| TILE-03 | Phase 11 | Pending (needs verification) |
-| TILE-04 | Phase 11 | Pending (needs verification, depends on CREW-05 fix) |
-| TILE-05 | Phase 11 | Pending (needs verification) |
-| TILE-06 | Phase 11 | Pending (needs verification) |
+| SCHED-01 | Phase 10 → **Phase 15** | Pending (verification gap) |
+| SCHED-02 | Phase 10 → **Phase 15** | Pending (verification gap) |
+| SCHED-03 | Phase 10 → **Phase 15** | Pending (verification gap) |
+| SCHED-04 | Phase 10 → **Phase 14** → **Phase 15** | Pending (verified, checkbox update) |
+| SCHED-05 | Phase 10 → **Phase 15** | Pending (verification gap) |
+| SCHED-06 | Phase 10 → **Phase 15** | Pending (verification gap) |
+| TILE-01 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| TILE-02 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| TILE-03 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| TILE-04 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| TILE-05 | Phase 11 → **Phase 15** | Pending (verification gap) |
+| TILE-06 | Phase 11 → **Phase 15** | Pending (verification gap) |
 | SET-01 | Phase 12 | Satisfied |
 | SET-02 | Phase 12 | Satisfied |
 | SET-03 | Phase 12 | Satisfied |
 | SET-04 | Phase 12 | Satisfied |
 | SET-05 | Phase 12 | Satisfied |
 | SET-06 | Phase 12 | Satisfied |
-| TIER-01 | Phase 13 | Pending |
-| TIER-02 | Phase 13 | Pending |
-| TIER-03 | Phase 13 | Pending |
-| TIER-04 | Phase 13 | Pending |
-| TIER-05 | Phase 13 | Pending |
+| TIER-01 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
+| TIER-02 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
+| TIER-03 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
+| TIER-04 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
+| TIER-05 | Phase 13 → **Phase 15** | Pending (verified, checkbox update) |
 
 **Coverage:**
 - v1.1 requirements: 36 total
 - Mapped to phases: 36 (100% coverage)
 - Unmapped: 0
-- Satisfied: 18 (Phases 8, 9, 12 verified)
-- Pending verification: 10 (Phases 10, 11 code complete)
-- Pending fix: 2 (CREW-05, SCHED-04 → Phase 14)
-- Pending implementation: 5 (Phase 13)
-- Gap closure phase: Phase 14 (CREW-05, SCHED-04)
+- Satisfied: 18 (Phases 8, 9, 12 verified + checked)
+- Pending verification/checkbox: 18 (CREW-05, SCHED-01-06, TILE-01-06, TIER-01-05 → Phase 15)
+- Gap closure phases: Phase 14 (code fixes), Phase 15 (verification + checkboxes)
 
 **Phase breakdown:**
 - Phase 8: 6 requirements (PLUG-01 through PLUG-06) — all satisfied
-- Phase 9: 7 requirements (CREW-01 through CREW-07) — 6 satisfied, CREW-05 → Phase 14
-- Phase 10: 6 requirements (SCHED-01 through SCHED-06) — code complete, needs verification; SCHED-04 → Phase 14
-- Phase 11: 6 requirements (TILE-01 through TILE-06) — code complete, needs verification
+- Phase 9: 7 requirements (CREW-01 through CREW-07) — 6 satisfied, CREW-05 checkbox → Phase 15
+- Phase 10: 6 requirements (SCHED-01 through SCHED-06) — code complete, verification → Phase 15
+- Phase 11: 6 requirements (TILE-01 through TILE-06) — code complete, verification → Phase 15
 - Phase 12: 6 requirements (SET-01 through SET-06) — all satisfied
-- Phase 13: 5 requirements (TIER-01 through TIER-05) — not started
-- Phase 14: 2 requirements (CREW-05, SCHED-04) — gap closure
+- Phase 13: 5 requirements (TIER-01 through TIER-05) — code complete, checkboxes → Phase 15
+- Phase 14: 2 requirements (CREW-05, SCHED-04) — code fix complete
+- Phase 15: 18 requirements — verification gap closure + checkbox updates
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-23 after milestone audit — added Phase 14 gap closure, updated statuses*
+*Last updated: 2026-02-26 — added Phase 15 verification gap closure from second milestone audit*
