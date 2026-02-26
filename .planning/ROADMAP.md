@@ -200,7 +200,7 @@ Plans:
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | Complete    | 2026-02-26 | 2026-02-25 |
-| 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 14. Integration Pipeline Fix | v1.1 | Complete    | 2026-02-26 | 2026-02-26 |
 
 ---
 *Created: 2026-02-10*
