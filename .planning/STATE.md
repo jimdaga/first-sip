@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 
 ## Current Position
 
-Phase: 14 — Integration Pipeline Fix (IN PROGRESS)
-Plan: 1/2 complete
-Status: In Progress
-Last activity: 2026-02-26 — Plan 14-01 executed (sidecar JSON wrapping, Go sections parsing, json.Valid guard, retry button, dead code removal)
+Phase: 14 — Integration Pipeline Fix (COMPLETE)
+Plan: 2/2 complete
+Status: Complete
+Last activity: 2026-02-26 — Plan 14-02 executed (timezone migration, scheduler fix, account settings page, per-plugin timezone removal)
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Last activity: 2026-02-26 — Plan 14-01 executed (sidecar JSON wrapping, Go sec
 | 11 | 3 | 34 min | 11.3 min |
 | 12 | 2/2 | 42 min | 21.0 min |
 | 13 | 2/2 | ~62 min | 31.0 min |
-| 14 | 1/2 | 2 min | 2.0 min |
+| 14 | 2/2 | ~20 min | 10.0 min |
 
 ## Accumulated Context
 
@@ -116,6 +116,9 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - [Phase 14-01]: html/template.HTMLEscapeString used in viewmodel.go for section title escaping (not templ import — avoids new dependency in non-template code)
 - [Phase 14-01]: Retry button reuses existing POST /api/settings/:pluginID/run-now — no new handler needed
 - [Phase 14-01]: Old malformed runs return empty content (no crash) via JSON parse failure returning empty string
+- [Phase 14-02]: Timezone removed from UserPluginConfig — scheduler reads cfg.User.Timezone (account-level) with UTC fallback, single source of truth
+- [Phase 14-02]: Account settings page at /settings/account with renderTimezoneSelect reuse — same component as plugin settings
+- [Phase 14-02]: Dashboard and settings SQL JOIN users table for timezone — users.timezone replaces upc.timezone
 
 ### Pending Todos
 
@@ -131,10 +134,10 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-26 (Phase 14-01 complete — sidecar JSON wrapping fix, Go sections parsing, retry button, dead code removal)
-Stopped at: Phase 14, Plan 1/2 complete. Plan 14-02 (timezone migration) is next.
-Resume with: /gsd:execute-phase 14
+Last session: 2026-02-26 (Phase 14-02 complete — timezone migration, scheduler User.Timezone fix, account settings page, per-plugin timezone removal)
+Stopped at: Phase 14 complete (2/2 plans). Integration pipeline fix is done.
+Resume with: Start next phase from ROADMAP.md
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-26 after Phase 14-01 (sidecar output format fix, Go sections rendering, retry button, dead code cleanup)*
+*Last updated: 2026-02-26 after Phase 14-02 (timezone migration, scheduler fix, account settings page, per-plugin timezone removal)*

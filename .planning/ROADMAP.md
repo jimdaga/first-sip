@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-02-13)
-- 🚧 **v1.1 Plugin Architecture** — Phases 8-14 (in progress)
+- ✅ **v1.1 Plugin Architecture** — Phases 8-14 (completed 2026-02-26)
 
 ## Phases
 
@@ -42,7 +42,7 @@
 
 ---
 
-### 🚧 v1.1 Plugin Architecture (In Progress)
+### ✅ v1.1 Plugin Architecture (Completed 2026-02-26)
 
 **Milestone Goal:** Transform First Sip from monolithic briefing generator into a modular, user-configurable plugin platform where each briefing type runs on its own schedule with its own CrewAI workflow.
 
@@ -163,8 +163,9 @@ Plans:
 
 ---
 
-#### Phase 14: Integration Pipeline Fix
+#### Phase 14: Integration Pipeline Fix ✅
 **Goal**: Fix CrewAI output format contract and scheduler timezone fallback to complete the E2E plugin execution pipeline
+**Completed**: 2026-02-26
 **Depends on**: Phase 12
 **Requirements**: CREW-05, SCHED-04
 **Gap Closure**: Closes gaps from v1.1 milestone audit
@@ -178,7 +179,7 @@ Plans:
 
 Plans:
 - [x] 14-01-PLAN.md — Output format contract fix (sidecar JSON wrapping, Go-side parsing, retry button, dead code removal)
-- [ ] 14-02-PLAN.md — Timezone migration (remove per-plugin timezone, wire User.Timezone, account settings page)
+- [x] 14-02-PLAN.md — Timezone migration (remove per-plugin timezone, wire User.Timezone, account settings page)
 
 ---
 
@@ -199,8 +200,8 @@ Plans:
 | 11. Tile-Based Dashboard | v1.1 | 3/3 | Complete | 2026-02-22 |
 | 12. Dynamic Settings UI | v1.1 | Complete    | 2026-02-23 | 2026-02-23 |
 | 13. Account Tier Scaffolding | v1.1 | Complete    | 2026-02-26 | 2026-02-25 |
-| 14. Integration Pipeline Fix | v1.1 | 1/2 | In Progress | - |
+| 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-26 after Phase 14-01 (sidecar output format fix, Go sections rendering, retry button, dead code cleanup)*
+*Last updated: 2026-02-26 after Phase 14-02 (timezone migration, scheduler fix, account settings page) — v1.1 Plugin Architecture COMPLETE*
