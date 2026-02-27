@@ -45,7 +45,17 @@ A user's configured briefing plugins run on schedule and their latest results ap
 
 ### Active
 
-(None — ready for next milestone requirements)
+## Current Milestone: v1.2 Live AI Generation
+
+**Goal:** Make the daily news digest produce real AI-generated content by connecting per-user API keys to the CrewAI sidecar with live web search.
+
+**Target features:**
+- Encrypted per-user API key storage and management UI
+- Provider-agnostic LLM configuration via LiteLLM (OpenAI, Anthropic, Groq, etc.)
+- Daily news digest with Tavily web search (DuckDuckGo fallback)
+- Per-run API key injection from Go to CrewAI sidecar
+- N8N webhook path retired, all generation through CrewAI plugins
+- Real briefing content rendering from structured CrewAI output
 
 ### Out of Scope
 
@@ -61,7 +71,7 @@ A user's configured briefing plugins run on schedule and their latest results ap
 - Plugin marketplace / third-party plugins — internal plugins only, marketplace needs security review
 - Plugin detail pages / drill-down views — tiles with summary only for now
 - CrewAI memory backend (context across briefings) — high complexity, defer
-- Multiple plugins beyond daily news digest — prove architecture first, add more in v1.2+
+- Multiple plugins beyond daily news digest — prove generation works first, add more in v1.3+
 
 ## Context
 
@@ -108,5 +118,9 @@ A user's configured briefing plugins run on schedule and their latest results ap
 | Non-fatal plugin initialization | App serves v1.0 features if plugins/sidecar fail | ✓ Good — graceful degradation, never blocks core functionality |
 | AccountTierID as nullable pointer | NULL means pre-migration user, falls back to free tier | ✓ Good — backwards compatible, no data migration needed |
 
+| Per-user API keys over server-side | Users own their keys, no server-side LLM costs, supports any provider | — Pending |
+| Tavily for search, DuckDuckGo fallback | Tavily free tier (1k/month) good enough, DDG as zero-cost fallback | — Pending |
+| LiteLLM for provider abstraction | CrewAI native support, single interface for OpenAI/Anthropic/Groq/etc. | — Pending |
+
 ---
-*Last updated: 2026-02-27 after v1.1 milestone*
+*Last updated: 2026-02-27 after v1.2 milestone started*
