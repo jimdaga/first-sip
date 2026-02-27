@@ -21,3 +21,25 @@
 
 ---
 
+
+## v1.1 Plugin Architecture (Shipped: 2026-02-27)
+
+**Phases completed:** 8 phases (8-15), 20 plans
+**Timeline:** 17 days (Feb 10 → Feb 27, 2026)
+**Execution time:** ~2.7 hours
+**Codebase:** ~13,800 LOC (Go 9,428 + Templ 1,538 + CSS 2,254 + Python 568), 134 files changed
+**Git range:** `feat(08-01)` → `feat(15-02)`
+**Requirements:** 36/36 satisfied
+
+**Delivered:** Transformed First Sip from monolithic briefing generator into a modular plugin platform with CrewAI workflows, per-user scheduling, tile-based dashboard, and dynamic settings UI.
+
+**Key accomplishments:**
+1. Plugin framework with YAML metadata, directory discovery, JSON Schema settings, and database registry
+2. CrewAI sidecar with Redis Streams communication, multi-agent workflows, and independent scaling
+3. Per-user scheduling with database-backed cron evaluation, timezone-aware matching, and Redis cache
+4. Tile-based dashboard with CSS Grid layout, expand-in-place content, drag-and-drop reordering, and HTMX live polling
+5. Dynamic settings UI with JSON Schema-driven forms, tag inputs, type coercion, and inline validation
+6. Account tier scaffolding with free/pro tiers, constraint enforcement, and upgrade prompts
+
+---
+
