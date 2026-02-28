@@ -72,30 +72,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KEYS-01 | — | Pending |
-| KEYS-02 | — | Pending |
-| KEYS-03 | — | Pending |
-| KEYS-04 | — | Pending |
-| KEYS-05 | — | Pending |
-| LLM-01 | — | Pending |
-| LLM-02 | — | Pending |
-| LLM-03 | — | Pending |
-| SRCH-01 | — | Pending |
-| SRCH-02 | — | Pending |
-| SRCH-03 | — | Pending |
-| GEN-01 | — | Pending |
-| GEN-02 | — | Pending |
-| GEN-03 | — | Pending |
-| GEN-04 | — | Pending |
-| CLN-01 | — | Pending |
-| CLN-02 | — | Pending |
-| CLN-03 | — | Pending |
+| KEYS-01 | Phase 16 | Pending |
+| KEYS-02 | Phase 16 | Pending |
+| KEYS-03 | Phase 16 | Pending |
+| KEYS-04 | Phase 16 | Pending |
+| KEYS-05 | Phase 16 | Pending |
+| LLM-01 | Phase 17 | Pending |
+| LLM-02 | Phase 17 | Pending |
+| LLM-03 | Phase 17 | Pending |
+| SRCH-01 | Phase 17 | Pending |
+| SRCH-02 | Phase 17 | Pending |
+| SRCH-03 | Phase 17 | Pending |
+| GEN-01 | Phase 18 | Pending |
+| GEN-02 | Phase 18 | Pending |
+| GEN-03 | Phase 18 | Pending |
+| GEN-04 | Phase 18 | Pending |
+| CLN-01 | Phase 19 | Pending |
+| CLN-02 | Phase 19 | Pending |
+| CLN-03 | Phase 19 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after initial definition*
+*Last updated: 2026-02-27 after roadmap creation — all 18 requirements mapped*

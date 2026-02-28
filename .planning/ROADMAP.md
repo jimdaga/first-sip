@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-02-13)
 - ✅ **v1.1 Plugin Architecture** — Phases 8-15 (shipped 2026-02-27)
+- 🚧 **v1.2 Live AI Generation** — Phases 16-19 (in progress)
 
 ## Phases
 
@@ -34,6 +35,72 @@
 
 </details>
 
+### 🚧 v1.2 Live AI Generation (In Progress)
+
+**Milestone Goal:** Make the daily news digest produce real AI-generated content by connecting per-user API keys to the CrewAI sidecar with live web search.
+
+#### Phase 16: API Key Management
+**Goal**: Users can securely store and manage their LLM and search API keys
+**Depends on**: Phase 15 (v1.1 complete)
+**Requirements**: KEYS-01, KEYS-02, KEYS-03, KEYS-04, KEYS-05
+**Success Criteria** (what must be TRUE):
+  1. User can add an LLM provider API key (OpenAI, Anthropic, Groq, etc.) and it is stored encrypted
+  2. User can add a Tavily search API key and it is stored encrypted
+  3. User can view stored keys with values masked (e.g., sk-...xxxx)
+  4. User can update or delete any stored key
+  5. User can select their preferred LLM provider and model
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: API key database model, migration, and encrypted storage
+- [ ] 16-02: API key management UI (add, view masked, update, delete, provider/model selection)
+
+#### Phase 17: LLM and Search Pipeline
+**Goal**: API keys flow through Redis Streams to the CrewAI sidecar, enabling live LLM calls and web search
+**Depends on**: Phase 16
+**Requirements**: LLM-01, LLM-02, LLM-03, SRCH-01, SRCH-02, SRCH-03
+**Success Criteria** (what must be TRUE):
+  1. Redis Streams job payload carries the user's LLM API key and provider/model string
+  2. CrewAI sidecar accepts LLM config and initializes the crew with the specified provider/model via LiteLLM
+  3. User can override the LLM model per plugin via plugin settings
+  4. When user has a Tavily key, the researcher agent searches via Tavily
+  5. When user has no Tavily key, the researcher agent falls back to DuckDuckGo
+  6. Search queries use the user's topic preferences from plugin settings
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: Redis Streams payload extension and Go-side key injection
+- [ ] 17-02: Sidecar crew factory updates for LiteLLM provider/model config and per-plugin model override
+- [ ] 17-03: Tavily and DuckDuckGo search tool integration in researcher agent
+
+#### Phase 18: Live Generation and Content Rendering
+**Goal**: Daily news digest generates real AI content and briefing tiles display it as formatted Markdown
+**Depends on**: Phase 17
+**Requirements**: GEN-01, GEN-02, GEN-03, GEN-04
+**Success Criteria** (what must be TRUE):
+  1. Triggering a daily news digest generation calls the live LLM and produces real content
+  2. Briefing tile displays generated content rendered as formatted Markdown (headings, links, lists)
+  3. When generation fails, the briefing tile shows a clear error message rather than empty content
+  4. The full path works end-to-end: scheduled trigger fires, CrewAI runs, content appears in dashboard tile
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01: End-to-end generation flow with real CrewAI execution and timeout handling
+- [ ] 18-02: Markdown content rendering in briefing tiles and error state display
+
+#### Phase 19: Legacy Cleanup
+**Goal**: N8N webhook generation path is removed and the codebase has no dead webhook code
+**Depends on**: Phase 18
+**Requirements**: CLN-01, CLN-02, CLN-03
+**Success Criteria** (what must be TRUE):
+  1. The N8N webhook client and briefing:generate Asynq task are deleted from the codebase
+  2. Webhook-related environment variables and configuration keys are removed
+  3. Existing briefing history records remain readable and display correctly after the cleanup
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01: Remove N8N webhook client, briefing:generate task, and all webhook config references
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -53,7 +120,11 @@
 | 13. Account Tier Scaffolding | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 16. API Key Management | v1.2 | 0/2 | Not started | - |
+| 17. LLM and Search Pipeline | v1.2 | 0/3 | Not started | - |
+| 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
+| 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-27 — v1.1 Plugin Architecture milestone shipped*
+*Last updated: 2026-02-27 — v1.2 Live AI Generation roadmap added*
