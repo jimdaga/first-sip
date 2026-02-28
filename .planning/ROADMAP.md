@@ -49,11 +49,11 @@
   3. User can view stored keys with values masked (e.g., sk-...xxxx)
   4. User can update or delete any stored key
   5. User can select their preferred LLM provider and model
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 16-01: API key database model, migration, and encrypted storage
-- [ ] 16-02: API key management UI (add, view masked, update, delete, provider/model selection)
+- [ ] 16-01-PLAN.md — Data layer: UserAPIKey model, SQL migrations, encryption hooks, service CRUD, provider definitions
+- [ ] 16-02-PLAN.md — UI layer: API Keys settings page, handlers, sidebar/hub integration, HTMX interactions
 
 #### Phase 17: LLM and Search Pipeline
 **Goal**: API keys flow through Redis Streams to the CrewAI sidecar, enabling live LLM calls and web search
