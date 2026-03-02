@@ -69,7 +69,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Go-side key injection: fetch user API keys and LLM preferences, inject into Redis Streams payload settings
+- [x] 17-01-PLAN.md — Go-side key injection: fetch user API keys and LLM preferences, inject into Redis Streams payload settings
 - [ ] 17-02-PLAN.md — Sidecar LLM/search integration: executor credential extraction, LiteLLM provider/model config, Tavily/DuckDuckGo search tool selection, imperative crew.py rewrite
 
 #### Phase 18: Live Generation and Content Rendering
@@ -120,10 +120,10 @@ Plans:
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 16. API Key Management | v1.2 | Complete    | 2026-03-02 | - |
-| 17. LLM and Search Pipeline | v1.2 | 0/2 | Not started | - |
+| 17. LLM and Search Pipeline | v1.2 | 1/2 | In progress | - |
 | 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
 | 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-03-02 — Phase 16 Plan 01 complete (data layer)*
+*Last updated: 2026-03-02 — Phase 17 Plan 01 complete (Go-side key injection into Redis Streams payload)*

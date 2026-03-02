@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 17 of 19 (LiteLLM Integration)
-Plan: 1 of N in current phase
-Status: Ready to begin
-Last activity: 2026-03-02 — Phase 16 complete (API Key Management UI layer)
+Plan: 2 of 2 in current phase
+Status: Plan 01 complete — ready for Plan 02
+Last activity: 2026-03-02 — Phase 17 Plan 01 complete (worker key injection)
 
-Progress: [█████████████░░░░░░░] 68% (milestones v1.0 + v1.1 complete, v1.2 Phase 16 done)
+Progress: [█████████████░░░░░░░] 70% (milestones v1.0 + v1.1 complete, v1.2 Phase 16-17-01 done)
 
 ## Performance Metrics
 
@@ -25,12 +25,13 @@ Progress: [█████████████░░░░░░░] 68% (mi
 **v1.0 MVP:** 7 phases, 11 plans, ~2.0 hours
 **v1.1 Plugin Architecture:** 8 phases, 20 plans, ~2.7 hours
 
-**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 2 plans complete
+**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 3 plans complete
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 16-api-key-management | 01 | 2min | 2 | 8 |
 | 16-api-key-management | 02 | 7min | 2 | 6 |
+| 17-llm-and-search-pipeline | 01 | 1min | 1 | 1 |
 
 ## Accumulated Context
 
@@ -53,6 +54,11 @@ Pending decisions for v1.2 (from PROJECT.md):
 - Client-side JS model filtering via embedded JSON avoids extra HTMX round-trip on provider select change
 - Error alert fragments use same section div IDs as success fragments for consistent HTMX outerHTML swap
 
+**Phase 17 Plan 01 decisions:**
+- Graceful degrade on key fetch failure — warn log and continue; sidecar surfaces missing credential errors at execution time
+- Per-plugin _llm_model override check uses `!ok || existing == ""` to handle both absent and empty string cases
+- findAPIKey uses index-range iteration to safely return pointer to slice element
+
 ### Pending Todos
 
 None.
@@ -66,9 +72,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Phase 16 complete — API Key Management UI (settings page, HTMX handlers, sidebar/hub navigation)
-Resume with: `/gsd:execute-phase 17` (LiteLLM Integration)
+Stopped at: Phase 17 Plan 01 complete — worker key injection into Redis Streams payload
+Resume with: Phase 17 Plan 02 (LLM and Search Pipeline — CrewAI sidecar integration)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-03-02 after Phase 16 Plan 02 execution*
+*Last updated: 2026-03-02 after Phase 17 Plan 01 execution*
