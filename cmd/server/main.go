@@ -12,6 +12,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/jimdaga/first-sip/internal/apikeys"
 	"github.com/jimdaga/first-sip/internal/auth"
 	"github.com/jimdaga/first-sip/internal/briefings"
 	"github.com/jimdaga/first-sip/internal/config"
@@ -251,6 +252,12 @@ func main() {
 		protected.POST("/api/settings/:pluginID/validate-field", settings.ValidateFieldHandler(db, cfg.PluginDir))
 		protected.POST("/api/settings/:pluginID/run-now", settings.RunNowHandler(db))
 		protected.POST("/api/user/settings/timezone", settings.SaveTimezoneHandler(db))
+
+		// API Key management routes
+		protected.GET("/settings/api-keys", apikeys.PageHandler(db))
+		protected.POST("/api/user/api-keys", apikeys.SaveKeyHandler(db))
+		protected.POST("/api/user/api-keys/:id/delete", apikeys.DeleteKeyHandler(db))
+		protected.POST("/api/user/llm-preference", apikeys.SaveLLMPreferenceHandler(db))
 
 		// Pro coming soon routes
 		protected.GET("/pro", func(c *gin.Context) {
