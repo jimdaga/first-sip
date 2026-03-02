@@ -1,7 +1,9 @@
 package templates
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/jimdaga/first-sip/internal/apikeysvm"
 	"github.com/jimdaga/first-sip/internal/settingsvm"
 )
 
@@ -69,6 +71,9 @@ templ AppSidebar(activePage string, plugins []SidebarPlugin) {
 					</a>
 					<a href="/settings/account" class={ settingsSubLinkClass(activePage, "account") }>
 						<span class="sidebar-label">Account</span>
+					</a>
+					<a href="/settings/api-keys" class={ settingsSubLinkClass(activePage, "api-keys") }>
+						<span class="sidebar-label">API Keys</span>
 					</a>
 				</div>
 			}
@@ -144,6 +149,15 @@ templ SettingsHubPage(plugins []SidebarPlugin) {
 						</span>
 						<span class="settings-hub-tile-title">Account Settings</span>
 						<span class="settings-hub-tile-desc">Set your timezone and account preferences</span>
+					</a>
+					<a href="/settings/api-keys" class="glass-card settings-hub-tile">
+						<span class="settings-hub-tile-icon">
+							<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+							</svg>
+						</span>
+						<span class="settings-hub-tile-title">API Keys</span>
+						<span class="settings-hub-tile-desc">Manage your LLM and search API keys</span>
 					</a>
 				</div>
 				@AppFooter()
@@ -843,4 +857,241 @@ templ PluginStatusSection(plugin settingsvm.PluginSettingsViewModel) {
 			</div>
 		}
 	</div>
+}
+
+// APIKeysSettingsPage renders the full API Keys settings page.
+// activePage is "settings-api-keys" so the sidebar highlights the sub-link.
+templ APIKeysSettingsPage(vm apikeysvm.APIKeysPageViewModel, plugins []SidebarPlugin) {
+	@Layout("API Keys - First Sip") {
+		<div class="app-layout">
+			@AppSidebar("settings-api-keys", plugins)
+			<main class="app-content">
+				<div class="page-hero">
+					@HeroTopBar()
+					<h1>API Keys</h1>
+					<p>Manage your LLM provider and search API keys</p>
+				</div>
+				@APIKeysSection(vm)
+				@LLMPreferenceSection(vm)
+				@AppFooter()
+			</main>
+		</div>
+	}
+}
+
+// APIKeysSection renders the LLM keys list + Tavily key section.
+// This div is the HTMX swap target after save/delete operations.
+templ APIKeysSection(vm apikeysvm.APIKeysPageViewModel) {
+	<div id="api-keys-section">
+		<!-- LLM Provider Keys -->
+		<div class="glass-card" style="margin-bottom: 1.5rem;">
+			<div class="glass-card-body">
+				<h2 class="settings-section-heading">LLM Provider Keys</h2>
+				<p class="settings-field-hint" style="margin-bottom: 1rem;">Add API keys for your LLM providers. Keys are encrypted at rest.</p>
+				if len(vm.LLMKeys) > 0 {
+					<div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+						for _, key := range vm.LLMKeys {
+							<div class="glass-inner" style="display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem;">
+								<div>
+									<span style="font-weight: 600; color: var(--text-primary); font-family: var(--font-body);">{ key.ProviderName }</span>
+									<span style="display: block; font-size: 0.8125rem; color: var(--text-secondary); font-family: monospace; margin-top: 0.2rem;">{ key.MaskedValue }</span>
+								</div>
+								<button
+									class="glass-btn glass-btn-ghost glass-btn-sm"
+									style="color: var(--status-unread-text); border-color: rgba(201,64,64,0.25);"
+									hx-post={ fmt.Sprintf("/api/user/api-keys/%d/delete", key.ID) }
+									hx-target="#api-keys-section"
+									hx-swap="outerHTML"
+									hx-confirm="Delete this API key?"
+								>
+									Delete
+								</button>
+							</div>
+						}
+					</div>
+				}
+				<!-- Add LLM Key form -->
+				<h3 class="settings-subsection-heading" style="margin-bottom: 0.75rem;">Add LLM Key</h3>
+				<form id="add-llm-key-form">
+					<input type="hidden" name="key_type" value="llm"/>
+					<div class="settings-field-group">
+						<label class="settings-field-label" for="llm-provider-select">Provider</label>
+						<select id="llm-provider-select" name="provider" class="settings-select">
+							<option value="">— Select provider —</option>
+							for _, p := range vm.Providers {
+								<option value={ p.ID }>{ p.Name }</option>
+							}
+						</select>
+					</div>
+					<div class="settings-field-group">
+						<label class="settings-field-label" for="llm-api-key-input">API Key</label>
+						<input
+							id="llm-api-key-input"
+							type="password"
+							name="api_key"
+							class="settings-input"
+							placeholder="sk-..."
+							autocomplete="off"
+						/>
+					</div>
+					<button
+						type="button"
+						class="glass-btn glass-btn-primary"
+						hx-post="/api/user/api-keys"
+						hx-include="#add-llm-key-form"
+						hx-target="#api-keys-section"
+						hx-swap="outerHTML"
+					>
+						Save LLM Key
+					</button>
+				</form>
+			</div>
+		</div>
+		<!-- Tavily Search Key -->
+		<div class="glass-card" style="margin-bottom: 1.5rem;">
+			<div class="glass-card-body">
+				<h2 class="settings-section-heading">Tavily Search Key</h2>
+				<p class="settings-field-hint" style="margin-bottom: 1rem;">Required for web search capabilities in your briefings.</p>
+				if vm.TavilyKey != nil {
+					<div class="glass-inner" style="display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; margin-bottom: 1rem;">
+						<div>
+							<span style="font-weight: 600; color: var(--text-primary); font-family: var(--font-body);">Tavily</span>
+							<span style="display: block; font-size: 0.8125rem; color: var(--text-secondary); font-family: monospace; margin-top: 0.2rem;">{ vm.TavilyKey.MaskedValue }</span>
+						</div>
+						<button
+							class="glass-btn glass-btn-ghost glass-btn-sm"
+							style="color: var(--status-unread-text); border-color: rgba(201,64,64,0.25);"
+							hx-post={ fmt.Sprintf("/api/user/api-keys/%d/delete", vm.TavilyKey.ID) }
+							hx-target="#api-keys-section"
+							hx-swap="outerHTML"
+							hx-confirm="Delete this API key?"
+						>
+							Delete
+						</button>
+					</div>
+				} else {
+					<form id="add-tavily-key-form">
+						<input type="hidden" name="key_type" value="tavily"/>
+						<input type="hidden" name="provider" value="tavily"/>
+						<div class="settings-field-group">
+							<label class="settings-field-label" for="tavily-api-key-input">API Key</label>
+							<input
+								id="tavily-api-key-input"
+								type="password"
+								name="api_key"
+								class="settings-input"
+								placeholder="tvly-..."
+								autocomplete="off"
+							/>
+						</div>
+						<button
+							type="button"
+							class="glass-btn glass-btn-primary"
+							hx-post="/api/user/api-keys"
+							hx-include="#add-tavily-key-form"
+							hx-target="#api-keys-section"
+							hx-swap="outerHTML"
+						>
+							Save Tavily Key
+						</button>
+					</form>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+// LLMPreferenceSection renders the LLM provider and model preference selects.
+// This div is the HTMX swap target after saving preferences.
+templ LLMPreferenceSection(vm apikeysvm.APIKeysPageViewModel) {
+	<div id="llm-preference-section">
+		<div class="glass-card">
+			<div class="glass-card-body">
+				<h2 class="settings-section-heading">LLM Preference</h2>
+				<p class="settings-field-hint" style="margin-bottom: 1rem;">Select your preferred LLM provider and model for AI briefing generation.</p>
+				<form id="llm-preference-form">
+					<div class="settings-field-group">
+						<label class="settings-field-label" for="pref-provider-select">Preferred Provider</label>
+						<select id="pref-provider-select" name="provider" class="settings-select" onchange="filterPrefModels(this.value)">
+							<option value="">— Select provider —</option>
+							for _, p := range vm.Providers {
+								<option value={ p.ID } if p.ID == vm.PreferredProvider { selected }>{ p.Name }</option>
+							}
+						</select>
+					</div>
+					<div class="settings-field-group">
+						<label class="settings-field-label" for="pref-model-select">Preferred Model</label>
+						<select id="pref-model-select" name="model" class="settings-select">
+							<option value="">— Select model —</option>
+							for _, p := range vm.Providers {
+								if p.ID == vm.PreferredProvider {
+									for _, m := range p.Models {
+										<option value={ m } if m == vm.PreferredModel { selected }>{ m }</option>
+									}
+								}
+							}
+						</select>
+					</div>
+					<div id="llm-pref-feedback" style="margin-bottom: 0.75rem;"></div>
+					<button
+						type="button"
+						class="glass-btn glass-btn-primary"
+						hx-post="/api/user/llm-preference"
+						hx-include="#llm-preference-form"
+						hx-target="#llm-preference-section"
+						hx-swap="outerHTML"
+					>
+						Save Preference
+					</button>
+				</form>
+				<!-- Provider→model map for client-side filtering (no extra round-trip) -->
+				<script>
+					(function() {
+						var providerModels = @templ.Raw(providerModelsJSON(vm));
+						window.filterPrefModels = function(providerID) {
+							var sel = document.getElementById('pref-model-select');
+							if (!sel) return;
+							var models = providerModels[providerID] || [];
+							sel.innerHTML = '<option value="">— Select model —</option>';
+							models.forEach(function(m) {
+								var opt = document.createElement('option');
+								opt.value = m;
+								opt.textContent = m;
+								sel.appendChild(opt);
+							});
+						};
+					})();
+				</script>
+			</div>
+		</div>
+	</div>
+}
+
+// APIKeysErrorAlert renders an error alert fragment for the API keys section.
+templ APIKeysErrorAlert(message string) {
+	<div id="api-keys-section">
+		<div class="glass-alert glass-alert-error" style="margin-bottom: 1.5rem;">
+			{ message }
+		</div>
+	</div>
+}
+
+// LLMPreferenceErrorAlert renders an error alert fragment for the LLM preference section.
+templ LLMPreferenceErrorAlert(message string) {
+	<div id="llm-preference-section">
+		<div class="glass-alert glass-alert-error" style="margin-bottom: 1rem;">
+			{ message }
+		</div>
+	</div>
+}
+
+// providerModelsJSON encodes the provider→models map as a JSON object literal
+// for embedding in the client-side script.
+func providerModelsJSON(vm apikeysvm.APIKeysPageViewModel) string {
+	m := make(map[string][]string, len(vm.Providers))
+	for _, p := range vm.Providers {
+		m[p.ID] = p.Models
+	}
+	b, _ := json.Marshal(m)
+	return string(b)
 }
