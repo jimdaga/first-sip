@@ -39,7 +39,7 @@
 
 **Milestone Goal:** Make the daily news digest produce real AI-generated content by connecting per-user API keys to the CrewAI sidecar with live web search.
 
-#### Phase 16: API Key Management
+#### Phase 16: API Key Management — COMPLETE 2026-03-02
 **Goal**: Users can securely store and manage their LLM and search API keys
 **Depends on**: Phase 15 (v1.1 complete)
 **Requirements**: KEYS-01, KEYS-02, KEYS-03, KEYS-04, KEYS-05
@@ -49,11 +49,11 @@
   3. User can view stored keys with values masked (e.g., sk-...xxxx)
   4. User can update or delete any stored key
   5. User can select their preferred LLM provider and model
-**Plans**: 2 plans
+**Plans**: 2/2 complete
 
 Plans:
 - [x] 16-01-PLAN.md — Data layer: UserAPIKey model, SQL migrations, encryption hooks, service CRUD, provider definitions
-- [ ] 16-02-PLAN.md — UI layer: API Keys settings page, handlers, sidebar/hub integration, HTMX interactions
+- [x] 16-02-PLAN.md — UI layer: API Keys settings page, handlers, sidebar/hub integration, HTMX interactions
 
 #### Phase 17: LLM and Search Pipeline
 **Goal**: API keys flow through Redis Streams to the CrewAI sidecar, enabling live LLM calls and web search
