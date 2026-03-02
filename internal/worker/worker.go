@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/jimdaga/first-sip/internal/apikeys"
 	"github.com/jimdaga/first-sip/internal/config"
 	"github.com/jimdaga/first-sip/internal/models"
 	"github.com/jimdaga/first-sip/internal/plugins"
@@ -194,6 +195,17 @@ func handleGenerateBriefing(logger *slog.Logger, db *gorm.DB, webhookClient *web
 	}
 }
 
+// findAPIKey searches a slice of UserAPIKey records for the first key matching both
+// keyType and provider. Returns nil if no match is found.
+func findAPIKey(keys []models.UserAPIKey, keyType, provider string) *models.UserAPIKey {
+	for i := range keys {
+		if keys[i].KeyType == keyType && keys[i].Provider == provider {
+			return &keys[i]
+		}
+	}
+	return nil
+}
+
 // handleExecutePlugin processes plugin execution tasks by creating a PluginRun record
 // and publishing the request to the Redis Stream for the CrewAI sidecar to consume.
 func handleExecutePlugin(logger *slog.Logger, db *gorm.DB, publisher *streams.Publisher) func(context.Context, *asynq.Task) error {
@@ -215,6 +227,45 @@ func handleExecutePlugin(logger *slog.Logger, db *gorm.DB, publisher *streams.Pu
 			"plugin_id", payload.PluginID,
 			"user_id", payload.UserID,
 		)
+
+		// Ensure settings map is initialized before key injection
+		if payload.Settings == nil {
+			payload.Settings = make(map[string]interface{})
+		}
+
+		// Inject user API keys and LLM preferences into settings.
+		// Failures are non-fatal: we log a warning and continue without keys.
+		// The CrewAI sidecar will surface errors if credentials are missing.
+		var user models.User
+		if err := db.WithContext(ctx).First(&user, payload.UserID).Error; err != nil {
+			logger.Warn("Failed to fetch user for key injection — proceeding without keys",
+				"user_id", payload.UserID,
+				"error", err.Error(),
+			)
+		} else {
+			userKeys, err := apikeys.GetKeysForUser(db, payload.UserID)
+			if err != nil {
+				logger.Warn("Failed to fetch API keys for user — proceeding without keys",
+					"user_id", payload.UserID,
+					"error", err.Error(),
+				)
+			} else {
+				// Inject LLM API key and model preference
+				if llmKey := findAPIKey(userKeys, "llm", user.LLMPreferredProvider); llmKey != nil {
+					payload.Settings["_llm_api_key"] = llmKey.EncryptedValue // AfterFind hook has already decrypted
+
+					// Only set _llm_model if not already overridden by per-plugin settings
+					if existing, ok := payload.Settings["_llm_model"]; !ok || existing == "" {
+						payload.Settings["_llm_model"] = user.LLMPreferredProvider + "/" + user.LLMPreferredModel
+					}
+				}
+
+				// Inject Tavily key if available
+				if tavilyKey := findAPIKey(userKeys, "tavily", "tavily"); tavilyKey != nil {
+					payload.Settings["_tavily_api_key"] = tavilyKey.EncryptedValue // AfterFind hook has already decrypted
+				}
+			}
+		}
 
 		// Generate a unique plugin_run_id for external tracking
 		pluginRunID := uuid.New().String()
