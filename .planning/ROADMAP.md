@@ -52,7 +52,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 16-01-PLAN.md — Data layer: UserAPIKey model, SQL migrations, encryption hooks, service CRUD, provider definitions
+- [x] 16-01-PLAN.md — Data layer: UserAPIKey model, SQL migrations, encryption hooks, service CRUD, provider definitions
 - [ ] 16-02-PLAN.md — UI layer: API Keys settings page, handlers, sidebar/hub integration, HTMX interactions
 
 #### Phase 17: LLM and Search Pipeline
@@ -120,11 +120,11 @@ Plans:
 | 13. Account Tier Scaffolding | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 16. API Key Management | v1.2 | 0/2 | Not started | - |
+| 16. API Key Management | v1.2 | 1/2 | In progress | - |
 | 17. LLM and Search Pipeline | v1.2 | 0/3 | Not started | - |
 | 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
 | 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-02-27 — v1.2 Live AI Generation roadmap added*
+*Last updated: 2026-03-02 — Phase 16 Plan 01 complete (data layer)*
