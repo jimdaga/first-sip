@@ -66,12 +66,11 @@ Plans:
   4. When user has a Tavily key, the researcher agent searches via Tavily
   5. When user has no Tavily key, the researcher agent falls back to DuckDuckGo
   6. Search queries use the user's topic preferences from plugin settings
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 17-01: Redis Streams payload extension and Go-side key injection
-- [ ] 17-02: Sidecar crew factory updates for LiteLLM provider/model config and per-plugin model override
-- [ ] 17-03: Tavily and DuckDuckGo search tool integration in researcher agent
+- [ ] 17-01-PLAN.md — Go-side key injection: fetch user API keys and LLM preferences, inject into Redis Streams payload settings
+- [ ] 17-02-PLAN.md — Sidecar LLM/search integration: executor credential extraction, LiteLLM provider/model config, Tavily/DuckDuckGo search tool selection, imperative crew.py rewrite
 
 #### Phase 18: Live Generation and Content Rendering
 **Goal**: Daily news digest generates real AI content and briefing tiles display it as formatted Markdown
@@ -121,7 +120,7 @@ Plans:
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 16. API Key Management | v1.2 | Complete    | 2026-03-02 | - |
-| 17. LLM and Search Pipeline | v1.2 | 0/3 | Not started | - |
+| 17. LLM and Search Pipeline | v1.2 | 0/2 | Not started | - |
 | 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
 | 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
