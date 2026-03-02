@@ -1,0 +1,3 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS llm_preferred_provider VARCHAR(50) NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS llm_preferred_model VARCHAR(100) NOT NULL DEFAULT '';

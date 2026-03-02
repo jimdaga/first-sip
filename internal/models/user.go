@@ -19,7 +19,12 @@ type User struct {
 	AccountTierID        *uint        `gorm:"index"` // nullable — NULL means pre-migration or unassigned (treated as free)
 	AccountTier          AccountTier  `gorm:"foreignKey:AccountTierID"`
 
+	// LLM preferences
+	LLMPreferredProvider string `gorm:"not null;default:''"`
+	LLMPreferredModel    string `gorm:"not null;default:''"`
+
 	// Associations
 	AuthIdentities []AuthIdentity `gorm:"constraint:OnDelete:CASCADE;"`
 	Briefings      []Briefing     `gorm:"constraint:OnDelete:CASCADE;"`
+	APIKeys        []UserAPIKey   `gorm:"constraint:OnDelete:CASCADE;"`
 }
