@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** A user's configured briefing plugins run on schedule and their latest results appear automatically on a tile-based dashboard — no manual action needed to receive fresh, personalized briefings every day.
-**Current focus:** Phase 17 — LiteLLM Integration
+**Current focus:** Phase 17 complete — ready for Phase 18 (Briefing Result Display)
 
 ## Current Position
 
-Phase: 17 of 19 (LiteLLM Integration)
-Plan: 2 of 2 in current phase
-Status: Plan 01 complete — ready for Plan 02
-Last activity: 2026-03-02 — Phase 17 Plan 01 complete (worker key injection)
+Phase: 17 of 19 (LiteLLM Integration) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 17 complete — ready for Phase 18
+Last activity: 2026-03-02 — Phase 17 Plan 02 complete (LLM and search pipeline)
 
-Progress: [█████████████░░░░░░░] 70% (milestones v1.0 + v1.1 complete, v1.2 Phase 16-17-01 done)
+Progress: [██████████████░░░░░░] 75% (milestones v1.0 + v1.1 complete, v1.2 Phases 16+17 done)
 
 ## Performance Metrics
 
@@ -25,13 +25,14 @@ Progress: [█████████████░░░░░░░] 70% (mi
 **v1.0 MVP:** 7 phases, 11 plans, ~2.0 hours
 **v1.1 Plugin Architecture:** 8 phases, 20 plans, ~2.7 hours
 
-**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 3 plans complete
+**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 4 plans complete
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 16-api-key-management | 01 | 2min | 2 | 8 |
 | 16-api-key-management | 02 | 7min | 2 | 6 |
 | 17-llm-and-search-pipeline | 01 | 1min | 1 | 1 |
+| 17-llm-and-search-pipeline | 02 | 4min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -59,22 +60,28 @@ Pending decisions for v1.2 (from PROJECT.md):
 - Per-plugin _llm_model override check uses `!ok || existing == ""` to handle both absent and empty string cases
 - findAPIKey uses index-range iteration to safely return pointer to slice element
 
+**Phase 17 Plan 02 decisions:**
+- Imperative crew pattern over @CrewBase — YAML config decorators cannot accept dynamic llm= at runtime; imperative constructors pass llm= directly to each Agent
+- DuckDuckGo wrapped with @tool decorator to match TavilySearchTool interface — CrewAI tools list accepts both native tools and @tool-wrapped functions
+- Credential stripping via _clean_settings filters all _-prefixed keys — prevents API keys from appearing in agent prompt templates as {_llm_api_key}
+- Anthropic max_tokens=4096 applied when model string starts with anthropic/ — required by Anthropic API, other providers use default
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-- [Research] Real CrewAI runs take 2-5 minutes — review Asynq + sidecar timeouts at phase 17/18
+- [Research] Real CrewAI runs take 2-5 minutes — review Asynq + sidecar timeouts at phase 18
 - [Research] API keys travel plaintext in Redis Streams — acceptable for same-host Redis, do not log payloads
 - [Research] Keys valid at save may expire later — surface errors prominently in phase 18
 
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Phase 17 Plan 01 complete — worker key injection into Redis Streams payload
-Resume with: Phase 17 Plan 02 (LLM and Search Pipeline — CrewAI sidecar integration)
+Stopped at: Phase 17 Plan 02 complete — LLM and search pipeline in sidecar
+Resume with: Phase 18 (Briefing Result Display)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-03-02 after Phase 17 Plan 01 execution*
+*Last updated: 2026-03-02 after Phase 17 Plan 02 execution*

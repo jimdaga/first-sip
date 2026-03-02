@@ -55,7 +55,7 @@ Plans:
 - [x] 16-01-PLAN.md — Data layer: UserAPIKey model, SQL migrations, encryption hooks, service CRUD, provider definitions
 - [x] 16-02-PLAN.md — UI layer: API Keys settings page, handlers, sidebar/hub integration, HTMX interactions
 
-#### Phase 17: LLM and Search Pipeline
+#### Phase 17: LLM and Search Pipeline — COMPLETE 2026-03-02
 **Goal**: API keys flow through Redis Streams to the CrewAI sidecar, enabling live LLM calls and web search
 **Depends on**: Phase 16
 **Requirements**: LLM-01, LLM-02, LLM-03, SRCH-01, SRCH-02, SRCH-03
@@ -66,11 +66,11 @@ Plans:
   4. When user has a Tavily key, the researcher agent searches via Tavily
   5. When user has no Tavily key, the researcher agent falls back to DuckDuckGo
   6. Search queries use the user's topic preferences from plugin settings
-**Plans**: 2 plans
+**Plans**: 2/2 complete
 
 Plans:
 - [x] 17-01-PLAN.md — Go-side key injection: fetch user API keys and LLM preferences, inject into Redis Streams payload settings
-- [ ] 17-02-PLAN.md — Sidecar LLM/search integration: executor credential extraction, LiteLLM provider/model config, Tavily/DuckDuckGo search tool selection, imperative crew.py rewrite
+- [x] 17-02-PLAN.md — Sidecar LLM/search integration: executor credential extraction, LiteLLM provider/model config, Tavily/DuckDuckGo search tool selection, imperative crew.py rewrite
 
 #### Phase 18: Live Generation and Content Rendering
 **Goal**: Daily news digest generates real AI content and briefing tiles display it as formatted Markdown
@@ -120,10 +120,10 @@ Plans:
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 16. API Key Management | v1.2 | Complete    | 2026-03-02 | - |
-| 17. LLM and Search Pipeline | v1.2 | 1/2 | In progress | - |
+| 17. LLM and Search Pipeline | v1.2 | 2/2 | Complete | 2026-03-02 |
 | 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
 | 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-03-02 — Phase 17 Plan 01 complete (Go-side key injection into Redis Streams payload)*
+*Last updated: 2026-03-02 — Phase 17 complete (LLM and search pipeline: sidecar credential extraction, crewai.LLM construction, Tavily/DuckDuckGo search tool selection, imperative crew pattern)*
