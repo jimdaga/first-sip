@@ -3,71 +3,102 @@
 Implements the researcher -> writer -> reviewer multi-agent pattern.
 Loaded dynamically by the sidecar executor via the create_crew() factory.
 """
-import os
-from pathlib import Path
 from crewai import Agent, Task, Crew, Process
-from crewai.project import CrewBase, agent, task, crew
 
 
-@CrewBase
-class NewsDigestCrew:
-    """Multi-agent crew for generating daily news digests."""
-
-    agents_config = str(Path(__file__).parent / "config" / "agents.yaml")
-    tasks_config = str(Path(__file__).parent / "config" / "tasks.yaml")
-
-    @agent
-    def researcher(self) -> Agent:
-        return Agent(config=self.agents_config["researcher"], verbose=True)
-
-    @agent
-    def writer(self) -> Agent:
-        return Agent(config=self.agents_config["writer"], verbose=True)
-
-    @agent
-    def reviewer(self) -> Agent:
-        return Agent(config=self.agents_config["reviewer"], verbose=False)
-
-    @task
-    def research_task(self) -> Task:
-        return Task(config=self.tasks_config["research_task"], agent=self.researcher())
-
-    @task
-    def write_task(self) -> Task:
-        return Task(
-            config=self.tasks_config["write_task"],
-            agent=self.writer(),
-            context=[self.research_task()],
-        )
-
-    @task
-    def review_task(self) -> Task:
-        return Task(
-            config=self.tasks_config["review_task"],
-            agent=self.reviewer(),
-            context=[self.write_task()],
-        )
-
-    @crew
-    def crew(self) -> Crew:
-        return Crew(
-            agents=self.agents,
-            tasks=self.tasks,
-            process=Process.sequential,
-            verbose=True,
-        )
-
-
-def create_crew(settings: dict) -> Crew:
+def create_crew(settings: dict, llm=None, search_tool=None) -> Crew:
     """Factory function called by sidecar executor.
 
-    This is the contract between plugin crew definitions and the sidecar:
-    every plugin's crew/crew.py must export create_crew(settings) -> Crew.
-
     Args:
-        settings: User plugin settings (topics, summary_length, etc.)
+        settings: Clean user plugin settings (topics, summary_length, etc.) — no credentials.
+        llm: crewai.LLM instance or None (falls back to CrewAI default).
+        search_tool: TavilySearchTool or DuckDuckGo @tool wrapper, or None.
 
     Returns:
         Configured Crew instance ready for kickoff_async(inputs=settings).
     """
-    return NewsDigestCrew().crew()
+    tools = [search_tool] if search_tool else []
+
+    researcher = Agent(
+        role="Senior News Research Analyst",
+        goal="Discover and analyze breaking news in {topics} to identify stories relevant to user interests",
+        backstory=(
+            "You are an experienced news analyst with expertise in {topics}. "
+            "You excel at finding high-quality sources, fact-checking claims, "
+            "and identifying stories that matter to discerning readers."
+        ),
+        tools=tools,
+        llm=llm,
+        verbose=True,
+    )
+
+    writer = Agent(
+        role="News Digest Writer",
+        goal="Transform research findings into concise, engaging news summaries",
+        backstory=(
+            "You are a skilled writer who crafts compelling news digests. "
+            "You distill complex topics into clear, actionable summaries "
+            "that respect the reader's time while delivering full context."
+        ),
+        llm=llm,
+        verbose=True,
+    )
+
+    reviewer = Agent(
+        role="Editorial Quality Reviewer",
+        goal="Ensure news digest meets quality standards for accuracy, clarity, and relevance",
+        backstory=(
+            "You are a meticulous editor who ensures every digest is "
+            "factually accurate, well-structured, and free of bias. "
+            "You catch errors that others miss."
+        ),
+        llm=llm,
+        verbose=False,
+    )
+
+    research_task = Task(
+        description=(
+            "Research breaking news in these topics: {topics}. "
+            "Find 3-5 high-quality stories from reputable sources. "
+            "For each story, note: headline, source, key facts, why it matters."
+        ),
+        expected_output=(
+            "JSON array of stories with fields: headline, source_url, "
+            "summary (2-3 sentences), relevance_score (1-10)"
+        ),
+        agent=researcher,
+    )
+
+    write_task = Task(
+        description=(
+            "Using the research findings, write a news digest. "
+            "Format: Brief intro paragraph, then 3-5 story summaries. "
+            "Each summary: headline, 2-3 sentence explanation, source credit. "
+            "Tone: Professional but conversational. Max 500 words total. "
+            "Summary length preference: {summary_length}."
+        ),
+        expected_output="Markdown-formatted news digest ready for display",
+        agent=writer,
+        context=[research_task],
+    )
+
+    review_task = Task(
+        description=(
+            "Review the news digest for: "
+            "Factual accuracy (check claims against research), "
+            "Clarity (no jargon, clear explanations), "
+            "Formatting (proper Markdown, consistent style), "
+            "Bias detection (neutral tone maintained). "
+            "If issues found, return revised version. If acceptable, approve as-is."
+        ),
+        expected_output="Final approved news digest in Markdown format, with quality score (1-10)",
+        agent=reviewer,
+        context=[write_task],
+    )
+
+    return Crew(
+        agents=[researcher, writer, reviewer],
+        tasks=[research_task, write_task, review_task],
+        process=Process.sequential,
+        verbose=True,
+    )
