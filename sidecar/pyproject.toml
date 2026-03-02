@@ -4,6 +4,10 @@ version = "0.1.0"
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "crewai>=1.9.3",
+    "crewai-tools>=0.55.0",
+    "tavily-python",
+    "langchain-community",
+    "duckduckgo-search>=4.1.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "redis>=6.1.0",

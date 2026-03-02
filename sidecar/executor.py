@@ -4,9 +4,15 @@ import asyncio
 import importlib.util
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Any
+
+from crewai import LLM
+from crewai_tools import TavilySearchTool
+from langchain_community.tools import DuckDuckGoSearchRun
+from crewai.tools import tool
 
 from models import PluginRequest, PluginResult
 
@@ -31,6 +37,62 @@ class CrewExecutor:
         self.timeout_seconds = timeout_seconds
         self.plugin_dir = plugin_dir
 
+    def _extract_llm(self, settings: dict) -> "LLM | None":
+        """Construct a crewai.LLM from injected credentials.
+
+        Args:
+            settings: Raw settings dict including credential keys.
+
+        Returns:
+            LLM instance or None if credentials are missing.
+        """
+        api_key = settings.get("_llm_api_key")
+        model = settings.get("_llm_model")
+        if not api_key or not model:
+            return None
+        kwargs: dict[str, Any] = {"model": model, "api_key": api_key}
+        if model.startswith("anthropic/"):
+            kwargs["max_tokens"] = 4096
+        return LLM(**kwargs)
+
+    def _extract_search_tool(self, settings: dict):
+        """Select Tavily or DuckDuckGo search tool based on available credentials.
+
+        Args:
+            settings: Raw settings dict including credential keys.
+
+        Returns:
+            TavilySearchTool instance or DuckDuckGo @tool wrapper.
+        """
+        tavily_key = settings.get("_tavily_api_key")
+        if tavily_key:
+            os.environ["TAVILY_API_KEY"] = tavily_key
+            return TavilySearchTool()
+
+        # DuckDuckGo fallback — no API key required
+        ddg = DuckDuckGoSearchRun()
+
+        @tool("Web Search")
+        def web_search(query: str) -> str:
+            """Search the web for current information."""
+            return ddg.run(query)
+
+        return web_search
+
+    def _clean_settings(self, settings: dict) -> dict:
+        """Strip credential keys from settings before passing to crew inputs.
+
+        Removes any key starting with '_' (e.g. _llm_api_key, _tavily_api_key,
+        _llm_model) to prevent credential leakage into agent template variables.
+
+        Args:
+            settings: Raw settings dict.
+
+        Returns:
+            Dict with credential keys removed.
+        """
+        return {k: v for k, v in settings.items() if not k.startswith("_")}
+
     async def execute(self, request: PluginRequest) -> PluginResult:
         """Execute a plugin's CrewAI workflow.
 
@@ -40,8 +102,13 @@ class CrewExecutor:
         Returns:
             PluginResult with status, output, or error
         """
+        # Extract credentials and build LLM + search tool
+        llm = self._extract_llm(request.settings)
+        search_tool = self._extract_search_tool(request.settings)
+        clean_settings = self._clean_settings(request.settings)
+
         # Load crew for this plugin
-        crew = self._load_crew(request.plugin_name, request.settings)
+        crew = self._load_crew(request.plugin_name, clean_settings, llm=llm, search_tool=search_tool)
         if crew is None:
             return PluginResult(
                 plugin_run_id=request.plugin_run_id,
@@ -52,7 +119,7 @@ class CrewExecutor:
         # Execute with timeout wrapper
         try:
             async with asyncio.timeout(self.timeout_seconds):
-                result = await crew.kickoff_async(inputs=request.settings)
+                result = await crew.kickoff_async(inputs=clean_settings)
                 # Extract output (CrewAI result may have .raw attribute)
                 raw_output = result.raw if hasattr(result, 'raw') else str(result)
 
@@ -138,15 +205,17 @@ class CrewExecutor:
             sections.append({"title": title, "content": content})
         return sections
 
-    def _load_crew(self, plugin_name: str, settings: dict[str, Any]):
+    def _load_crew(self, plugin_name: str, settings: dict[str, Any], llm=None, search_tool=None):
         """Load a plugin's crew definition dynamically.
 
         Convention: Each plugin's crew/crew.py must export a
-        create_crew(settings: dict) -> Crew factory function.
+        create_crew(settings: dict, llm=None, search_tool=None) -> Crew factory function.
 
         Args:
             plugin_name: Name of plugin (subdirectory in plugin_dir)
-            settings: Settings to pass to create_crew factory
+            settings: Clean settings (credentials already stripped) to pass to create_crew
+            llm: crewai.LLM instance or None
+            search_tool: Search tool instance or None
 
         Returns:
             Crew instance or None if not found/failed to load
@@ -181,7 +250,7 @@ class CrewExecutor:
                 logger.error(f"Plugin '{plugin_name}' crew.py missing create_crew() function")
                 return None
 
-            crew = module.create_crew(settings)
+            crew = module.create_crew(settings, llm=llm, search_tool=search_tool)
             logger.info(f"Loaded crew for plugin '{plugin_name}'")
             return crew
 
