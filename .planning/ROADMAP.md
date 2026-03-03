@@ -121,7 +121,7 @@ Plans:
 | 14. Integration Pipeline Fix | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 15. Verification & Documentation Closure | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 16. API Key Management | v1.2 | Complete    | 2026-03-02 | - |
-| 17. LLM and Search Pipeline | v1.2 | 3/3 | Complete | 2026-03-03 |
+| 17. LLM and Search Pipeline | v1.2 | Complete    | 2026-03-03 | 2026-03-03 |
 | 18. Live Generation and Content Rendering | v1.2 | 0/2 | Not started | - |
 | 19. Legacy Cleanup | v1.2 | 0/1 | Not started | - |
 
