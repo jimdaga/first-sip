@@ -9,23 +9,23 @@ Requirements for v1.2 Live AI Generation milestone. Each maps to roadmap phases.
 
 ### API Key Management
 
-- [ ] **KEYS-01**: User can store an encrypted LLM provider API key (OpenAI, Anthropic, Groq, etc.)
-- [ ] **KEYS-02**: User can store an encrypted Tavily search API key
-- [ ] **KEYS-03**: User can view their stored keys with masked display (sk-...xxxx)
-- [ ] **KEYS-04**: User can update or delete their stored API keys
-- [ ] **KEYS-05**: User can select their preferred LLM provider and model
+- [x] **KEYS-01**: User can store an encrypted LLM provider API key (OpenAI, Anthropic, Groq, etc.)
+- [x] **KEYS-02**: User can store an encrypted Tavily search API key
+- [x] **KEYS-03**: User can view their stored keys with masked display (sk-...xxxx)
+- [x] **KEYS-04**: User can update or delete their stored API keys
+- [x] **KEYS-05**: User can select their preferred LLM provider and model
 
 ### LLM Configuration
 
-- [ ] **LLM-01**: System passes user's LLM API key to CrewAI sidecar per run
-- [ ] **LLM-02**: CrewAI crew uses provider-agnostic LLM via LiteLLM format (provider/model)
-- [ ] **LLM-03**: User can override LLM model per plugin via plugin settings
+- [x] **LLM-01**: System passes user's LLM API key to CrewAI sidecar per run
+- [x] **LLM-02**: CrewAI crew uses provider-agnostic LLM via LiteLLM format (provider/model)
+- [x] **LLM-03**: User can override LLM model per plugin via plugin settings
 
 ### Web Search
 
-- [ ] **SRCH-01**: CrewAI researcher agent uses Tavily search when user has Tavily key
-- [ ] **SRCH-02**: CrewAI researcher agent falls back to DuckDuckGo when no Tavily key
-- [ ] **SRCH-03**: Search queries incorporate user's topic preferences from plugin settings
+- [x] **SRCH-01**: CrewAI researcher agent uses Tavily search when user has Tavily key
+- [x] **SRCH-02**: CrewAI researcher agent falls back to DuckDuckGo when no Tavily key
+- [x] **SRCH-03**: Search queries incorporate user's topic preferences from plugin settings
 
 ### Content Generation
 
@@ -72,17 +72,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KEYS-01 | Phase 16 | Pending |
-| KEYS-02 | Phase 16 | Pending |
-| KEYS-03 | Phase 16 | Pending |
-| KEYS-04 | Phase 16 | Pending |
-| KEYS-05 | Phase 16 | Pending |
-| LLM-01 | Phase 17 | Pending |
-| LLM-02 | Phase 17 | Pending |
-| LLM-03 | Phase 17 | Pending |
-| SRCH-01 | Phase 17 | Pending |
-| SRCH-02 | Phase 17 | Pending |
-| SRCH-03 | Phase 17 | Pending |
+| KEYS-01 | Phase 16 | Done |
+| KEYS-02 | Phase 16 | Done |
+| KEYS-03 | Phase 16 | Done |
+| KEYS-04 | Phase 16 | Done |
+| KEYS-05 | Phase 16 | Done |
+| LLM-01 | Phase 17 | Done |
+| LLM-02 | Phase 17 | Done |
+| LLM-03 | Phase 17 | Done |
+| SRCH-01 | Phase 17 | Done |
+| SRCH-02 | Phase 17 | Done |
+| SRCH-03 | Phase 17 | Done |
 | GEN-01 | Phase 18 | Pending |
 | GEN-02 | Phase 18 | Pending |
 | GEN-03 | Phase 18 | Pending |
@@ -98,4 +98,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after roadmap creation — all 18 requirements mapped*
+*Last updated: 2026-03-03 after Phase 17 Plan 03 execution — KEYS-01 through SRCH-03 marked Done*

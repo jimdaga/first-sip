@@ -32,6 +32,12 @@
       "enum": ["brief", "standard", "detailed"],
       "default": "standard",
       "description": "Length of article summaries"
+    },
+    "_llm_model": {
+      "type": "string",
+      "enum": ["", "openai/gpt-4o", "openai/gpt-4o-mini", "openai/gpt-4-turbo", "openai/gpt-3.5-turbo", "anthropic/claude-opus-4-5", "anthropic/claude-sonnet-4-5", "anthropic/claude-haiku-3-5", "groq/llama-3.3-70b-versatile", "groq/llama-3.1-8b-instant", "groq/mixtral-8x7b-32768"],
+      "default": "",
+      "description": "Override the LLM model for this plugin. Leave empty to use your account default."
     }
   },
   "required": ["frequency", "preferred_time", "topics"]
