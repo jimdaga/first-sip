@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 17 of 19 (LiteLLM Integration) — COMPLETE
-Plan: 2 of 2 complete
+Plan: 3 of 3 complete
 Status: Phase 17 complete — ready for Phase 18
-Last activity: 2026-03-02 — Phase 17 Plan 02 complete (LLM and search pipeline)
+Last activity: 2026-03-03 — Phase 17 Plan 03 complete (LLM-03 gap closure: _llm_model field in settings schema)
 
 Progress: [██████████████░░░░░░] 75% (milestones v1.0 + v1.1 complete, v1.2 Phases 16+17 done)
 
@@ -25,7 +25,7 @@ Progress: [██████████████░░░░░░] 75% (mi
 **v1.0 MVP:** 7 phases, 11 plans, ~2.0 hours
 **v1.1 Plugin Architecture:** 8 phases, 20 plans, ~2.7 hours
 
-**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 4 plans complete
+**v1.2 Live AI Generation:** 4 phases, ~8 plans (TBD), 5 plans complete
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -33,6 +33,7 @@ Progress: [██████████████░░░░░░] 75% (mi
 | 16-api-key-management | 02 | 7min | 2 | 6 |
 | 17-llm-and-search-pipeline | 01 | 1min | 1 | 1 |
 | 17-llm-and-search-pipeline | 02 | 4min | 2 | 3 |
+| 17-llm-and-search-pipeline | 03 | 2min | 1 | 2 |
 
 ## Accumulated Context
 
@@ -66,6 +67,11 @@ Pending decisions for v1.2 (from PROJECT.md):
 - Credential stripping via _clean_settings filters all _-prefixed keys — prevents API keys from appearing in agent prompt templates as {_llm_api_key}
 - Anthropic max_tokens=4096 applied when model string starts with anthropic/ — required by Anthropic API, other providers use default
 
+**Phase 17 Plan 03 decisions:**
+- _llm_model uses empty string default (not null) to match the worker guard condition !ok || existing == "" — consistent with sidecar executor's override detection
+- Not added to required array — field is optional, most users leave it empty to inherit account default
+- Enum values use LiteLLM provider/model format (e.g., openai/gpt-4o) to match what the worker passes to the sidecar
+
 ### Pending Todos
 
 None.
@@ -78,10 +84,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Phase 17 Plan 02 complete — LLM and search pipeline in sidecar
+Last session: 2026-03-03
+Stopped at: Phase 17 Plan 03 complete — LLM-03 gap closure (_llm_model field in settings schema)
 Resume with: Phase 18 (Briefing Result Display)
 
 ---
 *Created: 2026-02-10*
-*Last updated: 2026-03-02 after Phase 17 Plan 02 execution*
+*Last updated: 2026-03-03 after Phase 17 Plan 03 execution*
